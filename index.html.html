@@ -1,0 +1,3039 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>International Team</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d14;--surface:#13131f;--surface2:#1a1a2e;--surface3:#222238;
+  --border:#2c2c45;--border2:#3a3a58;
+  --accent:#f5c842;--accent-dim:rgba(245,200,66,.12);
+  --blue:#5b9cf6;--blue-dim:rgba(91,156,246,.12);
+  --green:#4ade80;--green-dim:rgba(74,222,128,.1);
+  --red:#f87171;--red-dim:rgba(248,113,113,.1);
+  --purple:#a78bfa;--purple-dim:rgba(167,139,250,.12);
+  --orange:#fb923c;--orange-dim:rgba(251,146,60,.12);
+  --teal:#2dd4bf;--teal-dim:rgba(45,212,191,.12);
+  --pink:#f472b6;--pink-dim:rgba(244,114,182,.12);
+  --text:#e2e2f0;--muted:#5a5a7a;--muted2:#8080a0;
+}
+
+/* LIGHT THEME */
+body.theme-light{
+  --bg:#f5f3ff;--surface:#ffffff;--surface2:#ede9fa;--surface3:#e2ddf5;
+  --border:#d1caf0;--border2:#b8b0e0;
+  --accent:#7c3aed;--accent-dim:rgba(124,58,237,.1);
+  --blue:#4f46e5;--blue-dim:rgba(79,70,229,.1);
+  --green:#059669;--green-dim:rgba(5,150,105,.1);
+  --red:#dc2626;--red-dim:rgba(220,38,38,.1);
+  --purple:#7c3aed;--purple-dim:rgba(124,58,237,.12);
+  --orange:#d97706;--orange-dim:rgba(217,119,6,.1);
+  --teal:#0891b2;--teal-dim:rgba(8,145,178,.1);
+  --pink:#db2777;--pink-dim:rgba(219,39,119,.1);
+  --text:#1e1b4b;--muted:#6b6a8a;--muted2:#4c4870;
+}
+body.theme-light{ color-scheme: light; }
+body.theme-light,
+body.theme-light .topbar,
+body.theme-light .nav-tabs,
+body.theme-light .modal,
+body.theme-light .login-box,
+body.theme-light .kard,
+body.theme-light .emp-sal-card,
+body.theme-light .dash-kard,
+body.theme-light .adm-sidebar,
+body.theme-light .content-area,
+body.theme-light .adm-section{
+  background-color: var(--bg);
+}
+body.theme-light .topbar{ background:var(--surface); }
+body.theme-light .nav-tabs{ background:var(--surface); }
+body.theme-light .kard,
+body.theme-light .dash-kard,
+body.theme-light .emp-sal-card{ background:var(--surface); box-shadow:0 2px 12px rgba(124,58,237,.07); }
+body.theme-light .modal{ background:var(--surface); }
+body.theme-light .login-box{ background:var(--surface); box-shadow:0 8px 40px rgba(124,58,237,.15); }
+body.theme-light .btn-primary{ color:#fff; background:var(--accent); }
+body.theme-light .tbl thead tr{ background:var(--surface2); }
+body.theme-light .tbl tr:hover{ background:var(--surface2); }
+body.theme-light .field input,
+body.theme-light .field select,
+body.theme-light .esc-input,
+body.theme-light .week-input,
+body.theme-light .calc-days-input{ background:var(--surface); color:var(--text); border-color:var(--border); }
+body.theme-light .adm-tab{ color:var(--muted); }
+body.theme-light .adm-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+body.theme-light .nav-tab{ color:var(--muted); }
+body.theme-light .nav-tab.active{ color:var(--accent); }
+body.theme-light ::-webkit-scrollbar-track{ background:var(--surface2); }
+body.theme-light ::-webkit-scrollbar-thumb{ background:var(--border2); }
+body.theme-light .shift-today-card{ background:var(--surface); }
+body.theme-light .exchange-offer{ background:var(--surface); }
+body.theme-light .announce-card{ background:var(--surface); }
+.wish-pill{font-size:9px;background:rgba(245,200,66,.13);color:var(--accent);border:1px dashed rgba(245,200,66,.4);border-radius:4px;padding:2px 5px;margin-top:3px;cursor:pointer;display:block;text-align:center;transition:.15s;user-select:none}
+.wish-pill:hover{background:rgba(245,200,66,.22);border-color:var(--accent)}
+.wish-empty{font-size:9px;color:var(--muted);opacity:.3;cursor:pointer;padding:2px 5px;border-radius:4px;border:1px dashed transparent;display:block;margin-top:3px;text-align:center;transition:.15s;user-select:none}
+.wish-empty:hover{opacity:.7;border-color:var(--border2);color:var(--muted2)}
+.wish-pill.limit-warn{border-color:rgba(248,113,113,.5)!important;background:rgba(248,113,113,.1)!important}
+.wish-badge{font-size:9px;background:rgba(245,200,66,.1);color:var(--accent);border:1px dashed rgba(245,200,66,.35);border-radius:3px;padding:1px 4px;display:inline-block;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+
+/* SHIFT TYPE COLORS */
+.sh-1{background:var(--blue-dim)!important;color:var(--blue)!important;border-color:rgba(91,156,246,.3)!important}
+.sh-2{background:var(--green-dim)!important;color:var(--green)!important;border-color:rgba(74,222,128,.3)!important}
+.sh-3{background:var(--purple-dim)!important;color:var(--purple)!important;border-color:rgba(167,139,250,.3)!important}
+.sh-4{background:var(--orange-dim)!important;color:var(--orange)!important;border-color:rgba(251,146,60,.3)!important}
+.sh-5{background:var(--teal-dim)!important;color:var(--teal)!important;border-color:rgba(45,212,191,.3)!important}
+.sh-6{background:var(--pink-dim)!important;color:var(--pink)!important;border-color:rgba(244,114,182,.3)!important}
+.sh-7{background:var(--red-dim)!important;color:var(--red)!important;border-color:rgba(248,113,113,.3)!important}
+.sh-mail{background:rgba(0,207,255,.12)!important;color:#00cfff!important;border-color:rgba(0,207,255,.3)!important}
+.sh-off{color:var(--muted)!important}
+.sh-vac{background:rgba(56,189,248,.12)!important;color:#38bdf8!important;border-color:rgba(56,189,248,.3)!important;font-size:14px!important}
+/* DAY COMMENTS */
+.day-comment-empty{font-size:10px;color:var(--muted2);opacity:.5;cursor:pointer;padding:3px 5px;border-radius:4px;border:1px dashed var(--border2);display:block;margin-top:4px;text-align:center;transition:.15s;user-select:none}
+.day-comment-empty:hover{opacity:1;border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.day-comment{font-size:10px;color:var(--teal);margin-top:4px;line-height:1.3;word-break:break-word;cursor:pointer;border-radius:4px;padding:3px 5px;border:1px solid rgba(45,212,191,.2);background:rgba(45,212,191,.05);transition:.15s;user-select:none}
+.day-comment:hover{border-color:var(--teal);background:rgba(45,212,191,.1)}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center}
+#login-screen::before{content:'';position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(245,200,66,.05) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:52px 44px;width:400px;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:5px;color:var(--accent);margin-bottom:4px}
+.login-tagline{color:var(--muted);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:44px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.field select,.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:13px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;appearance:none}
+.field select:focus,.field input:focus{border-color:var(--accent)}
+.field select option{background:#1a1a2e}
+.btn-primary{width:100%;padding:14px;background:var(--accent);color:#0d0d14;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;cursor:pointer;transition:.15s;text-transform:uppercase}
+.btn-primary:hover{opacity:.9}
+.btn-primary:active{transform:scale(.98)}
+.err{color:var(--red);font-size:12px;margin-top:10px;text-align:center;display:none}
+
+/* TOPBAR */
+#app{display:none}
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--accent)}
+.topbar-r{display:flex;align-items:center;gap:14px}
+.topbar-who{font-size:13px;color:var(--muted)}
+.topbar-who b{color:var(--text);font-weight:500}
+.btn-logout{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);padding:6px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* NAV */
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0;overflow-x:auto}
+.nav-tab{padding:14px 18px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;user-select:none;flex-shrink:0}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-tab:hover:not(.active){color:var(--text)}
+
+.content{padding:32px 28px;max-width:1200px;margin:0 auto}
+.page-h{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;line-height:1;margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:13px;margin-bottom:30px}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--muted2);margin:32px 0 12px}
+
+/* CARDS */
+.cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:4px}
+.kard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 20px 16px}
+.kard-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.kard-val{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;line-height:1}
+.kard-val.y{color:var(--accent)}.kard-val.b{color:var(--blue)}.kard-val.g{color:var(--green)}.kard-val.p{color:var(--purple)}
+.kard-sub{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* TODAY SHIFTS */
+.shift-today-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px}
+.shift-today-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative;overflow:hidden}
+.stc-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.stc-date{font-size:13px;color:var(--muted2);margin-bottom:8px}
+.stc-time{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;color:var(--accent);line-height:1}
+.stc-type{font-size:12px;margin-top:6px;opacity:.8}
+.stc-off{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--muted);letter-spacing:2px}
+
+/* SHIFT LEGEND */
+.shift-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted2)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* CALENDAR */
+.cal-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.cal-nav{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);width:34px;height:34px;cursor:pointer;font-size:16px;transition:.2s;display:flex;align-items:center;justify-content:center}
+.cal-nav:hover{border-color:var(--accent);color:var(--accent)}
+.cal-month-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px}
+.cal-grid{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
+.cal-wd{text-align:center;padding:10px 4px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-day{min-height:72px;padding:8px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);position:relative}
+.cal-day:nth-child(7n){border-right:none}
+.cal-day.empty{background:rgba(0,0,0,.3)}
+.cal-day.today-day{background:var(--accent-dim)}
+.cal-day-num{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted2);margin-bottom:4px}
+.cal-day.today-day .cal-day-num{color:var(--accent);font-weight:500}
+.shift-pill{font-size:10px;border-radius:4px;padding:2px 5px;display:inline-block;margin:1px 0;font-family:'DM Mono',monospace;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent;cursor:default}
+
+/* EXCHANGE */
+.exchange-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.exchange-offer{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(44,44,69,.5);gap:12px;flex-wrap:wrap}
+.exchange-offer:last-child{border-bottom:none}
+.exo-left{flex:1}
+.exo-name{font-weight:500;font-size:14px;margin-bottom:3px}
+.exo-shift{font-size:12px}
+.exo-date{font-size:12px;color:var(--muted);margin-bottom:4px}
+.exo-msg{font-size:12px;color:var(--muted2)}
+.btn-take{background:var(--green-dim);border:1px solid rgba(74,222,128,.3);border-radius:7px;color:var(--green);padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:.2s}
+.btn-take:hover{background:rgba(74,222,128,.2)}
+.btn-cancel-offer{background:var(--red-dim);border:1px solid rgba(248,113,113,.3);border-radius:7px;color:var(--red);padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s}
+.btn-cancel-offer:hover{background:rgba(248,113,113,.2)}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+
+/* TEAM SCHEDULE TABLE */
+.sched-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border)}
+.sched-table{border-collapse:collapse;min-width:800px;width:100%}
+.sched-table th{padding:9px 6px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--surface2);border:1px solid var(--border);white-space:nowrap;text-align:center}
+.sched-table td{padding:3px 3px;border:1px solid var(--border);vertical-align:middle;text-align:center}
+.sched-table .name-col{min-width:120px;padding:8px 12px;font-weight:500;font-size:12px;background:var(--surface2);position:sticky;left:0;z-index:1;text-align:left;white-space:nowrap}
+.sched-select{background:var(--bg);border:none;border-radius:5px;color:var(--text);padding:4px 2px;font-size:10px;width:100%;cursor:pointer;outline:none;font-family:'DM Mono',monospace;text-align:center}
+.today-col-h{background:rgba(245,200,66,.15)!important;color:var(--accent)!important}
+.today-col{background:rgba(245,200,66,.03)!important}
+.you-row .name-col{border-left:2px solid var(--accent)}
+
+/* SALARY */
+.calc-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px}
+.calc-ig label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.calc-ig input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:12px 14px;font-family:'DM Mono',monospace;font-size:15px;outline:none;transition:.2s;text-align:right}
+.calc-ig input:focus{border-color:var(--accent)}
+.calc-ig .hint{font-size:11px;color:var(--muted);margin-top:4px}
+.calc-result{background:var(--accent-dim);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.calc-result-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2)}
+.calc-result-val{font-family:'Bebas Neue',sans-serif;font-size:50px;letter-spacing:2px;color:var(--accent);line-height:1}
+.calc-result-break{font-size:11px;color:var(--muted);margin-top:4px}
+.calc-sep{height:1px;background:var(--border);margin:18px 0}
+.calc-days-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.calc-days-row label{font-size:12px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
+.calc-days-input{background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 14px;font-family:'DM Mono',monospace;font-size:20px;width:90px;text-align:center;outline:none;transition:.2s}
+.calc-days-input:focus{border-color:var(--accent)}
+.calc-total-box{display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;flex-wrap:wrap}
+.calc-total-label{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.calc-total-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:2px;color:var(--green);line-height:1}
+
+/* TABLES */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse}
+table.tbl th{text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:13px 14px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+table.tbl td{padding:11px 14px;font-size:13px;border-bottom:1px solid rgba(44,44,69,.4);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl tr:hover td{background:rgba(255,255,255,.015)}
+
+/* STATUS PILLS */
+.pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;display:inline-block}
+.pill-paid{background:var(--green-dim);color:var(--green)}
+.pill-pending{background:var(--accent-dim);color:var(--accent)}
+
+/* ADMIN */
+.admin-tabs{display:flex;gap:6px;margin-bottom:26px;flex-wrap:wrap}
+.adm-tab{padding:9px 18px;background:none;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:.2s}
+.adm-tab.active{background:var(--accent);color:#0d0d14;border-color:var(--accent);font-weight:700}
+.adm-section{display:none}
+.adm-section.active{display:block}
+.notice-box{background:var(--blue-dim);border:1px solid rgba(91,156,246,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--blue);margin-bottom:22px}
+
+.btn-sm{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s}
+.btn-sm.blue{color:var(--blue)}.btn-sm.blue:hover{border-color:var(--blue);background:var(--blue-dim)}
+.btn-sm.red{color:var(--red)}.btn-sm.red:hover{border-color:var(--red);background:var(--red-dim)}
+.btn-save{background:var(--accent);color:#0d0d14;border:none;border-radius:9px;padding:11px 26px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:.15s}
+.btn-save:hover{opacity:.9}
+.btn-add{background:var(--green-dim);border:1px solid rgba(74,222,128,.3);color:var(--green);border-radius:9px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;font-weight:500;transition:.2s}
+.btn-add:hover{background:rgba(74,222,128,.2)}
+
+/* MONTHLY */
+.month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.emp-sal-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.esc-name{font-weight:600;font-size:14px;margin-bottom:2px}
+.esc-role{font-size:12px;color:var(--muted);margin-bottom:14px}
+.esc-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(44,44,69,.4);font-size:13px}
+.esc-row:last-child{border-bottom:none}
+.esc-row span:first-child{color:var(--muted2)}
+.esc-total{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);letter-spacing:1px}
+.esc-input{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-family:'DM Mono',monospace;font-size:13px;width:100px;text-align:right;outline:none;transition:.2s}
+.esc-input:focus{border-color:var(--accent)}
+
+/* LINKS */
+.link-row{display:grid;grid-template-columns:1fr 1.5fr 60px 34px;gap:8px;align-items:center;margin-bottom:8px}
+.link-row input{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;width:100%}
+.link-row input:focus{border-color:var(--accent)}
+.del-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--red);width:34px;height:34px;cursor:pointer;font-size:16px;transition:.2s;display:flex;align-items:center;justify-content:center}
+.del-btn:hover{background:var(--red-dim);border-color:var(--red)}
+.add-row-btn{background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:9px;width:100%;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:.2s;margin-top:4px}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent)}
+.links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.link-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;text-decoration:none;color:var(--text);display:flex;align-items:center;gap:12px;transition:.2s}
+.link-card:hover{border-color:var(--blue);transform:translateY(-2px)}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:34px;width:480px;max-width:100%;max-height:88vh;overflow-y:auto;animation:fadeUp .3s ease}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:22px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-grid .field{margin-bottom:0}
+.full{grid-column:1/-1}
+.modal-actions{display:flex;gap:10px;margin-top:22px}
+.btn-cancel{flex:1;padding:12px;background:none;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:.2s}
+.btn-cancel:hover{border-color:var(--muted);color:var(--text)}
+
+/* OFFER SHIFT MODAL */
+.day-picker{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+.day-pick-btn{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:8px 4px;font-size:11px;cursor:pointer;text-align:center;transition:.2s;font-family:'DM Mono',monospace}
+.day-pick-btn:hover{border-color:var(--accent)}
+.day-pick-btn.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.day-pick-btn.has-shift{border-color:var(--border2)}
+.day-pick-btn.no-shift{color:var(--muted)}
+
+
+/* STATUS */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:.2s}
+.status-work{background:var(--green-dim);color:var(--green);border-color:rgba(74,222,128,.25)}
+.status-sick{background:var(--red-dim);color:var(--red);border-color:rgba(248,113,113,.25)}
+.status-vacation{background:var(--blue-dim);color:var(--blue);border-color:rgba(91,156,246,.25)}
+.status-remote{background:var(--purple-dim);color:var(--purple);border-color:rgba(167,139,250,.25)}
+.status-day-off{background:var(--surface2);color:var(--muted2);border-color:var(--border)}
+.status-select{background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:8px 12px;font-family:"DM Sans",sans-serif;font-size:13px;outline:none;width:100%;transition:.2s}
+.status-select:focus{border-color:var(--accent)}
+
+/* ANNOUNCEMENTS */
+.announce-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:12px;position:relative}
+.announce-card.pinned{border-color:rgba(245,200,66,.35);background:linear-gradient(135deg,rgba(245,200,66,.04),transparent)}
+.announce-pin{position:absolute;top:14px;right:14px;font-size:16px}
+.announce-author{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-bottom:6px}
+.announce-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
+.announce-ts{font-size:11px;color:var(--muted);margin-top:8px}
+.announce-del{position:absolute;bottom:14px;right:14px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:3px 8px;font-size:11px;cursor:pointer;transition:.2s}
+.announce-del:hover{border-color:var(--red);color:var(--red)}
+.team-status-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(44,44,69,.4);flex-wrap:wrap;gap:8px}
+.team-status-row:last-child{border-bottom:none}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:4px}
+.dash-kard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 22px 18px;position:relative;overflow:hidden}
+.dash-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.dash-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;line-height:1}
+.dash-trend{display:inline-flex;align-items:center;gap:4px;font-size:12px;margin-top:8px;padding:3px 10px;border-radius:20px;font-weight:500}
+.trend-up{background:var(--green-dim);color:var(--green)}
+.trend-down{background:var(--red-dim);color:var(--red)}
+.trend-flat{background:var(--surface2);color:var(--muted2)}
+.dash-chart{margin-top:16px;height:60px;display:flex;align-items:flex-end;gap:3px}
+.dash-bar{flex:1;border-radius:3px 3px 0 0;min-height:3px;transition:opacity .2s;position:relative;cursor:default}
+.dash-bar:hover{opacity:.8}
+.dash-bar-label{font-size:9px;color:var(--muted);text-align:center;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-bars-wrap{display:flex;flex-direction:column;flex:1}
+.week-tag{font-size:10px;color:var(--muted);background:var(--surface2);border-radius:4px;padding:1px 5px;display:inline-block}
+
+/* ADMIN PERF TABLE */
+.perf-table th,.perf-table td{padding:11px 14px}
+.perf-table td:first-child{font-weight:500}
+.rank-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:var(--muted2);width:32px;display:inline-block;text-align:right}
+.rank-1{color:var(--accent)}
+.rank-2{color:var(--muted2)}
+.rank-3{color:var(--orange)}
+.mini-bar-wrap{display:flex;align-items:center;gap:8px}
+.mini-bar{height:8px;border-radius:4px;min-width:4px;transition:width .3s}
+
+/* CSV UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--accent-dim)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:40px;margin-bottom:12px}
+.upload-text{font-size:14px;color:var(--muted2);margin-bottom:4px}
+.upload-hint{font-size:12px;color:var(--muted)}
+.week-selector{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.week-selector label{font-size:12px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase}
+.week-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:.2s}
+.week-input:focus{border-color:var(--accent)}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px}
+.preview-table th{padding:8px 10px;background:var(--surface2);text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.preview-table td{padding:8px 10px;border-bottom:1px solid rgba(44,44,69,.3)}
+.col-map-row{display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.col-map-select{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;width:100%}
+.col-map-select:focus{border-color:var(--accent)}
+
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+@media(max-width:640px){
+  .login-box{width:100%;margin:16px;padding:36px 24px}
+  .content{padding:20px 14px}
+  .topbar{padding:0 14px}
+  .nav-tabs{padding:0 14px}
+  .calc-grid{grid-template-columns:1fr}
+  .shift-today-row{grid-template-columns:1fr}
+  .modal-grid{grid-template-columns:1fr}
+  .link-row{grid-template-columns:1fr 1fr 34px}
+  .link-row input:nth-child(3){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">INTERNATIONAL TEAM</div>
+    <div class="login-tagline">Робоча платформа</div>
+    <div class="field"><label>Оберіть акаунт</label><select id="login-sel"></select></div>
+    <div class="field"><label>Пароль</label><input type="password" id="login-pass" placeholder="••••••••" onkeypress="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-primary" onclick="doLogin()">Увійти</button>
+    <div class="err" id="login-err">Невірний пароль</div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">INTERNATIONAL TEAM</div>
+    <div class="topbar-r">
+      <div class="topbar-who">Привіт, <b id="topbar-name"></b></div>
+      <span id="sb-status" title="Supabase" style="font-size:11px;padding:4px 9px;border-radius:6px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2);transition:.3s">⬤ sync</span>
+      <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 10px;font-size:15px;transition:.2s;line-height:1" title="Змінити тему">🌙</button>
+      <button class="btn-logout" onclick="logout()">Вийти</button>
+    </div>
+  </div>
+
+  <!-- EMPLOYEE -->
+  <div id="emp-view" style="display:none">
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="empTab('home',this)">🏠 Головна</div>
+      <div class="nav-tab" onclick="empTab('schedule',this)">📅 Мій графік</div>
+      <div class="nav-tab" onclick="empTab('salary',this)">💰 Зарплата</div>
+      <div class="nav-tab" onclick="empTab('team',this)">👥 Команда</div>
+      <div class="nav-tab" onclick="empTab('exchange',this)">🔄 Обмін змін</div>
+      <div class="nav-tab" onclick="empTab('reviews',this)">⭐ Відгуки</div>
+      <div class="nav-tab" onclick="empTab('perf',this)">📊 Продуктивність</div>
+      <div class="nav-tab" onclick="empTab('announce',this)">📢 Оголошення</div>
+      <div class="nav-tab" onclick="empTab('links',this)">🔗 Посилання</div>
+    </div>
+    <div class="content">
+      <div id="etab-home" class="etab">
+        <div class="page-h" id="emp-greeting"></div>
+        <div class="page-sub" id="emp-role-sub"></div>
+        <div class="shift-today-row" id="emp-today-row"></div>
+        <div id="emp-home-announce"></div>
+        <div id="emp-bday-banner" style="margin-bottom:4px"></div>
+        <div id="emp-home-reviews"></div>
+        
+        <div class="sec-title">МОЇ ПОКАЗНИКИ</div>
+        <div class="cards-row" id="emp-cards"></div>
+        <div id="emp-home-perf" style="margin-top:14px"></div>
+      </div>
+      <div id="etab-schedule" class="etab" style="display:none">
+        <div class="page-h">МІЙ ГРАФІК</div>
+        <div class="page-sub">Зміни на місяць</div>
+        <div id="wish-deadline-banner"></div>
+        <div class="cal-header">
+          <button class="cal-nav" onclick="empCalNav(-1)">‹</button>
+          <div class="cal-month-title" id="emp-cal-title"></div>
+          <button class="cal-nav" onclick="empCalNav(1)">›</button>
+        </div>
+        <div style="margin-bottom:14px" id="emp-legend"></div>
+        <div id="wish-month-comment-box" style="display:none;margin-bottom:16px"></div>
+        <div class="cal-grid">
+          <div class="cal-weekdays" id="cal-wds"></div>
+          <div class="cal-days" id="emp-cal-days"></div>
+        </div>
+      </div>
+      <div id="etab-salary" class="etab" style="display:none">
+        <div class="page-h">ЗАРПЛАТА</div>
+        <div class="page-sub">Калькулятор та виплати</div>
+        <div class="sec-title">КАЛЬКУЛЯТОР</div>
+        <div class="calc-box">
+          <div class="calc-grid">
+            <div class="calc-ig"><label>Ставка за день (₴)</label><input type="number" id="calc-rate" value="402" oninput="recalc()"><div class="hint">Базова ставка</div></div>
+            <div class="calc-ig"><label>KPI за день (₴)</label><input type="number" id="calc-kpi" value="402" oninput="recalc()"><div class="hint">Може змінюватись</div></div>
+            <div class="calc-ig"><label>Рейтинг (₴)</label><input type="number" id="calc-rating" value="0" oninput="recalc()"><div class="hint">Щомісячний</div></div>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="calc-result-label">Оплата за 1 денну зміну</div>
+              <div class="calc-result-val" id="calc-day-result">804 ₴</div>
+              <div class="calc-result-break" id="calc-break">402 + 402 + 0</div>
+            </div>
+            <div>
+              <div class="calc-result-label">Нічна зміна (×1.5)</div>
+              <div class="calc-result-val" id="calc-night-result" style="color:var(--purple)">1 206 ₴</div>
+              <div class="calc-result-break" id="calc-night-break" style="color:var(--purple)">денна × 1.5</div>
+            </div>
+          </div>
+          <div class="calc-sep"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+            <div>
+              <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Денних змін</div>
+              <input type="number" class="calc-days-input" id="calc-days" value="20" min="0" max="31" oninput="recalc()" style="width:100%">
+            </div>
+            <div>
+              <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--purple);margin-bottom:8px">🌙 Нічних змін</div>
+              <input type="number" class="calc-days-input" id="calc-nights" value="2" min="0" max="31" oninput="recalc()" style="width:100%;border-color:rgba(167,139,250,.4)">
+            </div>
+          </div>
+          <div class="calc-result" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div class="calc-result-label">Загальна зарплата</div>
+              <div class="calc-total-val" id="calc-total" style="font-size:48px">17 688 ₴</div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);text-align:right;align-self:flex-end" id="calc-total-break"></div>
+          </div>
+        </div>
+        <div class="sec-title">МОЇ ВИПЛАТИ</div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Місяць</th><th>Денних</th><th>🌙 Нічних</th><th>Ставка</th><th>KPI</th><th>Рейтинг</th><th>Бонус</th><th>РАЗОМ</th><th>Статус</th></tr></thead><tbody id="emp-payments"></tbody></table></div>
+      </div>
+      <div id="etab-team" class="etab" style="display:none">
+        <div class="page-h">КОМАНДА</div>
+        <div class="page-sub">Загальний графік змін</div>
+        <div class="cal-header">
+          <button class="cal-nav" onclick="teamCalNav(-1)">‹</button>
+          <div class="cal-month-title" id="team-cal-title"></div>
+          <button class="cal-nav" onclick="teamCalNav(1)">›</button>
+        </div>
+        <div style="margin-bottom:12px" id="team-legend"></div>
+        <div class="sched-wrap"><table class="sched-table" id="team-sched-table"></table></div>
+      </div>
+      <div id="etab-exchange" class="etab" style="display:none">
+        <div class="page-h">ОБМІН ЗМІН</div>
+        <div class="page-sub">Запропонувати або взяти зміну</div>
+        <div style="display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap">
+          <button class="btn-add" onclick="openOfferModal()">➕ Запропонувати свою зміну</button>
+        </div>
+        <div class="sec-title">ВІДКРИТІ ПРОПОЗИЦІЇ</div>
+        <div id="exchange-list" class="exchange-section"></div>
+      </div>
+            <div id="etab-reviews" class="etab" style="display:none">
+        <div class="page-h">МОЇ ВІДГУКИ</div>
+        <div class="page-sub">Кількість відгуків по сайтах</div>
+        <div id="emp-reviews-content"></div>
+      </div>
+<div id="etab-perf" class="etab" style="display:none">
+        <div class="page-h">МОЯ ПРОДУКТИВНІСТЬ</div>
+        <div class="page-sub">Динаміка по тижнях</div>
+        <div id="emp-perf-content"></div>
+      </div>
+      <div id="etab-announce" class="etab" style="display:none">
+        <div class="page-h">ОГОЛОШЕННЯ</div>
+        <div class="page-sub">Від керівника команди</div>
+        <a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(0,136,204,.15),rgba(0,136,204,.05));border:1px solid rgba(0,136,204,.35);border-radius:14px;padding:16px 20px;margin-bottom:18px;text-decoration:none;transition:.2s" onmouseover="this.style.borderColor='rgba(0,136,204,.6)'" onmouseout="this.style.borderColor='rgba(0,136,204,.35)'">
+          <div style="width:44px;height:44px;background:#29b6f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✈️</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:#29b6f6;letter-spacing:.5px">Telegram канал</div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Головні новини та оновлення від керівника</div>
+          </div>
+          <div style="margin-left:auto;color:#29b6f6;font-size:18px;opacity:.7">→</div>
+        </a>
+        <div id="emp-announce-list"></div>
+      </div>
+      <div id="etab-links" class="etab" style="display:none">
+        <div class="page-h">ПОСИЛАННЯ</div>
+        <div class="page-sub">Важливі ресурси</div>
+        <div class="links-grid" id="emp-links-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin-view" style="display:none">
+    <div class="content">
+      <div class="page-h">ПАНЕЛЬ УПРАВЛІННЯ</div>
+      <div class="page-sub">Адміністратор</div>
+      <div class="notice-box">💡 Всі зміни зберігаються у спільному сховищі та одразу видні співробітникам</div>
+      <div class="admin-tabs">
+        <button class="adm-tab active" onclick="admTab('staff',this)">👥 Агенти</button>
+        <button class="adm-tab" onclick="admTab('schedule',this)">📅 Графік</button>
+        <button class="adm-tab" onclick="admTab('wishes',this)">💌 Побажання</button>
+        <button class="adm-tab" onclick="admTab('comments',this)">💬 Нотатки</button>
+        <button class="adm-tab" onclick="admTab('monthly',this)">💰 Закрити місяць</button>
+        <button class="adm-tab" onclick="admTab('analytics',this)">📈 Аналітика</button>
+        <button class="adm-tab" onclick="admTab('perf',this)">📊 Продуктивність</button>
+        <button class="adm-tab" onclick="admTab('reviews',this)">⭐ Відгуки</button>
+        <button class="adm-tab" onclick="admTab('announce',this)">📢 Оголошення</button>
+        <button class="adm-tab" onclick="admTab('links',this)">🔗 Посилання</button>
+      </div>
+      <div class="adm-section active" id="adm-staff">
+        <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn-add" onclick="openAddAgent()">➕ Додати агента</button>
+          <span style="font-size:12px;color:var(--muted)">Статуси агентів оновлюються ними самостійно</span>
+        </div>
+
+        <div class="tbl-wrap"><table class="tbl" id="adm-staff-table"><thead><tr><th>Ім'я</th><th>Посада</th><th>🎂 ДН</th><th>Ставка</th><th>KPI</th><th>Рейтинг</th><th>Пароль</th><th></th></tr></thead><tbody id="adm-staff-list"></tbody></table></div>
+      </div>
+      <div class="adm-section" id="adm-schedule">
+        <div id="adm-bday-bar" style="margin-bottom:12px;flex-wrap:wrap;display:flex"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="cal-nav" onclick="admSchedNav(-1)">‹</button>
+          <div class="cal-month-title" id="adm-sched-title"></div>
+          <button class="cal-nav" onclick="admSchedNav(1)">›</button>
+          <button class="btn-save" onclick="saveSchedule()">Зберегти графік</button>
+        </div>
+        <div style="margin-bottom:14px" id="adm-legend"></div>
+        <div class="sched-wrap"><table class="sched-table" id="adm-sched-table"></table></div>
+      </div>
+      <div class="adm-section" id="adm-wishes">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div>
+            <div class="page-h" style="font-size:32px">ПОБАЖАННЯ</div>
+            <div class="page-sub" style="margin-bottom:0">Побажання агентів на наступний місяць</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="cal-nav" onclick="wishesNav(-1)">‹</button>
+            <div class="cal-month-title" id="wishes-month-title"></div>
+            <button class="cal-nav" onclick="wishesNav(1)">›</button>
+          </div>
+        </div>
+        <div id="wishes-month-notes"></div>
+        <div class="tbl-wrap" style="overflow-x:auto;margin-bottom:16px">
+          <table class="sched-table" id="wishes-table"></table>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn-save" onclick="saveWishesAsSchedule()">💾 Зберегти як графік</button>
+          <span style="font-size:12px;color:var(--muted)" id="wishes-save-hint">Зміни в рядку «ГРАФІК» збережуться в основний розклад</span>
+        </div>
+      </div>
+      <div class="adm-section" id="adm-comments">
+        <div class="page-h" style="font-size:32px">НОТАТКИ АГЕНТІВ</div>
+        <div class="page-sub">Коментарі до змін</div>
+        <div id="adm-comments-content"></div>
+      </div>
+      <div class="adm-section" id="adm-monthly">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <button class="cal-nav" onclick="monthlyNav(-1)">‹</button>
+          <div class="cal-month-title" id="monthly-title"></div>
+          <button class="cal-nav" onclick="monthlyNav(1)">›</button>
+        </div>
+        <div class="month-grid" id="monthly-grid"></div>
+        <div style="margin-top:18px"><button class="btn-save" onclick="saveMonthly()">💾 Зберегти виплати</button></div>
+      </div>
+      <div class="adm-section" id="adm-analytics">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+          <div>
+            <div class="page-h" style="font-size:32px">АНАЛІТИКА</div>
+            <div class="page-sub" style="margin-bottom:0">Зведений звіт по команді</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="cal-nav" onclick="analyticsNav(-1)">‹</button>
+            <div class="cal-month-title" id="analytics-month-title"></div>
+            <button class="cal-nav" onclick="analyticsNav(1)">›</button>
+          </div>
+        </div>
+        <div id="analytics-content"></div>
+      </div>
+      <div class="adm-section" id="adm-perf">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div>
+            <div class="page-h" style="font-size:32px">ПРОДУКТИВНІСТЬ</div>
+            <div class="page-sub" style="margin-bottom:0">Щотижневі дані команди</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <input type="text" id="new-week-label" class="week-input" placeholder="напр. 23–29 черв" style="width:150px">
+            <button class="btn-add" onclick="addPerfWeek()">➕ Додати тиждень</button>
+            <button class="btn-save" onclick="exportPerfExcel()">📥 Вигрузити Excel</button>
+          </div>
+        </div>
+        <div id="adm-perf-weeks"></div>
+        <div class="sec-title">РЕЙТИНГ (поточний тиждень)</div>
+        <div class="tbl-wrap">
+          <table class="tbl perf-table">
+            <thead><tr><th>#</th><th>Агент</th><th>Листи</th><th>Чати</th><th>К-сть змін</th><th>Ср.чатів/зміну</th><th>Ср.закрито загалом</th><th>Total</th><th>Динаміка</th></tr></thead>
+            <tbody id="adm-perf-list"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="adm-section" id="adm-reviews">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div>
+            <div class="page-h" style="font-size:32px">ВІДГУКИ</div>
+            <div class="page-sub" style="margin-bottom:0">1 відгук = 200 ₴ · Закриваємо в кінці місяця</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="cal-nav" onclick="reviewsMonthNav(-1)">‹</button>
+            <div class="cal-month-title" id="reviews-month-title"></div>
+            <button class="cal-nav" onclick="reviewsMonthNav(1)">›</button>
+          </div>
+        </div>
+        <div class="sec-title">УПРАВЛІННЯ САЙТАМИ</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="new-review-site" class="week-input" placeholder="напр. Kissandfly.de" style="width:200px">
+          <button class="btn-add" onclick="addReviewSite()">➕ Додати сайт</button>
+        </div>
+        <div class="sec-title">ТАБЛИЦЯ ВІДГУКІВ</div>
+        <div class="tbl-wrap" style="overflow-x:auto">
+          <table class="tbl" id="reviews-table"></table>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-save" onclick="saveReviews()">💾 Зберегти</button>
+          <button class="btn-save" onclick="exportReviewsExcel()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">📥 Вигрузити Excel</button>
+        </div>
+      </div>
+      <div class="adm-section" id="adm-announce">
+        <div class="kard" style="margin-bottom:16px;padding:24px">
+          <div class="sec-title" style="margin-top:0">НОВЕ ОГОЛОШЕННЯ</div>
+          <div class="field" style="margin-bottom:12px"><label>Текст оголошення</label><textarea id="ann-text" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:12px 14px;font-family:DM Sans,sans-serif;font-size:14px;outline:none;resize:vertical;line-height:1.5" placeholder="Введіть текст..."></textarea></div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted2);cursor:pointer"><input type="checkbox" id="ann-pin" style="accent-color:var(--accent)"> 📌 Закріпити</label>
+            <button class="btn-save" onclick="postAnnouncement()">Опублікувати</button>
+          </div>
+        </div>
+        <div class="sec-title">ОПУБЛІКОВАНІ</div>
+        <div id="adm-announce-list"></div>
+      </div>
+      <div class="adm-section" id="adm-links">
+        <div class="kard" style="margin-bottom:0;padding:24px">
+          <div class="sec-title" style="margin-top:0">ЗАГАЛЬНІ ПОСИЛАННЯ</div>
+          <div id="adm-links-editor"></div>
+          <button class="add-row-btn" onclick="addGlobalLink()">+ Додати посилання</button>
+          <div style="margin-top:16px"><button class="btn-save" onclick="saveLinks()">Зберегти</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- WISH MODAL -->
+<div class="modal-ov" id="wish-modal">
+  <div class="modal" style="max-width:400px">
+    <h3 id="wish-modal-title">ПОБАЖАННЯ НА ДЕНЬ</h3>
+    <div class="field" style="margin-bottom:14px">
+      <label>Бажана зміна</label>
+      <select id="wm-shift" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none">
+        <option value="">— без побажань —</option>
+        <option value="off">Вихідний 🌙</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('wish-modal')">Скасувати</button>
+      <button class="btn-cancel" id="wish-clear-btn" onclick="saveWish(true)" style="color:var(--red);border-color:var(--red)">🗑 Видалити</button>
+      <button class="btn-save" onclick="saveWish(false)">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMMENT MODAL -->
+<div class="modal-ov" id="comment-modal">
+  <div class="modal" style="max-width:420px">
+    <h3 id="comment-modal-title">НОТАТКА ДО ДНЯ</h3>
+    <div class="field" style="margin-bottom:14px">
+      <label>⏱ Переробка</label>
+      <select id="cm-overtime" class="field select" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none">
+        <option value="">— немає —</option>
+        <option value="30хв">30 хв</option>
+        <option value="1год">1 год</option>
+        <option value="2год">2 год</option>
+        <option value="3год">3 год</option>
+        <option value="4год">4 год</option>
+        <option value="5год">5 год</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>🕐 Запізнення</label>
+      <select id="cm-late" class="field select" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none">
+        <option value="">— немає —</option>
+        <option value="5хв">5 хв</option>
+        <option value="10хв">10 хв</option>
+        <option value="15хв">15 хв</option>
+        <option value="30хв">30 хв</option>
+        <option value="45хв">45 хв</option>
+        <option value="60хв">60 хв</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('comment-modal')">Скасувати</button>
+      <button class="btn-cancel" id="comment-clear-btn" onclick="saveComment(true)" style="color:var(--red);border-color:var(--red)">🗑 Очистити</button>
+      <button class="btn-save" onclick="saveComment(false)">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT EMP MODAL -->
+<div class="modal-ov" id="emp-modal">
+  <div class="modal">
+    <h3 id="modal-name-h">АГЕНТ</h3>
+    <div class="modal-grid">
+      <div class="field"><label>Ім'я</label><input type="text" id="m-name"></div>
+      <div class="field"><label>Посада</label><input type="text" id="m-role"></div>
+      <div class="field"><label>Ставка за день (₴)</label><input type="number" id="m-rate" value="402"></div>
+      <div class="field"><label>KPI за день (₴)</label><input type="number" id="m-kpi" value="402"></div>
+      <div class="field"><label>Рейтинг місяця (₴)</label><input type="number" id="m-rating" value="0"></div>
+      <div class="field"><label>Пароль</label><input type="text" id="m-pass"></div>
+      <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="m-bday" placeholder="напр. 09-03"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('emp-modal')">Скасувати</button>
+      <button class="btn-save" onclick="saveEmp()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD AGENT MODAL -->
+<div class="modal-ov" id="add-modal">
+  <div class="modal">
+    <h3>НОВИЙ АГЕНТ</h3>
+    <div class="modal-grid">
+      <div class="field full"><label>Ім'я та прізвище</label><input type="text" id="new-name" placeholder="Ім'я Прізвище"></div>
+      <div class="field"><label>Посада</label><input type="text" id="new-role" value="Агент"></div>
+      <div class="field"><label>Ставка за день (₴)</label><input type="number" id="new-rate" value="402"></div>
+      <div class="field"><label>KPI за день (₴)</label><input type="number" id="new-kpi" value="402"></div>
+      <div class="field"><label>Рейтинг місяця (₴)</label><input type="number" id="new-rating" value="0"></div>
+      <div class="field"><label>Пароль</label><input type="text" id="new-pass" value="1234"></div>
+      <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="new-bday" placeholder="напр. 09-03"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-modal')">Скасувати</button>
+      <button class="btn-save" onclick="addAgent()">Додати</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFER SHIFT MODAL -->
+<div class="modal-ov" id="offer-modal">
+  <div class="modal">
+    <h3>ЗАПРОПОНУВАТИ ЗМІНУ</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Оберіть день, в який хочете передати свою зміну</p>
+    <div class="day-picker" id="offer-day-picker"></div>
+    <div class="field" style="margin-top:16px"><label>Коментар (необов'язково)</label><input type="text" id="offer-comment" placeholder="Причина, уточнення..."></div>
+    <div id="offer-shift-preview" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('offer-modal')">Скасувати</button>
+      <button class="btn-save" onclick="submitOffer()">Запропонувати</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ SHIFT TYPES ══
+const SHIFTS = [
+  { id:'off',  label:'Вихідний',   short:'—',     time:'',      cls:'sh-off', color:'#5a5a7a' },
+  { id:'s1',   label:'8–16 чати',         short:'08 ч',  time:'08:00–16:00', cls:'sh-1', color:'#5b9cf6' },
+  { id:'s2',   label:'8–16 листи+фідбек', short:'08 л',  time:'08:00–16:00', cls:'sh-mail', color:'#00cfff' },
+  { id:'s3',   label:'10–18 чати',        short:'10 ч',  time:'10:00–18:00', cls:'sh-3', color:'#a78bfa' },
+  { id:'s4',   label:'11–19 листи+фідбек (сб/нд)', short:'11 л', time:'11:00–19:00', cls:'sh-mail', color:'#00cfff' },
+  { id:'s5',   label:'12–20 фідбек+листи/чати',    short:'12 ф', time:'12:00–20:00', cls:'sh-5', color:'#2dd4bf' },
+  { id:'s6',   label:'16–24 чати',        short:'16 ч',  time:'16:00–24:00', cls:'sh-6', color:'#f472b6' },
+  { id:'s6b',  label:'16–24 листи+фідбек',short:'16 л',  time:'16:00–24:00', cls:'sh-mail', color:'#00cfff' },
+  { id:'s7',   label:'00–8 чати+фідбек+листи', short:'00',  time:'00:00–08:00', cls:'sh-7', color:'#f87171' },
+  { id:'vacation', label:'Відпустка', short:'🏖',  time:'', cls:'sh-vac', color:'#38bdf8' },
+];
+
+function getShift(id){ return SHIFTS.find(s=>s.id===id) || SHIFTS[0]; }
+
+const MONTHS_UK = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+const ADMIN_PASS = '1234';
+
+// ══ STATE ══
+let db = {}, me = null, editingId = null;
+let empCalY, empCalM, teamCalY, teamCalM, admSchedY, admSchedM, monthlyY, monthlyM;
+let offerSelectedDay = null;
+
+// ══ GLOBALS ══
+let _lastDbStr='', _isSaving=false;
+
+// ══ STORAGE — Supabase ══
+const SB_URL = 'https://eyxwtvysqnndubemrrok.supabase.co';
+const SB_KEY = 'sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0';
+const SB_HDR = {
+  'Content-Type': 'application/json',
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY
+};
+
+async function loadDB(){
+  try{
+    const res = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value', {headers: SB_HDR});
+    if(res.ok){
+      const rows = await res.json();
+      if(rows.length && rows[0].value){ db=JSON.parse(rows[0].value); return; }
+    }
+  }catch(e){ console.warn('Supabase load error:',e); }
+  db=buildDefault();
+}
+
+async function saveDB(){
+  sbSaving();
+  _isSaving=true;
+  try{
+    const val=JSON.stringify(db);
+    console.log('[saveDB] PATCH to Supabase, size:', val.length);
+    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3', {
+      method:'PATCH',
+      headers:{...SB_HDR,'Prefer':'return=minimal'},
+      body:JSON.stringify({value:val})
+    });
+    console.log('[saveDB] PATCH status:', res.status);
+    if(!res.ok){
+      const errBody=await res.text();
+      throw new Error('PATCH failed: '+res.status+' '+errBody);
+    }
+    _lastDbStr=val;
+    sbOnline();
+    console.log('[saveDB] success!');
+  }catch(e){
+    console.error('[saveDB] ERROR:', e);
+    sbOffline();
+  } finally {
+    _isSaving=false;
+  }
+}
+
+function buildDefault(){
+  const names=['Андріяна Носаль','Софа Гронська','Сабіна Сафіулова','Катя Козицька',
+    'Христя Лещишин','Наталя Чикулаєва','Христя Малко','Наталя Грицан',
+    'Марічка Подвадцятник','Наталя Телятинська','Нікіта Крапівной',
+    'Вова Вульчин','Настя Волосянко','Маша Івасюк'];
+  const bdays={'Андріяна Носаль':'09-03','Софа Гронська':'09-23','Сабіна Сафіулова':'06-30','Катя Козицька':'11-10','Христя Лещишин':'04-10','Наталя Чикулаєва':'11-05','Христя Малко':'05-16','Наталя Грицан':'10-24','Марічка Подвадцятник':'04-05','Наталя Телятинська':'09-02','Нікіта Крапівной':'12-16','Вова Вульчин':'06-11','Настя Волосянко':'09-08','Маша Івасюк':'05-19'};
+  return {
+    staff: names.map((n,i)=>({id:i+1,name:n,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:bdays[n]||''})),
+    nextId: names.length+1,
+    schedule:{},
+    exchanges:[],
+    globalLinks:[
+      {name:'Google Диск',url:'https://drive.google.com',icon:'📁',desc:'Спільні файли'},
+      {name:'Корпоративна пошта',url:'https://mail.google.com',icon:'📧',desc:'Робоча пошта'},
+    ]
+  };
+}
+
+// ══ AUTH ══
+function buildLoginSel(){
+  document.getElementById('login-sel').innerHTML=
+    '<option value="admin">👑 Адміністратор</option>'+
+    db.staff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function doLogin(){
+  const sel=document.getElementById('login-sel').value;
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-err');
+  if(sel==='admin'){
+    if(pass!==ADMIN_PASS){err.style.display='block';return;}
+    me={type:'admin'};
+  } else {
+    const emp=db.staff.find(s=>s.id==sel);
+    if(!emp||pass!==emp.pass){err.style.display='block';return;}
+    me={type:'employee',data:emp};
+  }
+  err.style.display='none';
+  document.getElementById('login-pass').value='';
+  const now=new Date();
+  applyTheme();
+  empCalY=teamCalY=admSchedY=monthlyY=reviewsY=now.getFullYear(); wishesAdmY=undefined; analyticsY=undefined;
+  empCalM=teamCalM=admSchedM=monthlyM=reviewsM=now.getMonth();
+  showApp();
+}
+
+function logout(){
+  me=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  buildLoginSel();
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if(me.type==='admin'){
+    document.getElementById('topbar-name').textContent='Адміністратор';
+    document.getElementById('emp-view').style.display='none';
+    document.getElementById('admin-view').style.display='block';
+    renderAdmin();
+  } else {
+    document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0];
+    document.getElementById('emp-view').style.display='block';
+    document.getElementById('admin-view').style.display='none';
+    renderEmployee();
+  }
+}
+
+// ══ LEGEND ══
+function renderLegend(containerId){
+  document.getElementById(containerId).innerHTML=`<div class="shift-legend">`+
+    SHIFTS.slice(1).map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label} (${s.time})</div>`).join('')+
+    `</div>`;
+}
+
+// ══ EMPLOYEE ══
+function empTab(tab,el){
+  document.querySelectorAll('.etab').forEach(e=>e.style.display='none');
+  document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('etab-'+tab).style.display='block';
+  el.classList.add('active');
+  if(tab==='schedule'){renderEmpCal();}
+  if(tab==='team'){renderTeamCal();}
+  if(tab==='exchange'){renderExchange();}
+  if(tab==='links'){renderLinks();}
+  if(tab==='announce'){renderAnnounceEmp();}
+  if(tab==='reviews'){renderEmpReviews();}
+  if(tab==='perf'){renderEmpPerf();}
+}
+
+function renderEmployee(){
+  const e=me.data;
+  const h=new Date().getHours();
+  const gr=h<12?'ДОБРОГО РАНКУ':h<18?'ДОБРИЙ ДЕНЬ':'ДОБРИЙ ВЕЧІР';
+  document.getElementById('emp-greeting').textContent=gr+', '+e.name.split(' ')[0].toUpperCase();
+  document.getElementById('emp-role-sub').textContent=e.role;
+  renderTodayTomorrow();
+  const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
+  document.getElementById('emp-cards').innerHTML=`
+    <div class="kard"><div class="kard-label">Ставка за день</div><div class="kard-val y">${(e.rate||402)} ₴</div></div>
+    <div class="kard"><div class="kard-label">KPI за день</div><div class="kard-val b">${(e.kpi||402)} ₴</div></div>
+    <div class="kard"><div class="kard-label">Рейтинг місяця</div><div class="kard-val p">${(e.rating||0)} ₴</div></div>
+    <div class="kard"><div class="kard-label">Оплата за день</div><div class="kard-val g">${dayPay} ₴</div><div class="kard-sub">${e.rate}+${e.kpi}+${e.rating}</div></div>`;
+  document.getElementById('calc-rate').value=e.rate||402;
+  document.getElementById('calc-kpi').value=e.kpi||402;
+  document.getElementById('calc-rating').value=e.rating||0;
+  recalc();
+  renderPayments();
+  renderAnnounceHomeBanner();
+  renderBdayBanner();
+  renderHomePerfCards();
+  renderHomeReviewsBadge();
+}
+
+function renderTodayTomorrow(){
+  const e=me.data;
+  const now=new Date();
+  const key=mkey(now.getFullYear(),now.getMonth());
+  const mySched=(db.schedule[key]||{})[e.id]||{};
+  const tom=new Date(now); tom.setDate(tom.getDate()+1);
+  const tomKey=mkey(tom.getFullYear(),tom.getMonth());
+  const tomSched=(db.schedule[tomKey]||{})[e.id]||{};
+  const WDAYS=['Неділя','Понеділок','Вівторок','Середа','Четвер','П\'ятниця','Субота'];
+  function card(label,date,dayN,shiftId,highlight){
+    const sh=getShift(shiftId||'off');
+    const dateStr=`${WDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS_UK[date.getMonth()]}`;
+    const isOff=!shiftId||shiftId==='off';
+    return `<div class="shift-today-card" style="${highlight&&!isOff?'border-color:'+sh.color+';background:'+sh.color+'11':''}">
+      <div class="stc-label">${label}</div>
+      <div class="stc-date">${dateStr}</div>
+      ${isOff?`<div class="stc-off">ВИХІДНИЙ</div>`:
+        `<div class="stc-time" style="color:${sh.color}">${sh.time||sh.short}</div>
+         <div class="stc-type" style="color:${sh.color}">${sh.label}</div>`}
+    </div>`;
+  }
+  document.getElementById('emp-today-row').innerHTML=
+    card('СЬОГОДНІ',now,now.getDate(),mySched[now.getDate()],true)+
+    card('ЗАВТРА',tom,tom.getDate(),tomSched[tom.getDate()],false);
+}
+
+// Employee calendar
+function empCalNav(d){empCalM+=d;if(empCalM<0){empCalM=11;empCalY--;}if(empCalM>11){empCalM=0;empCalY++;}renderEmpCal();}
+function renderEmpCal(){
+  const now=new Date();
+  const isNextMonth=(empCalY>now.getFullYear())||(empCalY===now.getFullYear()&&empCalM===now.getMonth()+1)||
+                    (empCalY===now.getFullYear()+1&&now.getMonth()===11&&empCalM===0);
+  document.getElementById('emp-cal-title').textContent=MONTHS_UK[empCalM]+' '+empCalY+(isNextMonth?' · 💌 Побажання':'');
+  renderLegend('emp-legend');
+  // Deadline banner
+  const deadlineBanner=document.getElementById('wish-deadline-banner');
+  if(deadlineBanner){
+    const today=now.getDate(), thisM=now.getMonth(), thisY=now.getFullYear();
+    const daysLeft=25-today;
+    const isCurrentMonth=thisM===now.getMonth()&&thisY===now.getFullYear();
+    if(isNextMonth){
+      if(daysLeft>0){
+        deadlineBanner.innerHTML=`<div style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">📅 Дедлайн побажань — <b>25 ${MONTHS_UK[thisM]}</b> · залишилось <b style="color:var(--accent)">${daysLeft} ${daysLeft===1?'день':daysLeft<5?'дні':'днів'}</b></div>`;
+      } else if(daysLeft===0){
+        deadlineBanner.innerHTML=`<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">⚠️ <b>Сьогодні останній день</b> для побажань!</div>`;
+      } else {
+        deadlineBanner.innerHTML=`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--muted2)">🔒 Дедлайн минув 25-го — побажання закриті</div>`;
+      }
+    } else { deadlineBanner.innerHTML=''; }
+  }
+  // Month comment box (only on next month)
+  const mcBox=document.getElementById('wish-month-comment-box');
+  if(mcBox){
+    if(isNextMonth){
+      const empId=me.data.id;
+      const monthNote=((db.wishes||{})[empId]||(db.wishes||{})[String(empId)]||{})[key+'_note']||'';
+      mcBox.style.display='';
+      mcBox.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">💬 Загальний коментар на місяць</div>
+        <textarea id="wish-month-note" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;line-height:1.5;transition:.2s;box-sizing:border-box" placeholder="напр. бажано більше ранкових, не можу в нічні у вівторок...">${monthNote}</textarea>
+        <button onclick="saveWishMonthNote('${key}')" style="margin-top:8px;background:var(--accent-dim);border:1px solid rgba(245,200,66,.3);color:var(--accent);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;transition:.15s">Зберегти коментар</button>
+        <span id="wish-note-saved" style="font-size:11px;color:var(--green);margin-left:8px;opacity:0;transition:.3s"></span>
+      </div>`;
+    } else { mcBox.style.display='none'; }
+  }
+  const key=mkey(empCalY,empCalM);
+  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
+  const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
+  // Count off-wishes per day across all agents (for lічильник)
+  const offWishCount={};
+  if(isNextMonth){
+    db.staff.forEach(emp=>{
+      const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
+      Object.entries(ew).forEach(([day,w])=>{
+        if(w&&w.shift==='off'){
+          offWishCount[day]=(offWishCount[day]||0)+1;
+        }
+      });
+    });
+  }
+  renderCalDays('emp-cal-days',empCalY,empCalM,(d)=>{
+    const sh=getShift(mySched[d]);
+    const comment=myComments[d]||'';
+    const wish=myWishes[d]||null;
+    const bdayPeople=getDayBdays(empCalY,empCalM,d);
+    const bdayHtml=bdayPeople.length?`<div style="font-size:10px;color:var(--pink);margin-top:2px" title="${bdayPeople.map(e=>e.name).join(', ')}">${bdayPeople.map(e=>'🎂'+e.name.split(' ')[0]).join(' ')}</div>`:'';
+    const shiftHtml=sh.id==='off'
+      ?`<div style="font-size:10px;color:var(--muted)">—</div>`
+      :`<div class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</div>`;
+    const commentObj=typeof comment==='object'?comment:{};
+    const hasCmt=commentObj.overtime||commentObj.late;
+    const cParts=[];
+    if(commentObj.overtime) cParts.push(`⏱${commentObj.overtime}`);
+    if(commentObj.late)     cParts.push(`🕐-${commentObj.late}`);
+    const commentHtml=hasCmt
+      ?`<div class="day-comment" onclick="editDayComment(${d},'${key}')">${cParts.join(' ')}</div>`
+      :`<div class="day-comment-empty" onclick="editDayComment(${d},'${key}')">✏️ нотатка</div>`;
+    // Wish display — only on next month
+    let wishHtml='';
+    if(isNextMonth){
+      // Off-counter badge
+      const offCount=offWishCount[d]||0;
+      const isLimit=offCount>=4;
+      const isMyOff=wish&&wish.shift==='off';
+      const counterHtml=offCount>0
+        ?`<div style="font-size:9px;font-weight:600;color:${isLimit?'var(--red)':'var(--muted2)'};margin-top:2px;text-align:center" title="Хочуть вихідний: ${offCount} з 14">🌙×${offCount}${isLimit?' ⚠️':''}</div>`
+        :'';
+      if(wish){
+        const wishShift=wish.shift?getShift(wish.shift):null;
+        const wishLabel=(wishShift&&wish.shift!=='off')
+          ?wishShift.short
+          :wish.shift==='off'?'🌙вих':'';
+        const wishComment=wish.comment||'';
+        const label=wishLabel+(wishComment?' 💬':'');
+        wishHtml=`<div class="wish-pill${isMyOff&&isLimit?' limit-warn':''}" onclick="openWishModal(${d},'${key}')" title="${wishLabel}${wishComment?' · '+wishComment:''}">${label||'💌'}</div>${counterHtml}`;
+      } else {
+        wishHtml=`<div class="wish-empty" onclick="openWishModal(${d},'${key}')">💌</div>${counterHtml}`;
+      }
+    }
+    return shiftHtml+bdayHtml+commentHtml+wishHtml;
+  });
+  renderCalWeekdays();
+}
+
+// ── WISH MODAL ──
+let _wishDay=null,_wishKey=null;
+function openWishModal(day,key){
+  _wishDay=day; _wishKey=key;
+  const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
+  const cur=myWishes[day]||{};
+  document.getElementById('wish-modal-title').textContent=`ПОБАЖАННЯ — ${day} ЧИСЛО`;
+  const sel=document.getElementById('wm-shift');
+  sel.innerHTML=`<option value="">— без побажань —</option><option value="off"${cur.shift==='off'?' selected':''}>Вихідний 🌙</option>`;
+  SHIFTS.slice(1).forEach(s=>{
+    const opt=document.createElement('option');
+    opt.value=s.id; opt.textContent=s.short+' — '+s.label;
+    if(cur.shift===s.id) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  document.getElementById('wish-clear-btn').style.display=cur.shift?'':'none';
+  document.getElementById('wish-modal').classList.add('open');
+}
+async function saveWishMonthNote(key){
+  const note=document.getElementById('wish-month-note').value.trim();
+  const empId=me.data.id;
+  if(!db.wishes) db.wishes={};
+  if(!db.wishes[empId]) db.wishes[empId]={};
+  db.wishes[empId][key+'_note']=note;
+  await saveDB();
+  const sp=document.getElementById('wish-note-saved');
+  if(sp){sp.textContent='✅ Збережено';sp.style.opacity='1';setTimeout(()=>sp.style.opacity='0',2000);}
+}
+async function saveWish(clear){
+  // Check deadline
+  const now=new Date();
+  if(now.getDate()>25 && !clear){
+    alert('⚠️ Дедлайн минув! Побажання приймались до 25-го числа.'); return;
+  }
+  const shift=clear?'':document.getElementById('wm-shift').value;
+  const empId=me.data.id;
+  if(!db.wishes) db.wishes={};
+  if(!db.wishes[empId]) db.wishes[empId]={};
+  if(!db.wishes[empId][_wishKey]) db.wishes[empId][_wishKey]={};
+  if(!shift){
+    delete db.wishes[empId][_wishKey][_wishDay];
+  } else {
+    // keep existing month comment if any
+    const prev=db.wishes[empId][_wishKey][_wishDay]||{};
+    db.wishes[empId][_wishKey][_wishDay]={shift, comment:prev.comment||''};
+  }
+  await saveDB();
+  closeModal('wish-modal');
+  renderEmpCal();
+}
+
+let _commentDay=null, _commentKey=null;
+function editDayComment(day, key){
+  const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
+  const cur=myComments[day]||{};
+  _commentDay=day; _commentKey=key;
+  document.getElementById('comment-modal-title').textContent=`НОТАТКА — ${day} ЧИСЛО`;
+  document.getElementById('cm-overtime').value=cur.overtime||'';
+  document.getElementById('cm-late').value=cur.late||'';
+  const hasData=cur.overtime||cur.late;
+  document.getElementById('comment-clear-btn').style.display=hasData?'':'none';
+  document.getElementById('comment-modal').classList.add('open');
+}
+async function saveComment(clear){
+  const overtime=clear?'':document.getElementById('cm-overtime').value;
+  const late    =clear?'':document.getElementById('cm-late').value;
+  if(!db.dayComments) db.dayComments={};
+  if(!db.dayComments[me.data.id]) db.dayComments[me.data.id]={};
+  if(!db.dayComments[me.data.id][_commentKey]) db.dayComments[me.data.id][_commentKey]={};
+  if(!overtime&&!late){
+    delete db.dayComments[me.data.id][_commentKey][_commentDay];
+  } else {
+    db.dayComments[me.data.id][_commentKey][_commentDay]={overtime,late};
+  }
+  await saveDB();
+  closeModal('comment-modal');
+  renderEmpCal();
+}
+
+function renderCalWeekdays(){
+  const el=document.getElementById('cal-wds');
+  if(el) el.innerHTML=DAYS_UK.map(d=>`<div class="cal-wd">${d}</div>`).join('');
+}
+
+function renderCalDays(containerId,year,month,cellFn){
+  const el=document.getElementById(containerId); el.innerHTML='';
+  const now=new Date();
+  const first=new Date(year,month,1);
+  const last=new Date(year,month+1,0);
+  const startDow=(first.getDay()+6)%7;
+  for(let i=0;i<startDow;i++){const d=document.createElement('div');d.className='cal-day empty';el.appendChild(d);}
+  for(let d=1;d<=last.getDate();d++){
+    const div=document.createElement('div');
+    const isToday=now.getDate()===d&&now.getMonth()===month&&now.getFullYear()===year;
+    div.className='cal-day'+(isToday?' today-day':'');
+    div.innerHTML=`<div class="cal-day-num">${d}</div>`+cellFn(d);
+    el.appendChild(div);
+  }
+}
+
+// Team calendar
+function teamCalNav(d){teamCalM+=d;if(teamCalM<0){teamCalM=11;teamCalY--;}if(teamCalM>11){teamCalM=0;teamCalY++;}renderTeamCal();}
+function renderTeamCal(){
+  document.getElementById('team-cal-title').textContent=MONTHS_UK[teamCalM]+' '+teamCalY;
+  renderLegend('team-legend');
+  renderSchedTable('team-sched-table',teamCalY,teamCalM,false);
+}
+
+function renderSchedTable(tableId,year,month,editable){
+  const key=mkey(year,month);
+  const sched=db.schedule[key]||{};
+  const last=new Date(year,month+1,0).getDate();
+  const now=new Date();
+  const isNow=now.getMonth()===month&&now.getFullYear()===year;
+  const days=[]; for(let d=1;d<=last;d++) days.push(d);
+  const table=document.getElementById(tableId);
+  function isWeekend(d){ const dow=new Date(year,month,d).getDay(); return dow===0||dow===6; }
+  const dayMeta=(db.dayMeta&&db.dayMeta[mkey(year,month)])||{};
+
+  // header
+  let thead='<thead><tr><th class="name-col">Агент</th>';
+  days.forEach(d=>{
+    const dt=new Date(year,month,d);
+    const dow=DAYS_UK[(dt.getDay()+6)%7];
+    const isToday=isNow&&now.getDate()===d;
+    const wknd=isWeekend(d);
+    const meta=dayMeta[d]||{};
+    const emoji=meta.emoji||'';
+    const isOffice=meta.office||false;
+    let bg='', color='';
+    if(isToday){ bg='rgba(245,200,66,.15)'; color='var(--accent)'; }
+    else if(wknd){ bg='rgba(167,139,250,.13)'; color='var(--purple)'; }
+    const dayBdays=getDayBdays(year,month,d);
+    thead+=`<th style="text-align:center;min-width:${editable?76:52}px;background:${bg};color:${color};position:relative">
+      ${isOffice?`<div style="font-size:9px;margin-bottom:1px;opacity:.85">🏢офіс</div>`:''}
+      ${emoji?`<div style="font-size:13px;line-height:1;margin-bottom:1px">${emoji}</div>`:''}
+      ${dayBdays.length?`<div style="font-size:10px;color:var(--pink)" title="${dayBdays.map(e=>e.name).join(', ')}">🎂</div>`:''}
+      <div style="font-size:10px;letter-spacing:.5px">${dow}</div>
+      <div style="font-size:13px;font-family:'DM Mono',monospace">${d}</div>
+      ${editable?`<div style="margin-top:3px;display:flex;gap:2px;justify-content:center">
+        <button onclick="toggleOffice(${d})" title="Офісний день" style="background:${isOffice?'rgba(245,200,66,.3)':'none'};border:1px solid ${isOffice?'var(--accent)':'var(--border)'};border-radius:3px;padding:1px 3px;cursor:pointer;font-size:9px;color:${isOffice?'var(--accent)':'var(--muted)'}">🏢</button>
+        <button onclick="openEmojiPicker(${d},this)" title="Додати позначку" style="background:${emoji?'rgba(91,156,246,.2)':'none'};border:1px solid ${emoji?'var(--blue)':'var(--border)'};border-radius:3px;padding:1px 3px;cursor:pointer;font-size:9px;color:var(--muted)">${emoji||'＋'}</button>
+      </div>`:''}
+    </th>`;
+  });
+  thead+=`<th style="text-align:center;min-width:54px;background:var(--surface3);position:sticky;right:0;z-index:2">Змін</th>`;
+  thead+='</tr></thead>';
+
+  let tbody='<tbody>';
+  db.staff.forEach(emp=>{
+    const empSched=sched[emp.id]||{};
+    const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
+    let shiftCount=0;
+    let cells='';
+    days.forEach(d=>{
+      const isToday=isNow&&now.getDate()===d;
+      const wknd=isWeekend(d);
+      const shiftId=empSched[d]||'off';
+      const sh=getShift(shiftId);
+      const hasShift=shiftId&&shiftId!=='off';
+      if(hasShift) shiftCount++;
+      let bg='';
+      if(isToday) bg='rgba(245,200,66,.04)';
+      else if(wknd) bg='rgba(167,139,250,.07)';
+      if(editable){
+        const opts=SHIFTS.map(s=>`<option value="${s.id}" ${shiftId===s.id?'selected':''}>${s.short||'—'}</option>`).join('');
+        const empWish=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
+        const w=empWish[d];
+        const wishBadge=w?`<div style="font-size:8px;color:var(--accent);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;margin-top:1px" title="${w.comment||''}">${w.shift?(w.shift==='off'?'🌙вих':getShift(w.shift).short):''}${w.comment?' 💬':''}</div>`:'';
+        cells+=`<td style="padding:2px;background:${bg}"><select class="sched-select" data-emp="${emp.id}" data-day="${d}" style="color:${sh.color}" onchange="this.style.color=getShift(this.value).color">${opts}</select>${wishBadge}</td>`;
+      } else {
+        cells+=`<td style="background:${bg};text-align:center">${hasShift?`<span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33;font-size:10px">${sh.short}</span>`:`<span style="color:var(--muted);font-size:11px">—</span>`}</td>`;
+      }
+    });
+    tbody+=`<tr ${isMe?'class="you-row"':''}>`;
+    tbody+=`<td class="name-col">${emp.name.split(' ')[0]}${emp.name.split(' ')[1]?' '+emp.name.split(' ')[1][0]+'.':''}</td>`;
+    tbody+=cells;
+    tbody+=`<td style="text-align:center;background:var(--surface3);position:sticky;right:0;font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:${shiftCount>0?'var(--accent)':'var(--muted)'}">${shiftCount}</td>`;
+    tbody+='</tr>';
+  });
+  tbody+='</tbody>';
+  table.innerHTML=thead+tbody;
+}
+
+// ══ SALARY ══
+function recalc(){
+  const rate=+document.getElementById('calc-rate').value||0;
+  const kpi=+document.getElementById('calc-kpi').value||0;
+  const rating=+document.getElementById('calc-rating').value||0;
+  const days=+document.getElementById('calc-days').value||0;
+  const nights=+document.getElementById('calc-nights')?.value||0;
+  const dayT=rate+kpi+rating;
+  const nightT=Math.round(dayT*1.5);
+  const total=dayT*days + nightT*nights + (rating||0);
+  // Note: rating is monthly lump sum, not per-day, so subtract per-day portion and add once
+  const totalCorrect = (rate+kpi)*days + (rate+kpi)*1.5*nights + (rating||0);
+  document.getElementById('calc-day-result').textContent=dayT.toLocaleString('uk')+' ₴';
+  document.getElementById('calc-break').textContent=`${rate} + ${kpi} + ${rating}`;
+  document.getElementById('calc-night-result').textContent=Math.round((rate+kpi)*1.5).toLocaleString('uk')+' ₴';
+  document.getElementById('calc-night-break').textContent=`${dayT-rating} × 1.5`;
+  document.getElementById('calc-total').textContent=Math.round(totalCorrect).toLocaleString('uk')+' ₴';
+  const breakEl=document.getElementById('calc-total-break');
+  if(breakEl) breakEl.innerHTML=`${days} ден. × ${dayT-rating} + ${nights} ніч. × ${Math.round((rate+kpi)*1.5)} + рейтинг ${rating}`;
+}
+
+function renderPayments(){
+  const pmts=(me.data.payments||[]).slice().reverse();
+  const tbody=document.getElementById('emp-payments');
+  if(!pmts.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Виплат ще немає</td></tr>';return;}
+  tbody.innerHTML=pmts.map(p=>{
+    const base=(p.rate||402)+(p.kpi||402);
+    const total=Math.round(base*(p.days||0) + base*1.5*(p.nights||0) + (p.rating||0) + (p.bonus||0));
+    return `<tr><td>${p.month}</td><td>${p.days||0}</td><td style="color:var(--purple)">${p.nights||0}</td><td>${p.rate||402} ₴</td><td>${p.kpi||402} ₴</td><td>${p.rating||0} ₴</td><td>${p.bonus||0} ₴</td><td><b>${total.toLocaleString('uk')} ₴</b></td><td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td></tr>`;
+  }).join('');
+}
+
+
+// ══ STATUS ══
+// statuses removed
+
+// ══ ANNOUNCEMENTS ══
+async function postAnnouncement(){
+  const text=document.getElementById('ann-text').value.trim();
+  if(!text){alert('Введіть текст оголошення');return;}
+  const pinned=document.getElementById('ann-pin').checked;
+  if(!db.announcements) db.announcements=[];
+  db.announcements.unshift({
+    id:'an_'+Date.now(),
+    text, pinned,
+    author:'Адміністратор',
+    ts: new Date().toLocaleString('uk',{day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'})
+  });
+  document.getElementById('ann-text').value='';
+  document.getElementById('ann-pin').checked=false;
+  await saveDB();
+  renderAnnounceAdmin();
+}
+
+async function deleteAnnouncement(id){
+  db.announcements=(db.announcements||[]).filter(a=>a.id!==id);
+  await saveDB();
+  renderAnnounceAdmin();
+}
+
+function renderAnnounceAdmin(){
+  const list=document.getElementById('adm-announce-list');
+  const anns=db.announcements||[];
+  if(!anns.length){list.innerHTML='<div class="empty-state">Оголошень ще немає</div>';return;}
+  // pinned first
+  const sorted=[...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
+  list.innerHTML=sorted.map(a=>`
+    <div class="announce-card ${a.pinned?'pinned':''}">
+      ${a.pinned?'<div class="announce-pin">📌</div>':''}
+      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-text">${a.text}</div>
+      <div class="announce-ts">🕐 ${a.ts}</div>
+      <button class="announce-del" onclick="deleteAnnouncement('${a.id}')">Видалити</button>
+    </div>`).join('');
+}
+
+function renderAnnounceEmp(){
+  const list=document.getElementById('emp-announce-list');
+  const anns=db.announcements||[];
+  if(!anns.length){list.innerHTML='<div class="empty-state">Поки що немає оголошень</div>';return;}
+  const sorted=[...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
+  list.innerHTML=sorted.map(a=>`
+    <div class="announce-card ${a.pinned?'pinned':''}">
+      ${a.pinned?'<div class="announce-pin">📌</div>':''}
+      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-text">${a.text}</div>
+      <div class="announce-ts">🕐 ${a.ts}</div>
+    </div>`).join('');
+}
+
+// Show announce count badge on home tab if pinned
+function renderAnnounceHomeBanner(){
+  const pinned=(db.announcements||[]).filter(a=>a.pinned);
+  const el=document.getElementById('emp-home-announce');
+  if(!el) return;
+  const tgBanner=`<a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.25);border-radius:9px;padding:7px 14px;margin-bottom:10px;text-decoration:none;font-size:12px;color:#29b6f6;transition:.15s" onmouseover="this.style.background='rgba(0,136,204,.18)'" onmouseout="this.style.background='rgba(0,136,204,.1)'">✈️ <b>Telegram канал</b> — новини від керівника →</a>`;
+  if(!pinned.length){el.innerHTML=tgBanner;return;}
+  el.innerHTML=tgBanner+pinned.map(a=>`
+    <div class="announce-card pinned" style="margin-bottom:12px">
+      <div class="announce-pin">📌</div>
+      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-text">${a.text}</div>
+      <div class="announce-ts">🕐 ${a.ts}</div>
+    </div>`).join('');
+}
+
+
+// ══ PERFORMANCE / PRODUCTIVITY ══
+
+function renderHomePerfCards(){
+  const el = document.getElementById('emp-home-perf');
+  if(!el) return;
+  const data = (db.perf && db.perf[me.data.id]) || [];
+  if(data.length===0){ el.innerHTML=''; return; }
+  const latest = data[data.length-1];
+  const prev   = data[data.length-2]||null;
+  function trendBadge(cur, prv){
+    if(!prv) return '';
+    const diff=cur-prv, pct=prv?((diff/prv)*100).toFixed(1):0;
+    if(diff>0) return `<span class="dash-trend trend-up" style="font-size:11px">↑ +${Math.abs(pct)}%</span>`;
+    if(diff<0) return `<span class="dash-trend trend-down" style="font-size:11px">↓ −${Math.abs(pct)}%</span>`;
+    return `<span class="dash-trend trend-flat" style="font-size:11px">→</span>`;
+  }
+  el.innerHTML=`
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">
+      Продуктивність · <span class="week-tag">${latest.label||latest.week}</span>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-kard">
+        <div class="dash-label">Ср. чатів / зміну</div>
+        <div class="dash-val" style="color:var(--blue)">${(latest.avgChat||0).toFixed(1)}</div>
+        ${trendBadge(latest.avgChat, prev?.avgChat)}
+      </div>
+      <div class="dash-kard">
+        <div class="dash-label">Ср. закрито загалом</div>
+        <div class="dash-val" style="color:var(--teal)">${(latest.avgTotal||0).toFixed(1)}</div>
+        ${trendBadge(latest.avgTotal, prev?.avgTotal)}
+      </div>
+      <div class="dash-kard">
+        <div class="dash-label">Total за тиждень</div>
+        <div class="dash-val" style="color:var(--accent)">${(latest.total||0).toLocaleString('uk')}</div>
+        ${trendBadge(latest.total, prev?.total)}
+      </div>
+    </div>`;
+}
+
+
+// db.perf = { [staffId]: [ {week:'2025-W23', label:'23–29 черв', avgChat: 69.5, total: 1398}, ... ] }
+
+function getMyPerf(){
+  return (db.perf && db.perf[me.data.id]) || [];
+}
+
+function renderEmpPerf(){
+  const el = document.getElementById('emp-perf-content');
+  const chartData = getMyPerf(); // oldest → newest
+  const data = chartData.slice().reverse(); // newest first
+
+  if(!data.length){
+    el.innerHTML='<div class="empty-state" style="padding:60px">Даних поки немає — керівник ще не вніс звіти</div>';
+    return;
+  }
+
+  const latest = data[0];
+  const prev   = data[1] || null;
+
+  function trend(cur, prv, suffix=''){
+    if(!prv) return `<span class="dash-trend trend-flat">— перший тиждень</span>`;
+    const diff = cur - prv;
+    const pct  = prv ? ((diff/prv)*100).toFixed(1) : 0;
+    if(diff > 0) return `<span class="dash-trend trend-up">↑ +${Math.abs(pct)}%${suffix}</span>`;
+    if(diff < 0) return `<span class="dash-trend trend-down">↓ −${Math.abs(pct)}%${suffix}</span>`;
+    return `<span class="dash-trend trend-flat">→ без змін</span>`;
+  }
+
+  function miniChart(field, color){
+    const vals = chartData.map(d=>d[field]||0);
+    const max  = Math.max(...vals, 1);
+    const bars = vals.map((v,i)=>{
+      const h = Math.round((v/max)*52)+4;
+      const isLast = i===vals.length-1;
+      return `<div style="display:flex;flex-direction:column;align-items:center;flex:1">
+        <div class="dash-bar" style="height:${h}px;background:${isLast?color:color+'55'};width:100%"
+          title="${chartData[i].label||chartData[i].week}: ${v}"></div>
+        <div class="dash-bar-label">${(chartData[i].label||chartData[i].week||'').split('–')[0]||''}</div>
+      </div>`;
+    }).join('');
+    return `<div class="dash-chart">${bars}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="dash-grid">
+      <div class="dash-kard">
+        <div class="dash-label">Середнє чатів / зміну</div>
+        <div class="dash-val" style="color:var(--blue)">${(latest.avgChat||0).toFixed(1)}</div>
+        ${trend(latest.avgChat, prev?.avgChat, '')}
+        ${miniChart('avgChat','#5b9cf6')}
+      </div>
+      <div class="dash-kard">
+        <div class="dash-label">Ср. закрито загалом</div>
+        <div class="dash-val" style="color:var(--teal)">${(latest.avgTotal||0).toFixed(1)}</div>
+        ${trend(latest.avgTotal, prev?.avgTotal, '')}
+        ${miniChart('avgTotal','#2dd4bf')}
+      </div>
+      <div class="dash-kard">
+        <div class="dash-label">Total за тиждень</div>
+        <div class="dash-val" style="color:var(--accent)">${(latest.total||0).toLocaleString('uk')}</div>
+        ${trend(latest.total, prev?.total, '')}
+        ${miniChart('total','#f5c842')}
+      </div>
+    </div>
+
+    <div class="sec-title">МОЯ ІСТОРІЯ ПО ТИЖНЯХ</div>
+    <div class="tbl-wrap" style="margin-bottom:0">
+      <table class="tbl">
+        <thead><tr><th>Тиждень</th><th>Листи</th><th>Чати</th><th>Змін чатів</th><th>Змін заг.</th><th>Ср.чатів/зміну</th><th>Ср.закрито загалом</th><th>Total</th><th>Динаміка</th></tr></thead>
+        <tbody>
+          ${data.map((d,i)=>{
+            const p = data[i+1]||null;
+            const diff = p ? d.total - p.total : null;
+            const pct  = (p&&p.total) ? ((diff/p.total)*100).toFixed(1) : null;
+            const trendHtml = diff===null ? '<span class="dash-trend trend-flat">—</span>'
+              : diff>0 ? `<span class="dash-trend trend-up">↑ +${Math.abs(pct)}%</span>`
+              : diff<0 ? `<span class="dash-trend trend-down">↓ −${Math.abs(pct)}%</span>`
+              : `<span class="dash-trend trend-flat">→</span>`;
+            return `<tr>
+              <td><span class="week-tag">${d.label||d.week}</span></td>
+              <td style="font-family:'DM Mono',monospace">${d.letters||0}</td>
+              <td style="font-family:'DM Mono',monospace">${d.chats||0}</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${d.shiftChats||0}</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${d.shifts||0}</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--blue);font-weight:600">${(d.avgChat||0).toFixed(1)}</td>
+              <td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:600">${(d.avgTotal||0).toFixed(1)}</td>
+              <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${(d.total||0).toLocaleString('uk')}</td>
+              <td>${trendHtml}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-title" style="margin-top:28px">РЕЙТИНГ КОМАНДИ (поточний тиждень)</div>
+    ${renderTeamPerfTable()}
+    `;
+}
+
+function renderTeamPerfTable(){
+  const weeks = getWeekList();
+  if(!weeks.length) return '<div class="empty-state">Даних ще немає</div>';
+  const curWeek  = weeks[weeks.length-1];
+  const prevWeek = weeks[weeks.length-2]||null;
+  const rows = db.staff.map(emp=>{
+    const empData=(db.perf&&db.perf[emp.id])||[];
+    const cur =empData.find(d=>d.week===curWeek)||null;
+    const prev=prevWeek?(empData.find(d=>d.week===prevWeek)||null):null;
+    return {emp,cur,prev};
+  }).filter(r=>r.cur).sort((a,b)=>(b.cur.total||0)-(a.cur.total||0));
+  if(!rows.length) return '<div class="empty-state">Введіть та збережіть дані тижня</div>';
+  const maxTotal=rows[0].cur.total||1;
+  const isMe=id=>me&&me.type==='employee'&&me.data.id===id;
+  return `<div class="tbl-wrap"><table class="tbl perf-table"><thead><tr>
+    <th>#</th><th>Агент</th><th>Ср.чатів/зм.</th><th>Ср.загалом</th><th>Total</th><th>Динаміка</th>
+  </tr></thead><tbody>`+
+  rows.map(({emp,cur,prev},i)=>{
+    const rank=i+1;
+    const rankCls=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
+    const diff=prev?(cur.total||0)-(prev.total||0):null;
+    const pct=(prev&&prev.total)?((diff/prev.total)*100).toFixed(1):null;
+    const tr=diff===null?'<span class="dash-trend trend-flat" style="font-size:11px">—</span>'
+      :diff>0?`<span class="dash-trend trend-up" style="font-size:11px">↑ +${Math.abs(pct)}%</span>`
+      :diff<0?`<span class="dash-trend trend-down" style="font-size:11px">↓ −${Math.abs(pct)}%</span>`
+      :`<span class="dash-trend trend-flat" style="font-size:11px">→</span>`;
+    const barW=Math.round((cur.total/maxTotal)*100);
+    const meStyle=isMe(emp.id)?'background:rgba(245,200,66,.04);':'';
+    return `<tr style="${meStyle}">
+      <td><span class="rank-num ${rankCls}">${rank}</span>${isMe(emp.id)?' 👈':''}</td>
+      <td><b>${emp.name.split(' ')[0]} ${(emp.name.split(' ')[1]||'')[0]||''}.</b></td>
+      <td style="font-family:'DM Mono',monospace;color:var(--blue)">${(cur.avgChat||0).toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--teal)">${(cur.avgTotal||0).toFixed(1)}</td>
+      <td><div class="mini-bar-wrap">
+        <div class="mini-bar" style="width:${barW}px;max-width:100px;background:${isMe(emp.id)?'var(--accent)':rank<=3?'var(--blue)':'var(--border2)'}"></div>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${(cur.total||0).toLocaleString('uk')}</span>
+      </div></td>
+      <td>${tr}</td>
+    </tr>`;
+  }).join('')+
+  '</tbody></table></div>';
+}
+
+// ── Admin perf table ──
+// db.perf[empId] = [ {week:'label', letters, chats, shiftChats, shiftLetters}, ... ]
+
+function addPerfWeek(){
+  const label = document.getElementById('new-week-label').value.trim();
+  if(!label){ alert('Вкажіть назву тижня (напр. 23–29 черв)'); return; }
+  if(!db.perf) db.perf = {};
+  // Add empty row for each agent if not exists
+  db.staff.forEach(emp=>{
+    if(!db.perf[emp.id]) db.perf[emp.id]=[];
+    if(!db.perf[emp.id].find(d=>d.week===label)){
+      db.perf[emp.id].push({week:label, letters:0, chats:0, shiftChats:0, shifts:0});
+    }
+  });
+  document.getElementById('new-week-label').value='';
+  renderAdmPerf();
+}
+
+function getWeekList(){
+  if(!db.perf) return [];
+  const all = new Set();
+  Object.values(db.perf).forEach(rows=>rows.forEach(r=>all.add(r.week)));
+  return [...all];
+}
+
+function renderAdmPerf(){
+  const weeks = getWeekList();
+  const weeksEl = document.getElementById('adm-perf-weeks');
+  
+  if(!weeks.length){
+    weeksEl.innerHTML='<div class="empty-state" style="padding:40px">Додайте перший тиждень вище ↑</div>';
+  } else {
+    // Show latest week editable table
+    const curWeek = weeks[weeks.length-1];
+    weeksEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="sec-title" style="margin-top:0;margin-bottom:0">ВВЕДЕННЯ ДАНИХ</div>
+        <select id="perf-week-sel" class="col-map-select" style="width:auto" onchange="renderAdmPerf()">
+          ${weeks.slice().reverse().map(w=>`<option value="${w}" ${w===curWeek?'selected':''}>${w}</option>`).join('')}
+        </select>
+        <button class="btn-sm red" onclick="deletePerfWeek()" style="margin-left:4px">🗑 Видалити тиждень</button>
+      </div>
+      <div class="tbl-wrap" style="margin-bottom:20px;overflow-x:auto">
+        <table class="tbl" id="perf-input-table">
+          <thead><tr>
+            <th>Агент</th>
+            <th>Листи</th>
+            <th>Чати</th>
+            <th>К-сть змін чатів</th>
+            <th>К-сть змін (загальна)</th>
+            <th style="color:var(--blue)">Ср.чатів/зміну</th>
+            <th style="color:var(--teal)">Ср.закрито загалом</th>
+            <th style="color:var(--accent)">Total</th>
+          </tr></thead>
+          <tbody id="perf-input-body"></tbody>
+        </table>
+      </div>
+      <button class="btn-save" onclick="savePerfWeek()">💾 Зберегти дані тижня</button>`;
+    renderPerfInputTable(curWeek);
+  }
+  renderAdmPerfRanking();
+}
+
+function renderPerfInputTable(week){
+  const selEl = document.getElementById('perf-week-sel');
+  const selWeek = (selEl && selEl.value) || week;
+  const tbody = document.getElementById('perf-input-body');
+  if(!tbody) return;
+  
+  tbody.innerHTML = db.staff.map(emp=>{
+    const empData = (db.perf && db.perf[emp.id]) || [];
+    const row = empData.find(d=>d.week===selWeek) || {letters:0,chats:0,shiftChats:0,shifts:0};
+    const l  = row.letters||0;
+    const ch = row.chats||0;
+    const sc = row.shiftChats||0;   // К-сть змін чатів
+    const st = row.shifts||0;       // К-сть змін загальна
+    const total    = l + ch;
+    const avgChat  = sc>0 ? (ch/sc).toFixed(1) : '—';
+    const avgTotal = st>0 ? (total/st).toFixed(1) : '—';
+    return `<tr id="pr-${emp.id}">
+      <td style="font-weight:500;white-space:nowrap">${emp.name}</td>
+      <td><input type="number" min="0" class="esc-input" id="pl-${emp.id}"  value="${l}"  oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="pc-${emp.id}"  value="${ch}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="psc-${emp.id}" value="${sc}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="pst-${emp.id}" value="${st}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td id="pavg-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--blue);text-align:center;font-weight:600">${avgChat}</td>
+      <td id="pavgt-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--teal);text-align:center;font-weight:600">${avgTotal}</td>
+      <td id="ptot-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--accent);text-align:center;font-weight:700">${total.toLocaleString('uk')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function recalcPerfRow(empId){
+  const l  = +document.getElementById(`pl-${empId}`)?.value||0;
+  const ch = +document.getElementById(`pc-${empId}`)?.value||0;
+  const sc = +document.getElementById(`psc-${empId}`)?.value||0;  // змін чатів
+  const st = +document.getElementById(`pst-${empId}`)?.value||0;  // змін загальна
+  const total    = l + ch;
+  const avgChat  = sc>0 ? (ch/sc).toFixed(1) : '—';
+  const avgTotal = st>0 ? (total/st).toFixed(1) : '—';
+  document.getElementById(`pavg-${empId}`).textContent  = avgChat;
+  document.getElementById(`pavgt-${empId}`).textContent = avgTotal;
+  document.getElementById(`ptot-${empId}`).textContent  = total.toLocaleString('uk');
+}
+
+async function savePerfWeek(){
+  const selEl = document.getElementById('perf-week-sel');
+  if(!selEl){ alert('Спочатку додайте тиждень'); return; }
+  const selWeek = selEl.value;
+  if(!db.perf) db.perf={};
+  
+  db.staff.forEach(emp=>{
+    const l  = +document.getElementById(`pl-${emp.id}`)?.value||0;
+    const ch = +document.getElementById(`pc-${emp.id}`)?.value||0;
+    const sc = +document.getElementById(`psc-${emp.id}`)?.value||0;  // змін чатів
+    const st = +document.getElementById(`pst-${emp.id}`)?.value||0;  // змін загальна
+    const total    = l + ch;
+    const avgChat  = sc>0 ? Math.round((ch/sc)*10)/10 : 0;
+    const avgTotal = st>0 ? Math.round((total/st)*10)/10 : 0;
+    
+    if(!db.perf[emp.id]) db.perf[emp.id]=[];
+    const idx = db.perf[emp.id].findIndex(d=>d.week===selWeek);
+    const entry = {week:selWeek, letters:l, chats:ch, shiftChats:sc, shifts:st, avgChat, avgTotal, total};
+    if(idx>=0) db.perf[emp.id][idx]=entry;
+    else db.perf[emp.id].push(entry);
+  });
+  
+  await saveDB();
+  renderAdmPerfRanking();
+}
+
+async function deletePerfWeek(){
+  const selEl = document.getElementById('perf-week-sel');
+  if(!selEl) return;
+  const selWeek = selEl.value;
+  if(!confirm(`Видалити тиждень "${selWeek}"? Це незворотно.`)) return;
+  db.staff.forEach(emp=>{
+    if(db.perf && db.perf[emp.id])
+      db.perf[emp.id] = db.perf[emp.id].filter(d=>d.week!==selWeek);
+  });
+  await saveDB();
+  renderAdmPerf();
+}
+
+function renderAdmPerfRanking(){
+  const tbody = document.getElementById('adm-perf-list');
+  if(!tbody) return;
+  const weeks = getWeekList();
+  if(!weeks.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-state">Даних ще немає</td></tr>'; return; }
+  const curWeek  = weeks[weeks.length-1];
+  const prevWeek = weeks[weeks.length-2]||null;
+  
+  const rows = db.staff.map(emp=>{
+    const empData = (db.perf&&db.perf[emp.id])||[];
+    const cur  = empData.find(d=>d.week===curWeek)||null;
+    const prev = prevWeek ? (empData.find(d=>d.week===prevWeek)||null) : null;
+    return {emp, cur, prev};
+  }).filter(r=>r.cur).sort((a,b)=>(b.cur.total||0)-(a.cur.total||0));
+  
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-state">Введіть та збережіть дані</td></tr>'; return; }
+  
+  tbody.innerHTML = rows.map(({emp,cur,prev},i)=>{
+    const rank=i+1;
+    const rankCls=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
+    const diff = prev ? (cur.total||0)-(prev.total||0) : null;
+    const pct  = (prev&&prev.total) ? ((diff/prev.total)*100).toFixed(1) : null;
+    const trendHtml = diff===null?'<span class="dash-trend trend-flat" style="font-size:11px">—</span>'
+      :diff>0?`<span class="dash-trend trend-up" style="font-size:11px">↑ +${Math.abs(pct)}%</span>`
+      :diff<0?`<span class="dash-trend trend-down" style="font-size:11px">↓ −${Math.abs(pct)}%</span>`
+      :`<span class="dash-trend trend-flat" style="font-size:11px">→</span>`;
+    return `<tr>
+      <td><span class="rank-num ${rankCls}">${rank}</span></td>
+      <td><b>${emp.name}</b></td>
+      <td style="font-family:'DM Mono',monospace">${cur.letters||0}</td>
+      <td style="font-family:'DM Mono',monospace">${cur.chats||0}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${cur.shiftChats||0}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${cur.shiftLetters||0}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--blue);font-weight:600">${(cur.avgChat||0).toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:600">${(cur.avgTotal||0).toFixed(1)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--accent);font-weight:700">${(cur.total||0).toLocaleString('uk')}</td>
+      <td>${trendHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Excel export ──
+function exportPerfExcel(){
+  const weeks = getWeekList();
+  if(!weeks.length){ alert('Даних немає'); return; }
+  
+  // Build CSV (Excel reads it fine)
+  const headers = ['Агент','Тиждень','Листи','Чати','К-сть змін чатів','К-сть змін заг.','Ср.чатів/зміну','Ср.закрито загалом','Total'];
+  const rows = [headers.join(';')];
+  
+  db.staff.forEach(emp=>{
+    const empData = (db.perf&&db.perf[emp.id])||[];
+    weeks.forEach(w=>{
+      const d = empData.find(r=>r.week===w);
+      if(!d) return;
+      rows.push([
+        emp.name, w,
+        d.letters||0,
+        d.chats||0,
+        d.shiftChats||0,
+        d.shifts||0,
+        (d.avgChat||0).toFixed(1),
+        (d.avgTotal||0).toFixed(1),
+        d.total||0
+      ].join(';'));
+    });
+  });
+  
+  // Add totals row
+  const lastWeek = weeks[weeks.length-1];
+  rows.push('');
+  rows.push(['РАЗОМ',lastWeek,'','',
+    db.staff.reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.chats:0);},0),
+    '','','','',
+    db.staff.reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.total:0);},0)
+  ].join(';'));
+  
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `productivity_${lastWeek.replace(/[^a-zA-Z0-9а-яёА-ЯЁ]/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Old upload functions (kept as stubs) ──
+function handleDrop(e){ e.preventDefault(); }
+function handleFile(f){}
+function parseCSV(t){}
+function parseExcel(b){}
+let _csvHeaders=[], _csvRows=[];
+function showColumnMapper(){}
+async function importPerfData(){}
+
+
+
+
+// ══ BIRTHDAYS ══
+function getBdayInfo(emp){
+  // Returns null or {name, daysUntil, isToday, isSoon (within 7 days)}
+  if(!emp.birthday) return null;
+  const [mm,dd] = emp.birthday.split('-').map(Number);
+  if(!mm||!dd) return null;
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  let bday = new Date(thisYear, mm-1, dd);
+  if(bday < now && !(bday.getDate()===now.getDate()&&bday.getMonth()===now.getMonth())) {
+    bday = new Date(thisYear+1, mm-1, dd);
+  }
+  const diffMs = bday - now;
+  const daysUntil = Math.ceil(diffMs / (1000*60*60*24));
+  const isToday = daysUntil === 0 || (bday.getDate()===now.getDate()&&bday.getMonth()===now.getMonth()&&(bday.getFullYear()===thisYear||bday.getFullYear()===thisYear+1));
+  const isSoon = daysUntil >= 0 && daysUntil <= 7;
+  return { name: emp.name, daysUntil, isToday, isSoon, mm, dd };
+}
+
+function renderBdayBanner(){
+  // Show on employee home — upcoming birthdays in next 7 days
+  const el = document.getElementById('emp-bday-banner');
+  if(!el) return;
+  const upcoming = db.staff.map(emp=>({emp, info:getBdayInfo(emp)}))
+    .filter(x=>x.info&&x.info.isSoon)
+    .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
+  if(!upcoming.length){el.innerHTML='';return;}
+  el.innerHTML = upcoming.map(({emp,info})=>{
+    const isMe = me&&me.type==='employee'&&me.data.id===emp.id;
+    const dayText = info.isToday ? '🎉 СЬОГОДНІ!' : `за ${info.daysUntil} ${info.daysUntil===1?'день':info.daysUntil<5?'дні':'днів'}`;
+    return `<div style="display:flex;align-items:center;gap:12px;background:${info.isToday?'linear-gradient(135deg,rgba(245,200,66,.15),rgba(244,114,182,.1))':'var(--surface)'};border:1px solid ${info.isToday?'rgba(245,200,66,.4)':'var(--border)'};border-radius:10px;padding:10px 16px;margin-bottom:8px">
+      <span style="font-size:22px">${info.isToday?'🎂':'🎁'}</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${isMe?'🎉 Твій день народження!':emp.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${info.dd}.${String(info.mm).padStart(2,'0')} · ${dayText}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAdmBdayBanner(){
+  // Show in schedule header for admin
+  const upcoming = db.staff.map(emp=>({emp, info:getBdayInfo(emp)}))
+    .filter(x=>x.info&&x.info.isSoon)
+    .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
+  return upcoming.map(({emp,info})=>{
+    const dayText = info.isToday ? '🎉 СЬОГОДНІ!' : `за ${info.daysUntil} ${info.daysUntil===1?'день':info.daysUntil<5?'дні':'днів'}`;
+    return `<div style="display:inline-flex;align-items:center;gap:8px;background:${info.isToday?'rgba(245,200,66,.12)':'var(--surface2)'};border:1px solid ${info.isToday?'rgba(245,200,66,.3)':'var(--border)'};border-radius:8px;padding:6px 12px;margin:2px 4px 2px 0;font-size:12px">
+      <span>${info.isToday?'🎂':'🎁'}</span>
+      <b>${emp.name.split(' ')[0]}</b>
+      <span style="color:var(--muted)">${dayText}</span>
+    </div>`;
+  }).join('');
+}
+
+// Check if a specific calendar day has a birthday
+function getDayBdays(year, month, day){
+  // month is 0-based
+  return db.staff.filter(emp=>{
+    if(!emp.birthday) return false;
+    const [mm,dd] = emp.birthday.split('-').map(Number);
+    return mm-1===month && dd===day;
+  });
+}
+
+
+// ══ ADMIN WISHES ══
+let wishesAdmY, wishesAdmM;
+function wishesNav(d){
+  wishesAdmM+=d;
+  if(wishesAdmM<0){wishesAdmM=11;wishesAdmY--;}
+  if(wishesAdmM>11){wishesAdmM=0;wishesAdmY++;}
+  renderAdmWishes();
+}
+function renderAdmWishes(){
+  const now=new Date();
+  if(wishesAdmY===undefined){ wishesAdmY=now.getFullYear(); wishesAdmM=now.getMonth()+1; if(wishesAdmM>11){wishesAdmM=0;wishesAdmY++;} }
+  const titleEl=document.getElementById('wishes-month-title');
+  if(titleEl) titleEl.textContent=MONTHS_UK[wishesAdmM]+' '+wishesAdmY;
+  // Show month notes above table
+  const notesEl=document.getElementById('wishes-month-notes');
+  if(notesEl){
+    const key2=mkey(wishesAdmY,wishesAdmM);
+    const notes=db.staff.map(emp=>{
+      const note=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key2+'_note']||'';
+      return note?{name:emp.name,note}:null;
+    }).filter(Boolean);
+    notesEl.innerHTML=notes.length?`<div style="margin-bottom:16px">
+      <div class="sec-title" style="margin-top:0">ЗАГАЛЬНІ КОМЕНТАРІ АГЕНТІВ</div>
+      ${notes.map(n=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 16px;margin-bottom:6px;display:flex;gap:12px;align-items:flex-start">
+        <b style="min-width:130px;font-size:13px">${n.name}</b>
+        <span style="font-size:13px;color:var(--muted2)">💬 ${n.note}</span>
+      </div>`).join('')}
+    </div>`:'';
+  }
+  const table=document.getElementById('wishes-table');
+  if(!table) return;
+  const key=mkey(wishesAdmY,wishesAdmM);
+  const wishes=db.wishes||{};
+  const existSched=(db.schedule&&db.schedule[key])||{};
+  const last=new Date(wishesAdmY,wishesAdmM+1,0).getDate();
+  const days=[]; for(let d=1;d<=last;d++) days.push(d);
+  function isWeekend(d){ const dow=new Date(wishesAdmY,wishesAdmM,d).getDay(); return dow===0||dow===6; }
+
+  // Pre-count off-wishes per day
+  const admOffCount={};
+  db.staff.forEach(emp=>{
+    const ew=((wishes[emp.id]||wishes[String(emp.id)]||{})[key])||{};
+    Object.entries(ew).forEach(([day,w])=>{
+      if(w&&w.shift==='off') admOffCount[day]=(admOffCount[day]||0)+1;
+    });
+  });
+
+  // Header
+  let thead='<thead><tr>';
+  thead+=`<th style="min-width:110px;position:sticky;left:0;background:var(--surface2);z-index:3;font-size:11px">Агент</th>`;
+  days.forEach(d=>{
+    const wknd=isWeekend(d);
+    const dt=new Date(wishesAdmY,wishesAdmM,d);
+    const dow=DAYS_UK[(dt.getDay()+6)%7];
+    const bg=wknd?'rgba(167,139,250,.13)':'';
+    const col=wknd?'var(--purple)':'';
+    const cnt=admOffCount[d]||0;
+    const cntHtml=cnt>0
+      ?`<div style="font-size:9px;font-weight:700;color:${cnt>=4?'var(--red)':'var(--muted2)'};line-height:1">🌙×${cnt}</div>`
+      :'';
+    thead+=`<th style="min-width:68px;text-align:center;background:${bg};color:${col};padding:4px 2px">
+      <div style="font-size:9px;opacity:.7">${dow}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${d}</div>
+      ${cntHtml}
+    </th>`;
+  });
+  thead+='</tr></thead>';
+
+  // Shift select options HTML (reuse)
+  const shiftOpts=SHIFTS.map(s=>`<option value="${s.id}">${s.short}</option>`).join('');
+
+  // Body — one row per agent with wish display + editable schedule select
+  let tbody='<tbody>';
+  db.staff.forEach(emp=>{
+    const empWishes=(wishes[emp.id]||wishes[String(emp.id)]||{})[key]||{};
+    const empSched=existSched[emp.id]||{};
+    const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
+
+    tbody+=`<tr>`;
+    tbody+=`<td style="font-size:11px;font-weight:600;padding:4px 8px;position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">${shortName}</td>`;
+
+    days.forEach(d=>{
+      const wknd=isWeekend(d);
+      const cellBg=wknd?'rgba(167,139,250,.06)':'';
+      const w=empWishes[d];
+      const curSched=empSched[d]||'off';
+      const sh=getShift(curSched);
+
+      // Wish badge
+      let wishBadge='';
+      if(w){
+        const ws=w.shift?getShift(w.shift):null;
+        const wLabel=(ws&&w.shift!=='off')?ws.short:(w.shift==='off'?'🌙':'' );
+        const wComment=w.comment?` title="${w.comment}"`:'';
+        const offOver=w.shift==='off'&&(admOffCount[d]||0)>=4;
+        wishBadge=`<div${wComment} style="font-size:9px;color:${offOver?'var(--red)':'var(--accent)'};background:${offOver?'rgba(248,113,113,.1)':'rgba(245,200,66,.1)'};border:1px dashed ${offOver?'rgba(248,113,113,.4)':'rgba(245,200,66,.35)'};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}</div>`;
+      }
+
+      // Editable schedule select
+      const opts=`<option value="off"${curSched==='off'?' selected':''}>—</option>`+
+        SHIFTS.slice(1).map(s=>`<option value="${s.id}"${curSched===s.id?' selected':''}>${s.short}</option>`).join('');
+
+      tbody+=`<td style="background:${cellBg};padding:2px;text-align:center;vertical-align:middle">
+        ${wishBadge}
+        <select class="wish-sched-sel" data-emp="${emp.id}" data-day="${d}" style="width:62px;font-size:10px;background:var(--bg);border:1px solid ${curSched!=='off'?sh.color+'55':'var(--border)'};border-radius:4px;color:${sh.color};padding:2px 2px;outline:none;cursor:pointer" onchange="onWishSchedChange(this)">
+          ${opts}
+        </select>
+      </td>`;
+    });
+    tbody+='</tr>';
+  });
+  tbody+='</tbody>';
+  table.innerHTML=thead+tbody;
+}
+
+function onWishSchedChange(sel){
+  const sh=getShift(sel.value);
+  sel.style.borderColor=sel.value!=='off'?sh.color+'55':'var(--border)';
+  sel.style.color=sh.color;
+}
+
+async function saveWishesAsSchedule(){
+  const key=mkey(wishesAdmY,wishesAdmM);
+  if(!db.schedule) db.schedule={};
+  if(!db.schedule[key]) db.schedule[key]={};
+  // Init all staff
+  db.staff.forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
+
+  document.querySelectorAll('.wish-sched-sel').forEach(sel=>{
+    const empId=+sel.dataset.emp;
+    const day=+sel.dataset.day;
+    const val=sel.value;
+    if(!db.schedule[key][empId]) db.schedule[key][empId]={};
+    if(val&&val!=='off') db.schedule[key][empId][day]=val;
+    else delete db.schedule[key][empId][day];
+  });
+
+  await saveDB();
+  const hint=document.getElementById('wishes-save-hint');
+  if(hint){ hint.textContent='✅ Збережено! Графік оновлено.'; hint.style.color='var(--green)'; setTimeout(()=>{ hint.textContent='Зміни в рядку «ГРАФІК» збережуться в основний розклад'; hint.style.color=''; },3000); }
+}
+
+
+// ══ ANALYTICS ══
+let analyticsY, analyticsM;
+function analyticsNav(d){
+  analyticsM+=d;
+  if(analyticsM<0){analyticsM=11;analyticsY--;}
+  if(analyticsM>11){analyticsM=0;analyticsY++;}
+  renderAnalytics();
+}
+function renderAnalytics(){
+  const now=new Date();
+  if(analyticsY===undefined){analyticsY=now.getFullYear();analyticsM=now.getMonth();}
+  document.getElementById('analytics-month-title').textContent=MONTHS_UK[analyticsM]+' '+analyticsY;
+  const el=document.getElementById('analytics-content');
+  if(!el) return;
+  const key=mkey(analyticsY,analyticsM);
+  const sched=db.schedule&&db.schedule[key]||{};
+  const last=new Date(analyticsY,analyticsM+1,0).getDate();
+
+  // ── Per-agent shift stats ──
+  const stats=db.staff.map(emp=>{
+    const empSched=sched[emp.id]||sched[String(emp.id)]||{};
+    let total=0,nights=0,offDays=0,vacation=0;
+    for(let d=1;d<=last;d++){
+      const sh=empSched[d];
+      if(!sh||sh==='off'){offDays++;continue;}
+      if(sh==='vacation'){vacation++;continue;}
+      if(sh==='s7') nights++;
+      total++;
+    }
+    // overtime/late from dayComments
+    const dayC=((db.dayComments||{})[emp.id]||(db.dayComments||{})[String(emp.id)]||{})[key]||{};
+    let overtimeMins=0,lateMins=0,lateCount=0;
+    Object.values(dayC).forEach(v=>{
+      if(typeof v==='object'){
+        overtimeMins+=overtimeToMins(v.overtime);
+        const lm=lateToMins(v.late);
+        if(lm){lateMins+=lm;lateCount++;}
+      }
+    });
+    // perf: latest week in this month
+    const perfData=(db.perf&&db.perf[emp.id]||[]).filter(w=>w.week&&w.week.startsWith(analyticsY+'-'));
+    const latestPerf=perfData[perfData.length-1]||null;
+    return {emp,total,nights,offDays,vacation,overtimeMins,lateMins,lateCount,latestPerf};
+  });
+
+  function fmtMins(m){if(!m)return'—';const h=Math.floor(m/60),mn=m%60;return h?`${h}г${mn?` ${mn}хв`:''}`:mn+'хв';}
+  const maxShifts=Math.max(...stats.map(s=>s.total),1);
+
+  // ── Summary cards ──
+  const totalShifts=stats.reduce((a,s)=>a+s.total,0);
+  const totalNights=stats.reduce((a,s)=>a+s.nights,0);
+  const totalVacation=stats.reduce((a,s)=>a+s.vacation,0);
+  const totalLate=stats.reduce((a,s)=>a+s.lateCount,0);
+  const totalOvertime=stats.reduce((a,s)=>a+s.overtimeMins,0);
+
+  const summaryCards=`<div class="dash-grid" style="margin-bottom:24px">
+    <div class="dash-kard"><div class="dash-label">Змін всього</div><div class="dash-val" style="color:var(--accent)">${totalShifts}</div></div>
+    <div class="dash-kard"><div class="dash-label">🌙 Нічних змін</div><div class="dash-val" style="color:var(--purple)">${totalNights}</div></div>
+    <div class="dash-kard"><div class="dash-label">🏖 Відпусток</div><div class="dash-val" style="color:var(--blue)">${totalVacation}</div></div>
+    <div class="dash-kard"><div class="dash-label">🕐 Запізнень</div><div class="dash-val" style="color:var(--red)">${totalLate}</div></div>
+    <div class="dash-kard"><div class="dash-label">⏱ Переробка</div><div class="dash-val" style="color:var(--orange);font-size:22px">${fmtMins(totalOvertime)}</div></div>
+  </div>`;
+
+  // ── Detailed table ──
+  const tableHtml=`<div class="sec-title">ДЕТАЛЬНО ПО АГЕНТАХ</div>
+  <div class="tbl-wrap" style="overflow-x:auto">
+  <table class="tbl">
+    <thead><tr>
+      <th>Агент</th>
+      <th style="color:var(--accent)">Змін</th>
+      <th style="color:var(--purple)">🌙 Нічних</th>
+      <th style="color:var(--blue)">🏖 Відпустка</th>
+      <th style="color:var(--orange)">⏱ Переробка</th>
+      <th style="color:var(--red)">🕐 Запізнень</th>
+      <th style="color:var(--red)">🕐 Хв запізн.</th>
+      <th style="color:var(--teal)">Ср.чатів/зм.</th>
+      <th style="color:var(--accent)">Total</th>
+      <th>Активність</th>
+    </tr></thead>
+    <tbody>
+      ${stats.map(s=>{
+        const barW=maxShifts>0?Math.round((s.total/maxShifts)*100):0;
+        return `<tr>
+          <td style="font-weight:500">${s.emp.name}</td>
+          <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent);text-align:center">${s.total}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:${s.nights?'var(--purple)':'var(--muted)'}">${s.nights||'—'}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:${s.vacation?'var(--blue)':'var(--muted)'}">${s.vacation||'—'}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:${s.overtimeMins?'var(--orange)':'var(--muted)'}">${fmtMins(s.overtimeMins)}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:${s.lateCount?'var(--red)':'var(--muted)'};">${s.lateCount||'—'}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:${s.lateMins?'var(--red)':'var(--muted)'}">${fmtMins(s.lateMins)}</td>
+          <td style="font-family:'DM Mono',monospace;text-align:center;color:var(--teal)">${s.latestPerf?(s.latestPerf.avgChat||0).toFixed(1):'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-weight:700;text-align:center;color:var(--accent)">${s.latestPerf?s.latestPerf.total.toLocaleString('uk'):'—'}</td>
+          <td style="min-width:100px;padding:4px 8px">
+            <div style="background:var(--surface2);border-radius:3px;height:8px;overflow:hidden">
+              <div style="width:${barW}%;height:100%;background:var(--accent);border-radius:3px;transition:.3s"></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+
+  el.innerHTML=summaryCards+tableHtml;
+}
+
+// ══ ADMIN COMMENTS ══
+// Parse overtime string to minutes: "2год"→120, "30хв"→30
+function overtimeToMins(s){ if(!s) return 0; if(s.includes('год')) return parseInt(s)*60; if(s.includes('хв')) return parseInt(s); return 0; }
+function lateToMins(s){ if(!s) return 0; return parseInt(s)||0; }
+
+function renderAdmComments(){
+  const el = document.getElementById('adm-comments-content');
+  if(!el) return;
+  const comments = db.dayComments || {};
+
+  // Collect all entries
+  let rows = [];
+  db.staff.forEach(emp => {
+    // dayComments keys are stored as strings (JSON serialization)
+    const empC = comments[emp.id] || comments[String(emp.id)] || {};
+    Object.entries(empC).forEach(([mk, days]) => {
+      Object.entries(days).forEach(([day, data]) => {
+        if(!data) return;
+        const obj = typeof data==='object' ? data : {overtime:'',late:''};
+        if(!obj.overtime && !obj.late) return;
+        const [y,m] = mk.split('-').map(Number);
+        rows.push({ emp, mk, year:y, month:m, day:+day, obj });
+      });
+    });
+  });
+  rows.sort((a,b) => b.year-a.year || b.month-a.month || b.day-a.day);
+
+  // Build per-agent summary (all time)
+  const summary = {};
+  db.staff.forEach(emp => { summary[emp.id]={overtimeMins:0, lateMins:0, lateCount:0}; });
+  rows.forEach(r => {
+    const sid = r.emp.id;
+    if(!summary[sid]) summary[sid]={overtimeMins:0,lateMins:0,lateCount:0};
+    summary[sid].overtimeMins += overtimeToMins(r.obj.overtime);
+    const lm = lateToMins(r.obj.late);
+    if(lm){ summary[sid].lateMins += lm; summary[sid].lateCount++; }
+  });
+
+  function fmtMins(m){ if(!m) return '—'; const h=Math.floor(m/60),mn=m%60; return h?`${h}г${mn?` ${mn}хв`:''}`:mn+' хв'; }
+
+  // Summary cards
+  const summaryHtml = `
+    <div class="sec-title" style="margin-top:0">ЗВЕДЕННЯ ПО АГЕНТАХ</div>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table class="tbl">
+        <thead><tr>
+          <th>Агент</th>
+          <th style="color:var(--orange)">⏱ Переробка (всього)</th>
+          <th style="color:var(--red)">🕐 Запізнень (разів)</th>
+          <th style="color:var(--red)">🕐 Запізнення (хвилин)</th>
+        </tr></thead>
+        <tbody>
+          ${db.staff.map(emp => {
+            const s=summary[emp.id]||{overtimeMins:0,lateMins:0,lateCount:0};
+            const hasData=s.overtimeMins||s.lateMins;
+            return `<tr style="${hasData?'':'opacity:.4'}">
+              <td style="font-weight:500">${emp.name}</td>
+              <td style="font-family:'DM Mono',monospace;color:${s.overtimeMins?'var(--orange)':'var(--muted)'}">${fmtMins(s.overtimeMins)}</td>
+              <td style="font-family:'DM Mono',monospace;font-weight:600;color:${s.lateCount?'var(--red)':'var(--muted)'}">${s.lateCount||'—'}</td>
+              <td style="font-family:'DM Mono',monospace;color:${s.lateMins?'var(--red)':'var(--muted)'}">${fmtMins(s.lateMins)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  if(!rows.length){
+    el.innerHTML=summaryHtml+'<div class="empty-state" style="padding:30px">Детальних записів ще немає</div>';
+    return;
+  }
+
+  // Group by month
+  const grouped = {};
+  rows.forEach(r => { if(!grouped[r.mk]) grouped[r.mk]=[]; grouped[r.mk].push(r); });
+
+  const detailHtml = Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([mk, rs]) => {
+    const [y,m] = mk.split('-').map(Number);
+    return `<div style="margin-bottom:20px">
+      <div class="sec-title">${MONTHS_UK[m-1]} ${y}</div>
+      ${rs.map(r=>{
+        const parts=[];
+        if(r.obj.overtime) parts.push(`<span style="background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.25);border-radius:6px;padding:2px 8px;font-size:12px">⏱ +${r.obj.overtime}</span>`);
+        if(r.obj.late)     parts.push(`<span style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);border-radius:6px;padding:2px 8px;font-size:12px">🕐 -${r.obj.late}</span>`);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap">
+          <div style="font-weight:500;font-size:13px;min-width:140px">${r.emp.name}</div>
+          <div style="font-size:12px;color:var(--muted2);min-width:80px">${r.day} ${MONTHS_UK[r.month-1]}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${parts.join('')}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = summaryHtml + '<div class="sec-title">ДЕТАЛІ ПО ДНЯХ</div>' + detailHtml;
+}
+
+// ══ REVIEWS ══
+// db.reviews = { [mkey]: { sites:[...], data:{[siteIdx]:{[empId]: count}} } }
+let reviewsY, reviewsM;
+
+function reviewsMonthNav(d){
+  reviewsM+=d;
+  if(reviewsM<0){reviewsM=11;reviewsY--;}
+  if(reviewsM>11){reviewsM=0;reviewsY++;}
+  renderAdmReviews();
+}
+
+function getReviewsMkey(){ return reviewsY+'-'+(String(reviewsM+1).padStart(2,'0')); }
+
+function ensureReviewsMonth(){
+  if(!db.reviews) db.reviews={};
+  const k = getReviewsMkey();
+  if(!db.reviews[k]) db.reviews[k]={sites:[],data:{}};
+  return db.reviews[k];
+}
+
+function addReviewSite(){
+  const name = document.getElementById('new-review-site').value.trim();
+  if(!name) return;
+  const rv = ensureReviewsMonth();
+  if(rv.sites.includes(name)){ alert('Цей сайт вже є'); return; }
+  rv.sites.push(name);
+  document.getElementById('new-review-site').value='';
+  renderAdmReviews();
+}
+
+function renderAdmReviews(){
+  if(reviewsY===undefined){ const now=new Date(); reviewsY=now.getFullYear(); reviewsM=now.getMonth(); }
+  document.getElementById('reviews-month-title').textContent = MONTHS_UK[reviewsM]+' '+reviewsY;
+  const k = getReviewsMkey();
+  const rv = (db.reviews&&db.reviews[k]) || {sites:[],data:{}};
+  const sites = rv.sites || [];
+  const data  = rv.data  || {};
+  const table = document.getElementById('reviews-table');
+  if(!table) return;
+
+  if(!sites.length){
+    table.innerHTML='<tr><td class="empty-state" colspan="20">Додайте сайти вище ↑</td></tr>';
+    return;
+  }
+
+  // Header: Reviews | agent initials...
+  const initials = emp => {
+    const p = emp.name.split(' ');
+    return (p[0]?p[0][0]:'')+(p[1]?p[1][0]:'');
+  };
+  let html = '<thead><tr>';
+  html += '<th style="text-align:left;min-width:130px">Reviews</th>';
+  db.staff.forEach(emp => { html += `<th style="min-width:44px;text-align:center">${initials(emp)}</th>`; });
+  html += '</tr></thead>';
+
+  html += '<tbody>';
+  sites.forEach((site, si) => {
+    html += '<tr>';
+    html += `<td style="font-size:12px">${site} <button onclick="removeReviewSite(${si})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:10px;margin-left:4px" title="Видалити">✕</button></td>`;
+    db.staff.forEach(emp => {
+      const val = (data[si]&&data[si][emp.id]) || 0;
+      html += `<td style="text-align:center;padding:2px"><input type="number" min="0" class="esc-input" id="rv-${si}-${emp.id}" value="${val}" oninput="recalcReviewRow(${si})" style="width:46px;text-align:center;padding:4px"></td>`;
+    });
+    html += '</tr>';
+  });
+
+  // Totals row: count per agent
+  html += '<tr style="border-top:2px solid var(--border2)">';
+  html += '<td style="font-weight:600;font-size:11px;color:var(--muted2);letter-spacing:1px">ВІДГУКІВ ∑</td>';
+  let grandTotal = 0;
+  db.staff.forEach(emp => {
+    let empTotal = 0;
+    sites.forEach((_, si) => { empTotal += (data[si]&&data[si][emp.id])||0; });
+    grandTotal += empTotal;
+    html += `<td id="rv-emp-${emp.id}" style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${empTotal}</td>`;
+  });
+  html += '</tr>';
+
+  // UAH row: sum per agent
+  html += '<tr style="border-top:1px solid var(--border)">';
+  html += '<td style="font-weight:600;font-size:11px;color:var(--teal);letter-spacing:1px">СУМА ₴</td>';
+  db.staff.forEach(emp => {
+    let empTotal = 0;
+    sites.forEach((_, si) => { empTotal += (data[si]&&data[si][emp.id])||0; });
+    html += `<td id="rv-emp-uah-${emp.id}" style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--teal);font-size:12px">${(empTotal*200).toLocaleString('uk')}</td>`;
+  });
+  html += '</tr>';
+
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function recalcReviewRow(si){
+  const k = getReviewsMkey();
+  const rv = (db.reviews&&db.reviews[k])||{sites:[],data:{}};
+  const sites = rv.sites||[];
+  // Recalc agent totals + uah
+  db.staff.forEach(emp => {
+    let empTotal = 0;
+    sites.forEach((_, i) => { empTotal += +document.getElementById(`rv-${i}-${emp.id}`)?.value||0; });
+    const el    = document.getElementById(`rv-emp-${emp.id}`);
+    const uahEl = document.getElementById(`rv-emp-uah-${emp.id}`);
+    if(el)    el.textContent    = empTotal;
+    if(uahEl) uahEl.textContent = (empTotal*200).toLocaleString('uk');
+  });
+}
+
+function removeReviewSite(si){
+  if(!confirm('Видалити цей сайт і всі дані по ньому?')) return;
+  const rv = ensureReviewsMonth();
+  rv.sites.splice(si, 1);
+  const newData = {};
+  Object.entries(rv.data).forEach(([k,v]) => {
+    const nk = +k; if(nk===si) return;
+    newData[nk>si?nk-1:nk] = v;
+  });
+  rv.data = newData;
+  renderAdmReviews();
+}
+
+async function saveReviews(){
+  const k = getReviewsMkey();
+  const rv = ensureReviewsMonth();
+  rv.data = {};
+  rv.sites.forEach((_, si) => {
+    rv.data[si] = {};
+    db.staff.forEach(emp => {
+      const val = +document.getElementById(`rv-${si}-${emp.id}`)?.value||0;
+      if(val) rv.data[si][emp.id] = val;
+    });
+  });
+  await saveDB();
+  renderAdmReviews();
+  alert('✅ Збережено!');
+}
+
+async function exportReviewsExcel(){
+  const k = getReviewsMkey();
+  const rv = (db.reviews&&db.reviews[k])||{sites:[],data:{}};
+  const initials = emp => { const p=emp.name.split(' '); return (p[0]?p[0][0]:'')+(p[1]?p[1][0]:''); };
+  const header = ['Reviews', ...db.staff.map(e=>initials(e)), 'Разом', 'Сума ₴'].join(';');
+  const rows = [header];
+  rv.sites.forEach((site, si) => {
+    let total = 0;
+    const cols = db.staff.map(emp => { const v=(rv.data[si]&&rv.data[si][emp.id])||0; total+=v; return v; });
+    rows.push([site, ...cols, total, total*200].join(';'));
+  });
+  // Agent totals
+  const agentTotals = db.staff.map(emp => {
+    return rv.sites.reduce((s,_,si)=>(rv.data[si]&&rv.data[si][emp.id])||0+s, 0);
+  });
+  rows.push(['РАЗОМ', ...agentTotals, agentTotals.reduce((a,b)=>a+b,0), agentTotals.reduce((a,b)=>a+b,0)*200].join(';'));
+  const BOM='\uFEFF';
+  const blob=new Blob([BOM+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`reviews_${k}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Employee reviews view
+function renderEmpReviews(){
+  const el = document.getElementById('emp-reviews-content');
+  if(!el) return;
+  const now = new Date();
+  // Show last 3 months
+  let html = '';
+  for(let i=0; i<3; i++){
+    let y=now.getFullYear(), m=now.getMonth()-i;
+    if(m<0){m+=12;y--;}
+    const k=y+'-'+(String(m+1).padStart(2,'0'));
+    const rv=(db.reviews&&db.reviews[k])||{sites:[],data:{}};
+    if(!rv.sites.length) continue;
+    let myTotal=0;
+    const siteRows = rv.sites.map((site,si)=>{
+      const val=(rv.data[si]&&rv.data[si][me.data.id])||0;
+      myTotal+=val;
+      return val>0?`<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(44,44,69,.3)">
+        <span style="font-size:13px">${site}</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--accent)">${val}</span>
+      </div>`:'';
+    }).filter(Boolean).join('');
+    if(!myTotal) continue;
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:13px">${MONTHS_UK[m]} ${y}</span>
+        <div style="display:flex;gap:16px">
+          <div style="text-align:right"><div style="font-size:10px;color:var(--muted);letter-spacing:1px">ВІДГУКІВ</div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1">${myTotal}</div></div>
+          <div style="text-align:right"><div style="font-size:10px;color:var(--muted);letter-spacing:1px">НАРАХОВАНО</div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--teal);line-height:1">${(myTotal*200).toLocaleString('uk')} ₴</div></div>
+        </div>
+      </div>
+      ${siteRows}
+    </div>`;
+  }
+  el.innerHTML = html || '<div class="empty-state" style="padding:60px">Відгуків ще не внесено</div>';
+}
+
+// Show reviews badge on home if current month has data
+function renderHomeReviewsBadge(){
+  const el=document.getElementById('emp-home-reviews');
+  if(!el) return;
+  const now=new Date();
+  const k=now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0'));
+  const rv=(db.reviews&&db.reviews[k])||{sites:[],data:{}};
+  let myTotal=0;
+  rv.sites.forEach((_,si)=>{ myTotal+=(rv.data[si]&&rv.data[si][me.data.id])||0; });
+  if(!myTotal){el.innerHTML='';return;}
+  el.innerHTML=`<div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:12px">
+    <span style="font-size:18px">⭐</span>
+    <div><div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Відгуки цього місяця</div>
+    <div style="font-size:16px;font-weight:600">${myTotal} відгуків · <span style="color:var(--teal)">${(myTotal*200).toLocaleString('uk')} ₴</span></div></div>
+  </div>`;
+}
+
+
+// ══ THEME ══
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('theme-light');
+  const btn = document.getElementById('theme-btn');
+  if(btn) btn.textContent = isLight ? '☀️' : '🌙';
+  try{ localStorage.setItem('itTheme', isLight?'light':'dark'); }catch(e){}
+}
+function applyTheme(){
+  try{
+    const saved = localStorage.getItem('itTheme');
+    if(saved==='light'){
+      document.body.classList.add('theme-light');
+    }
+    // Update button after topbar renders
+    setTimeout(()=>{
+      const btn = document.getElementById('theme-btn');
+      const isLight = document.body.classList.contains('theme-light');
+      if(btn) btn.textContent = isLight ? '☀️' : '🌙';
+    }, 50);
+  }catch(e){}
+}
+
+
+// ══ SUPABASE SYNC STATUS ══
+function sbToast(msg,color,bg){
+  let t=document.getElementById('sb-toast');
+  if(!t){t=document.createElement('div');t.id='sb-toast';
+    t.style.cssText='position:fixed;bottom:20px;right:20px;padding:8px 16px;border-radius:9px;font-size:12px;font-weight:500;z-index:9999;transition:.3s;pointer-events:none;opacity:0';
+    document.body.appendChild(t);}
+  t.textContent=msg; t.style.background=bg; t.style.color=color; t.style.opacity='1';
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.opacity='0',2500);
+}
+function sbOnline(){
+  const el=document.getElementById('sb-status');
+  if(el){el.textContent='⬤ sync';el.style.color='var(--green)';el.style.background='rgba(74,222,128,.1)';el.style.borderColor='rgba(74,222,128,.2)';}
+  sbToast('✅ Збережено','var(--green)','rgba(74,222,128,.15)');
+}
+function sbOffline(){
+  const el=document.getElementById('sb-status');
+  if(el){el.textContent='⬤ offline';el.style.color='var(--red)';el.style.background='rgba(248,113,113,.1)';el.style.borderColor='rgba(248,113,113,.2)';}
+  sbToast('❌ Помилка збереження','var(--red)','rgba(248,113,113,.15)');
+}
+function sbSaving(){
+  const el=document.getElementById('sb-status');
+  if(el){el.textContent='↑ saving...';el.style.color='var(--accent)';el.style.background='var(--accent-dim)';el.style.borderColor='rgba(245,200,66,.2)';}
+}
+
+// Auto-refresh DB every 30s (pick up changes from other users)
+async function autoRefreshDB(){
+  if(_isSaving) return; // don't overwrite during active save
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value',{headers:SB_HDR});
+    if(!res.ok){sbOffline();return;}
+    const rows=await res.json();
+    if(rows.length && rows[0].value){
+      const fresh=rows[0].value;
+      if(fresh!==_lastDbStr){
+        _lastDbStr=fresh;
+        db=JSON.parse(fresh);
+        // Re-render current view
+        const activeAdm=document.querySelector('.adm-section.active');
+        if(me){
+          if(me.type==='admin'){
+            const btn=document.querySelector('.adm-tab.active');
+            if(activeAdm&&btn){ const id=activeAdm.id.replace('adm-',''); admTab(id,btn); }
+          } else renderEmployee();
+        }
+      }
+      sbOnline();
+    }
+  }catch(e){ sbOffline(); }
+}
+setInterval(autoRefreshDB, 60000);
+
+// ══ EXCHANGE ══
+// Статуси: 'open' = пропозиція висить, 'pending' = хтось запропонував обмін (чекає підтвердження), 'done' = завершено, 'cancelled'
+
+function renderExchange(){
+  if(!db.exchanges) db.exchanges=[];
+  const myId=me.data.id;
+  const myName=me.data.name;
+
+  // Пропозиції які я виклав (open)
+  const myOffers=(db.exchanges).filter(ex=>ex.fromId===myId&&ex.status==='open');
+  // Хтось хоче обмінятись зі мною — чекає мого підтвердження
+  const pendingForMe=(db.exchanges).filter(ex=>ex.fromId===myId&&ex.status==='pending');
+  // Пропозиції інших (open), де я можу запропонувати обмін
+  const othersOffers=(db.exchanges).filter(ex=>ex.fromId!==myId&&ex.status==='open');
+  // Мої заявки на обмін (pending) — чекаю відповіді іншого
+  const myPending=(db.exchanges).filter(ex=>ex.responderId===myId&&ex.status==='pending');
+
+  let html='';
+
+  // БЛОК 1: Хтось хоче обмінятись зі мною — підтвердити чи відхилити
+  if(pendingForMe.length){
+    html+=`<div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:16px 18px;margin-bottom:14px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px">🔔 ЗАПИТИ НА ОБМІН — ЧЕКАЮТЬ ВАШОГО ПІДТВЕРДЖЕННЯ</div>`;
+    pendingForMe.forEach(ex=>{
+      const myShId=ex.responderShiftId;
+      const theirShId=ex.shiftId;
+      const mySh=getShift(myShId||'off');
+      const theirSh=getShift(theirShId);
+      html+=`<div class="exchange-offer" style="background:var(--surface2);border-radius:10px;margin-bottom:8px;padding:14px 16px">
+        <div class="exo-left">
+          <div class="exo-name" style="color:var(--accent)">⇄ ${ex.responderName} хоче обмінятись</div>
+          <div class="exo-date" style="margin-top:4px">📅 ${ex.day} ${MONTHS_UK[ex.month-1]} ${ex.year}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;font-size:12px">
+            <span>Ваша зміна:</span>
+            <span class="shift-pill ${theirSh.cls}" style="border-color:${theirSh.color}33">${theirSh.short}</span>
+            <span style="color:var(--muted)">→ отримаєте →</span>
+            <span class="shift-pill ${mySh.cls}" style="border-color:${mySh.color}33">${mySh.short}</span>
+            <span>зміна ${ex.responderName.split(' ')[0]}</span>
+          </div>
+          ${ex.comment?`<div class="exo-msg" style="margin-top:6px">💬 ${ex.comment}</div>`:''}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn-take" onclick="confirmExchange('${ex.id}')">✓ Підтвердити</button>
+          <button class="btn-cancel-offer" onclick="rejectExchange('${ex.id}')">✕ Відхилити</button>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // БЛОК 2: Мої висячі пропозиції
+  if(myOffers.length){
+    html+=`<div style="margin-bottom:14px">
+      <div class="sec-title" style="margin-top:0;margin-bottom:10px">МОЇ ПРОПОЗИЦІЇ</div>`;
+    myOffers.forEach(ex=>{
+      const sh=getShift(ex.shiftId);
+      html+=`<div class="exchange-offer">
+        <div class="exo-left">
+          <div class="exo-name">📤 ${ex.day} ${MONTHS_UK[ex.month-1]} — <span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label}</div>
+          <div class="exo-msg" style="margin-top:4px">Очікує пропозицій від колег</div>
+          ${ex.comment?`<div class="exo-msg">💬 ${ex.comment}</div>`:''}
+        </div>
+        <button class="btn-cancel-offer" onclick="cancelOffer('${ex.id}')">Скасувати</button>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // БЛОК 3: Мої заявки на чужі пропозиції (pending, чекаю відповіді)
+  if(myPending.length){
+    html+=`<div style="margin-bottom:14px">
+      <div class="sec-title" style="margin-top:0;margin-bottom:10px">МОЇ ЗАЯВКИ (ОЧІКУЮТЬ ВІДПОВІДІ)</div>`;
+    myPending.forEach(ex=>{
+      const theirSh=getShift(ex.shiftId);
+      const mySh=getShift(ex.responderShiftId||'off');
+      html+=`<div class="exchange-offer" style="opacity:.8">
+        <div class="exo-left">
+          <div class="exo-name">⏳ Пропозиція до ${ex.fromName.split(' ')[0]}</div>
+          <div style="font-size:12px;margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            Ваша: <span class="shift-pill ${mySh.cls}" style="border-color:${mySh.color}33">${mySh.short}</span>
+            → їхня: <span class="shift-pill ${theirSh.cls}" style="border-color:${theirSh.color}33">${theirSh.short}</span>
+            (${ex.day} ${MONTHS_UK[ex.month-1]})
+          </div>
+        </div>
+        <button class="btn-cancel-offer" onclick="withdrawRequest('${ex.id}')">Відкликати</button>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // БЛОК 4: Пропозиції колег — можна запропонувати обмін
+  html+=`<div class="sec-title" style="margin-top:0;margin-bottom:10px">ПРОПОЗИЦІЇ КОЛЕГ</div>`;
+  if(!othersOffers.length){
+    html+='<div class="empty-state">Наразі немає відкритих пропозицій від колег</div>';
+  } else {
+    html+='<div class="exchange-section">';
+    othersOffers.forEach(ex=>{
+      const sh=getShift(ex.shiftId);
+      // Чи вже є моя заявка на цю пропозицію
+      const alreadyApplied=myPending.some(p=>p.id===ex.id);
+      html+=`<div class="exchange-offer">
+        <div class="exo-left">
+          <div class="exo-name">${ex.fromName}</div>
+          <div class="exo-date">📅 ${ex.day} ${MONTHS_UK[ex.month-1]} ${ex.year}</div>
+          <div class="exo-shift" style="margin-top:4px"><span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label} ${sh.time?'('+sh.time+')':''}</div>
+          ${ex.comment?`<div class="exo-msg">💬 ${ex.comment}</div>`:''}
+        </div>
+        ${alreadyApplied
+          ?`<span style="font-size:12px;color:var(--muted)">Заявку надіслано</span>`
+          :`<button class="btn-take" onclick="proposeExchange('${ex.id}')">⇄ Обмінятись</button>`}
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  document.getElementById('exchange-list').innerHTML=html;
+}
+
+function openOfferModal(){
+  offerSelectedDay=null;
+  const now=new Date();
+  const key=mkey(now.getFullYear(),now.getMonth());
+  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  let html='';
+  for(let d=1;d<=last;d++){
+    const shiftId=mySched[d]||'off';
+    const sh=getShift(shiftId);
+    const hasShift=shiftId&&shiftId!=='off';
+    html+=`<div class="day-pick-btn ${hasShift?'has-shift':'no-shift'}" onclick="selectOfferDay(${d},'${shiftId}')" id="opd-${d}">`+
+      `${d}<br><span style="font-size:9px;color:${sh.color}">${sh.short||'—'}</span></div>`;
+  }
+  document.getElementById('offer-day-picker').innerHTML=html;
+  document.getElementById('offer-shift-preview').innerHTML='';
+  document.getElementById('offer-comment').value='';
+  document.getElementById('offer-modal').classList.add('open');
+}
+
+function selectOfferDay(day,shiftId){
+  offerSelectedDay={day,shiftId};
+  document.querySelectorAll('.day-pick-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('opd-'+day).classList.add('selected');
+  const sh=getShift(shiftId);
+  document.getElementById('offer-shift-preview').innerHTML=shiftId==='off'
+    ?`<span style="color:var(--muted)">Це вихідний — зміни немає</span>`
+    :`<span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label} (${sh.time})`;
+}
+
+async function submitOffer(){
+  if(!offerSelectedDay){alert('Оберіть день');return;}
+  if(!offerSelectedDay.shiftId||offerSelectedDay.shiftId==='off'){alert('У цей день у вас вихідний');return;}
+  const now=new Date();
+  // Перевірити чи вже є пропозиція від мене на цей день
+  const dup=(db.exchanges||[]).find(ex=>ex.fromId===me.data.id&&ex.day===offerSelectedDay.day&&ex.status==='open');
+  if(dup){alert('Ви вже маєте відкриту пропозицію на цей день');return;}
+  const offer={
+    id:'ex_'+Date.now(),
+    fromId:me.data.id, fromName:me.data.name,
+    day:offerSelectedDay.day, month:now.getMonth()+1, year:now.getFullYear(),
+    shiftId:offerSelectedDay.shiftId,
+    comment:document.getElementById('offer-comment').value,
+    status:'open'
+  };
+  if(!db.exchanges) db.exchanges=[];
+  db.exchanges.push(offer);
+  await saveDB();
+  closeModal('offer-modal');
+  renderExchange();
+}
+
+// Хтось хоче обмінятись — надсилає запит (pending), свапу ще немає
+async function proposeExchange(offerId){
+  const ex=db.exchanges.find(e=>e.id===offerId);
+  if(!ex||ex.status!=='open') return;
+  const now=new Date();
+  const key=mkey(ex.year,ex.month-1);
+  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const myShiftId=mySched[ex.day]||'off';
+  // Зміна ініціатора запиту буде responder
+  ex.status='pending';
+  ex.responderId=me.data.id;
+  ex.responderName=me.data.name;
+  ex.responderShiftId=myShiftId;
+  await saveDB();
+  renderExchange();
+  alert(`✅ Запит надіслано ${ex.fromName.split(' ')[0]}. Коли вони підтвердять — зміни поміняються в графіку.`);
+}
+
+// Автор пропозиції підтверджує — тільки тут відбувається swap
+async function confirmExchange(offerId){
+  const ex=db.exchanges.find(e=>e.id===offerId);
+  if(!ex||ex.status!=='pending') return;
+  const key=mkey(ex.year,ex.month-1);
+  if(!db.schedule[key]) db.schedule[key]={};
+  if(!db.schedule[key][ex.fromId]) db.schedule[key][ex.fromId]={};
+  if(!db.schedule[key][ex.responderId]) db.schedule[key][ex.responderId]={};
+  // Міняємо зміни місцями
+  const fromShift=ex.shiftId;         // те що пропонував автор
+  const respShift=ex.responderShiftId; // те що є у того хто хоче обмінятись
+  db.schedule[key][ex.fromId][ex.day]=respShift||'off';
+  db.schedule[key][ex.responderId][ex.day]=fromShift;
+  ex.status='done';
+  await saveDB();
+  renderExchange();
+  alert(`✅ Обмін підтверджено! Графік оновлено.\n${ex.fromName.split(' ')[0]}: ${getShift(respShift).short||'вихідний'}\n${ex.responderName.split(' ')[0]}: ${getShift(fromShift).short}`);
+}
+
+async function rejectExchange(offerId){
+  const ex=db.exchanges.find(e=>e.id===offerId);
+  if(!ex) return;
+  ex.status='open'; // повертаємо до відкритих
+  delete ex.responderId; delete ex.responderName; delete ex.responderShiftId;
+  await saveDB();
+  renderExchange();
+}
+
+async function withdrawRequest(offerId){
+  const ex=db.exchanges.find(e=>e.id===offerId);
+  if(!ex||ex.status!=='pending') return;
+  ex.status='open';
+  delete ex.responderId; delete ex.responderName; delete ex.responderShiftId;
+  await saveDB();
+  renderExchange();
+}
+
+async function cancelOffer(id){
+  db.exchanges=(db.exchanges||[]).filter(e=>e.id!==id);
+  await saveDB();
+  renderExchange();
+}
+
+// ══ LINKS ══
+function renderLinks(){
+  const links=db.globalLinks||[];
+  document.getElementById('emp-links-grid').innerHTML=links.length
+    ?links.map(l=>`<a class="link-card" href="${l.url}" target="_blank"><span style="font-size:20px">${l.icon||'🔗'}</span><div><div style="font-size:14px;font-weight:500">${l.name}</div>${l.desc?`<div style="font-size:11px;color:var(--muted)">${l.desc}</div>`:''}</div></a>`).join('')
+    :'<div class="empty-state">Посилань ще немає</div>';
+}
+
+// ══ ADMIN ══
+function admTab(tab,el){
+  document.querySelectorAll('.adm-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('adm-'+tab).classList.add('active');
+  el.classList.add('active');
+  if(tab==='schedule'){renderAdmSched(); document.getElementById('adm-bday-bar').innerHTML=renderAdmBdayBanner();}
+  if(tab==='monthly'){renderMonthly();}
+  if(tab==='links'){renderLinksEditor();}
+  if(tab==='announce'){renderAnnounceAdmin();}
+  if(tab==='perf'){renderAdmPerf();}
+  if(tab==='analytics'){renderAnalytics();}
+  if(tab==='wishes'){renderAdmWishes();}
+  if(tab==='comments'){renderAdmComments();}
+  if(tab==='reviews'){renderAdmReviews();}
+}
+
+function renderAdmin(){ renderAdmStaff(); }
+
+function renderAdmStaff(){
+  document.getElementById('adm-staff-list').innerHTML=db.staff.map(e=>`
+    <tr>
+      <td><b>${e.name}</b></td>
+      <td style="color:var(--muted)">${e.role}</td>
+      <td style="font-family:'DM Mono',monospace">${e.rate||402} ₴</td>
+      <td style="font-family:'DM Mono',monospace">${e.kpi||402} ₴</td>
+      <td style="font-family:'DM Mono',monospace">${e.rating||0} ₴</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--muted)">${e.pass}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-sm blue" onclick="openEmpModal(${e.id})">✏️ Редагувати</button>
+        <button class="btn-sm red" onclick="removeAgent(${e.id})">🗑 Видалити</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── SCHEDULE ADMIN ──
+function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}if(admSchedM>11){admSchedM=0;admSchedY++;}renderAdmSched();}
+function renderAdmSched(){
+  document.getElementById('adm-sched-title').textContent=MONTHS_UK[admSchedM]+' '+admSchedY;
+  renderLegend('adm-legend');
+  const key=mkey(admSchedY,admSchedM);
+  if(!db.schedule[key]) db.schedule[key]={};
+  db.staff.forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
+  renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
+}
+
+
+// ── DAY META (office / emoji) ──
+async function toggleOffice(day){
+  const key=mkey(admSchedY,admSchedM);
+  if(!db.dayMeta) db.dayMeta={};
+  if(!db.dayMeta[key]) db.dayMeta[key]={};
+  if(!db.dayMeta[key][day]) db.dayMeta[key][day]={};
+  db.dayMeta[key][day].office=!db.dayMeta[key][day].office;
+  await saveDB();
+  renderAdmSched();
+}
+
+const QUICK_EMOJIS=['🎂','⚠️','🎉','📌','🔴','🟡','🟢','❄️','☀️','🏖️','💼','📞','🛑','✅','🔔',''];
+function openEmojiPicker(day, btn){
+  // remove any existing picker
+  document.querySelectorAll('.emoji-picker-pop').forEach(e=>e.remove());
+  const picker=document.createElement('div');
+  picker.className='emoji-picker-pop';
+  picker.style.cssText='position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-wrap:wrap;gap:6px;max-width:200px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.5)';
+  const rect=btn.getBoundingClientRect();
+  picker.style.top=(rect.bottom+4)+'px';
+  picker.style.left=Math.min(rect.left,window.innerWidth-210)+'px';
+  QUICK_EMOJIS.forEach(em=>{
+    const b=document.createElement('button');
+    b.textContent=em||'✕';
+    b.title=em?em:'Очистити';
+    b.style.cssText='background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;transition:.15s';
+    b.onmouseenter=()=>b.style.background='var(--surface3)';
+    b.onmouseleave=()=>b.style.background='none';
+    b.onclick=async()=>{ await setDayEmoji(day,em); picker.remove(); };
+    picker.appendChild(b);
+  });
+  // custom input
+  const inp=document.createElement('input');
+  inp.placeholder='свій...';
+  inp.style.cssText='background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 6px;font-size:13px;width:100%;outline:none';
+  inp.onkeypress=async(e)=>{ if(e.key==='Enter'){ await setDayEmoji(day,inp.value); picker.remove(); }};
+  picker.appendChild(inp);
+  document.body.appendChild(picker);
+  setTimeout(()=>document.addEventListener('click',function h(e){ if(!picker.contains(e.target)&&e.target!==btn){ picker.remove(); document.removeEventListener('click',h); }},true),0);
+}
+
+async function setDayEmoji(day,emoji){
+  const key=mkey(admSchedY,admSchedM);
+  if(!db.dayMeta) db.dayMeta={};
+  if(!db.dayMeta[key]) db.dayMeta[key]={};
+  if(!db.dayMeta[key][day]) db.dayMeta[key][day]={};
+  db.dayMeta[key][day].emoji=emoji;
+  await saveDB();
+  renderAdmSched();
+}
+
+async function saveSchedule(){
+  const key=mkey(admSchedY,admSchedM);
+  if(!db.schedule[key]) db.schedule[key]={};
+  document.querySelectorAll('#adm-sched-table select.sched-select').forEach(sel=>{
+    const empId=+sel.dataset.emp, day=+sel.dataset.day;
+    if(!db.schedule[key][empId]) db.schedule[key][empId]={};
+    db.schedule[key][empId][day]=sel.value;
+  });
+  await saveDB();
+  alert('✅ Графік збережено!');
+}
+
+// ── MONTHLY ──
+function monthlyNav(d){monthlyM+=d;if(monthlyM<0){monthlyM=11;monthlyY--;}if(monthlyM>11){monthlyM=0;monthlyY++;}renderMonthly();}
+function renderMonthly(){
+  document.getElementById('monthly-title').textContent=MONTHS_UK[monthlyM]+' '+monthlyY;
+  const key=mkey(monthlyY,monthlyM);
+  const sched=db.schedule[key]||{};
+  document.getElementById('monthly-grid').innerHTML=db.staff.map(emp=>{
+    const empSched=sched[emp.id]||{};
+    // Auto-count: night shift = s7 (00-8)
+    const allShifts=Object.values(empSched).filter(v=>v&&v!=='off');
+    const autoNights=allShifts.filter(v=>v==='s7').length;
+    const autoDays=allShifts.length-autoNights;
+    const existing=(emp.payments||[]).find(p=>p.monthKey===key)||{};
+    const dv=existing.days!==undefined?existing.days:autoDays;
+    const nv=existing.nights!==undefined?existing.nights:autoNights;
+    const bv=existing.bonus||0;
+    const base=(emp.rate||402)+(emp.kpi||402);
+    const total=Math.round(base*dv + base*1.5*nv + (emp.rating||0) + bv);
+    return `<div class="emp-sal-card">
+      <div class="esc-name">${emp.name}</div>
+      <div class="esc-role">${emp.role}</div>
+      <div class="esc-row"><span>База за зміну</span><span style="font-family:'DM Mono',monospace">${base} ₴</span></div>
+      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${Math.round(base*1.5)} ₴</span></div>
+      <div class="esc-row"><span>Авто з графіку (ден/ніч)</span><span style="color:var(--muted);font-size:12px">${autoDays}д / ${autoNights}н</span></div>
+      <div class="esc-row"><span>Денних змін</span><input class="esc-input" type="number" id="days-${emp.id}" value="${dv}" oninput="recalcCard(${emp.id})"></div>
+      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічних змін</span><input class="esc-input" type="number" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="border-color:rgba(167,139,250,.4)"></div>
+      <div class="esc-row"><span>Рейтинг</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${emp.rating||0} ₴</span></div>
+      <div class="esc-row"><span>Бонус</span><input class="esc-input" type="number" id="bonus-${emp.id}" value="${bv}" oninput="recalcCard(${emp.id})"></div>
+      <div class="esc-row" style="padding-top:10px;margin-top:4px;border-top:1px solid var(--border)"><span>РАЗОМ</span><span class="esc-total" id="total-${emp.id}">${total.toLocaleString('uk')} ₴</span></div>
+    </div>`;
+  }).join('');
+}
+
+function recalcCard(id){
+  const emp=db.staff.find(s=>s.id===id);
+  const days=+document.getElementById(`days-${id}`)?.value||0;
+  const nights=+document.getElementById(`nights-${id}`)?.value||0;
+  const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
+  const base=(emp.rate||402)+(emp.kpi||402);
+  const total=Math.round(base*days + base*1.5*nights + (emp.rating||0) + bonus);
+  document.getElementById(`total-${id}`).textContent=total.toLocaleString('uk')+' ₴';
+}
+
+async function saveMonthly(){
+  const key=mkey(monthlyY,monthlyM);
+  const label=MONTHS_UK[monthlyM]+' '+monthlyY;
+  db.staff.forEach(emp=>{
+    const days=+document.getElementById(`days-${emp.id}`)?.value||0;
+    const nights=+document.getElementById(`nights-${emp.id}`)?.value||0;
+    const bonus=+document.getElementById(`bonus-${emp.id}`)?.value||0;
+    if(!emp.payments) emp.payments=[];
+    const idx=emp.payments.findIndex(p=>p.monthKey===key);
+    const entry={monthKey:key,month:label,days,nights,bonus,rate:emp.rate||402,kpi:emp.kpi||402,rating:emp.rating||0,status:'paid'};
+    if(idx>=0) emp.payments[idx]=entry; else emp.payments.push(entry);
+  });
+  await saveDB();
+  alert('✅ Виплати збережено!');
+}
+
+// ── AGENT CRUD ──
+function openAddAgent(){ document.getElementById('add-modal').classList.add('open'); }
+async function addAgent(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){alert('Вкажіть ім\'я');return;}
+  const agent={
+    id:db.nextId++, name, role:document.getElementById('new-role').value||'Агент',
+    pass:document.getElementById('new-pass').value||'1234',
+    birthday:document.getElementById('new-bday').value.trim(),
+    rate:+document.getElementById('new-rate').value||402,
+    kpi:+document.getElementById('new-kpi').value||402,
+    rating:+document.getElementById('new-rating').value||0,
+    payments:[]
+  };
+  db.staff.push(agent);
+  await saveDB();
+  closeModal('add-modal');
+  renderAdmStaff();
+  buildLoginSel();
+}
+
+async function removeAgent(id){
+  const emp=db.staff.find(s=>s.id===id);
+  if(!emp) return;
+  if(!confirm(`Видалити ${emp.name}? Це незворотна дія.`)) return;
+  db.staff=db.staff.filter(s=>s.id!==id);
+  await saveDB();
+  renderAdmStaff();
+  buildLoginSel();
+}
+
+// ── EMP MODAL ──
+function openEmpModal(id){
+  editingId=id;
+  const e=db.staff.find(s=>s.id===id);
+  document.getElementById('modal-name-h').textContent=e.name.toUpperCase();
+  document.getElementById('m-name').value=e.name;
+  document.getElementById('m-role').value=e.role;
+  document.getElementById('m-rate').value=e.rate||402;
+  document.getElementById('m-kpi').value=e.kpi||402;
+  document.getElementById('m-rating').value=e.rating||0;
+  document.getElementById('m-pass').value=e.pass;
+  document.getElementById('m-bday').value=e.birthday||'';
+  document.getElementById('emp-modal').classList.add('open');
+}
+
+async function saveEmp(){
+  const e=db.staff.find(s=>s.id===editingId);
+  e.name=document.getElementById('m-name').value;
+  e.role=document.getElementById('m-role').value;
+  e.rate=+document.getElementById('m-rate').value;
+  e.kpi=+document.getElementById('m-kpi').value;
+  e.rating=+document.getElementById('m-rating').value;
+  e.pass=document.getElementById('m-pass').value;
+  e.birthday=document.getElementById('m-bday').value.trim();
+  await saveDB();
+  closeModal('emp-modal');
+  renderAdmStaff();
+  buildLoginSel();
+}
+
+// ── LINKS ADMIN ──
+function renderLinksEditor(){
+  document.getElementById('adm-links-editor').innerHTML=(db.globalLinks||[]).map((l,i)=>`
+    <div class="link-row">
+      <input type="text" value="${l.name}" placeholder="Назва" id="gl-n-${i}">
+      <input type="text" value="${l.url}" placeholder="https://..." id="gl-u-${i}">
+      <input type="text" value="${l.icon||'🔗'}" placeholder="🔗" id="gl-i-${i}">
+      <button class="del-btn" onclick="removeLink(${i})">×</button>
+    </div>`).join('');
+}
+function addGlobalLink(){db.globalLinks=getLinksForm();db.globalLinks.push({name:'',url:'',icon:'🔗',desc:''});renderLinksEditor();}
+function removeLink(i){db.globalLinks=getLinksForm();db.globalLinks.splice(i,1);renderLinksEditor();}
+function getLinksForm(){return (db.globalLinks||[]).map((_,i)=>({name:document.getElementById(`gl-n-${i}`)?.value||'',url:document.getElementById(`gl-u-${i}`)?.value||'',icon:document.getElementById(`gl-i-${i}`)?.value||'🔗',desc:''}));}
+async function saveLinks(){db.globalLinks=getLinksForm();await saveDB();alert('✅ Посилання збережено!');}
+
+// ── UTILS ──
+function mkey(y,m){return `${y}-${String(m+1).padStart(2,'0')}`;}
+function closeModal(id){document.getElementById(id).classList.remove('open');editingId=null;}
+
+document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+// ═══ INIT ═══
+(async()=>{await loadDB();buildLoginSel();})();
+</script>
+</body>
+</html>
