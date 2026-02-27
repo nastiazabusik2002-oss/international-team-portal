@@ -430,6 +430,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         
         <div class="sec-title">МОЇ ПОКАЗНИКИ</div>
         <div class="cards-row" id="emp-cards"></div>
+        <div id="emp-kpi-link-block" style="margin-top:14px"></div>
         <div id="emp-home-perf" style="margin-top:14px"></div>
       </div>
       <div id="etab-schedule" class="etab" style="display:none">
@@ -769,6 +770,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="field"><label>Рейтинг місяця (₴)</label><input type="number" id="m-rating" value="0"></div>
       <div class="field"><label>Пароль</label><input type="text" id="m-pass"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="m-bday" placeholder="напр. 09-03"></div>
+      <div class="field" style="grid-column:1/-1"><label>📊 Посилання на карту якості (Google Drive)</label><input type="text" id="m-kpilink" placeholder="https://docs.google.com/..."></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('emp-modal')">Скасувати</button>
@@ -1000,6 +1002,7 @@ function renderEmployee(){
   renderAnnounceHomeBanner();
   renderBdayBanner();
   renderHomePerfCards();
+  renderKpiLinkBlock();
   renderHomeReviewsBadge();
 }
 
@@ -1444,6 +1447,24 @@ function renderAnnounceHomeBanner(){
 
 
 // ══ PERFORMANCE / PRODUCTIVITY ══
+
+function renderKpiLinkBlock(){
+  const el=document.getElementById('emp-kpi-link-block');
+  if(!el||!me||me.type!=='employee') return;
+  const link=(me.data.kpiLink||'').trim();
+  if(!link){ el.innerHTML=''; return; }
+  el.innerHTML=`<div style="margin-bottom:4px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">МІЙ KPI</div>
+    <a href="${link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;text-decoration:none;color:var(--text);transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+      <span style="font-size:24px">📊</span>
+      <div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:2px">Моя карта якості</div>
+        <div style="font-size:11px;color:var(--muted)">Відкрити в Google Drive →</div>
+      </div>
+    </a>
+  </div>`;
+}
+
 
 function renderHomePerfCards(){
   const el = document.getElementById('emp-home-perf');
@@ -3017,6 +3038,7 @@ function openEmpModal(id){
   document.getElementById('m-rating').value=e.rating||0;
   document.getElementById('m-pass').value=e.pass;
   document.getElementById('m-bday').value=e.birthday||'';
+  document.getElementById('m-kpilink').value=e.kpiLink||'';
   document.getElementById('emp-modal').classList.add('open');
 }
 
@@ -3029,6 +3051,7 @@ async function saveEmp(){
   e.rating=+document.getElementById('m-rating').value;
   e.pass=document.getElementById('m-pass').value;
   e.birthday=document.getElementById('m-bday').value.trim();
+  e.kpiLink=document.getElementById('m-kpilink').value.trim();
   await saveDB();
   closeModal('emp-modal');
   renderAdmStaff();
