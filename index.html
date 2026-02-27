@@ -1033,6 +1033,7 @@ function renderTodayTomorrow(){
 function empCalNav(d){empCalM+=d;if(empCalM<0){empCalM=11;empCalY--;}if(empCalM>11){empCalM=0;empCalY++;}renderEmpCal();}
 function renderEmpCal(){
   const now=new Date();
+  const key=mkey(empCalY,empCalM);
   const isNextMonth=(empCalY>now.getFullYear())||(empCalY===now.getFullYear()&&empCalM===now.getMonth()+1)||
                     (empCalY===now.getFullYear()+1&&now.getMonth()===11&&empCalM===0);
   document.getElementById('emp-cal-title').textContent=MONTHS_UK[empCalM]+' '+empCalY+(isNextMonth?' · 💌 Побажання':'');
@@ -1068,7 +1069,7 @@ function renderEmpCal(){
       </div>`;
     } else { mcBox.style.display='none'; }
   }
-  const key=mkey(empCalY,empCalM);
+
   const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
   const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
