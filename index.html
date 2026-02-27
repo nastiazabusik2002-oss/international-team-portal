@@ -1035,15 +1035,18 @@ function renderEmpCal(){
   const now=new Date();
   const isNextMonth=(empCalY>now.getFullYear())||(empCalY===now.getFullYear()&&empCalM===now.getMonth()+1)||
                     (empCalY===now.getFullYear()+1&&now.getMonth()===11&&empCalM===0);
+  const key=mkey(empCalY,empCalM);
+  // Побажання відкриті 1-24 числа поточного місяця для НАСТУПНОГО місяця
+  const today=now.getDate();
+  const wishOpen=isNextMonth && today>=1 && today<=24;
   document.getElementById('emp-cal-title').textContent=MONTHS_UK[empCalM]+' '+empCalY+(isNextMonth?' · 💌 Побажання':'');
   renderLegend('emp-legend');
   // Deadline banner
   const deadlineBanner=document.getElementById('wish-deadline-banner');
   if(deadlineBanner){
-    const today=now.getDate(), thisM=now.getMonth(), thisY=now.getFullYear();
-    const daysLeft=25-today;
-    const isCurrentMonth=thisM===now.getMonth()&&thisY===now.getFullYear();
-    if(isNextMonth){
+    const thisM=now.getMonth(), thisY=now.getFullYear();
+    const daysLeft=24-today;
+    if(wishOpen||isNextMonth){
       if(daysLeft>0){
         deadlineBanner.innerHTML=`<div style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">📅 Дедлайн побажань — <b>25 ${MONTHS_UK[thisM]}</b> · залишилось <b style="color:var(--accent)">${daysLeft} ${daysLeft===1?'день':daysLeft<5?'дні':'днів'}</b></div>`;
       } else if(daysLeft===0){
@@ -1068,13 +1071,12 @@ function renderEmpCal(){
       </div>`;
     } else { mcBox.style.display='none'; }
   }
-  const key=mkey(empCalY,empCalM);
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
   const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
   // Count off-wishes per day across all agents (for lічильник)
   const offWishCount={};
-  if(isNextMonth){
+  if(wishOpen){
     db.staff.forEach(emp=>{
       const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
       Object.entries(ew).forEach(([day,w])=>{
@@ -1103,7 +1105,7 @@ function renderEmpCal(){
       :`<div class="day-comment-empty" onclick="editDayComment(${d},'${key}')">✏️ нотатка</div>`;
     // Wish display — only on next month
     let wishHtml='';
-    if(isNextMonth){
+    if(wishOpen){
       // Off-counter badge
       const offCount=offWishCount[d]||0;
       const isLimit=offCount>=4;
@@ -1321,16 +1323,14 @@ function recalc(){
   const nights=+document.getElementById('calc-nights')?.value||0;
   const dayT=rate+kpi+rating;
   const nightT=Math.round(dayT*1.5);
-  const total=dayT*days + nightT*nights + (rating||0);
-  // Note: rating is monthly lump sum, not per-day, so subtract per-day portion and add once
-  const totalCorrect = (rate+kpi)*days + (rate+kpi)*1.5*nights + (rating||0);
+  const totalCorrect = dayT*days + nightT*nights;
   document.getElementById('calc-day-result').textContent=dayT.toLocaleString('uk')+' ₴';
   document.getElementById('calc-break').textContent=`${rate} + ${kpi} + ${rating}`;
-  document.getElementById('calc-night-result').textContent=Math.round((rate+kpi)*1.5).toLocaleString('uk')+' ₴';
-  document.getElementById('calc-night-break').textContent=`${dayT-rating} × 1.5`;
+  document.getElementById('calc-night-result').textContent=nightT.toLocaleString('uk')+' ₴';
+  document.getElementById('calc-night-break').textContent=`${dayT} × 1.5`;
   document.getElementById('calc-total').textContent=Math.round(totalCorrect).toLocaleString('uk')+' ₴';
   const breakEl=document.getElementById('calc-total-break');
-  if(breakEl) breakEl.innerHTML=`${days} ден. × ${dayT-rating} + ${nights} ніч. × ${Math.round((rate+kpi)*1.5)} + рейтинг ${rating}`;
+  if(breakEl) breakEl.innerHTML=`${days} ден. × ${dayT} + ${nights} ніч. × ${nightT}`;
 }
 
 function renderPayments(){
@@ -1339,7 +1339,7 @@ function renderPayments(){
   if(!pmts.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Виплат ще немає</td></tr>';return;}
   tbody.innerHTML=pmts.map(p=>{
     const base=(p.rate||402)+(p.kpi||402);
-    const total=Math.round(base*(p.days||0) + base*1.5*(p.nights||0) + (p.rating||0) + (p.bonus||0));
+    const base2=base+(p.rating||0); const total=Math.round(base2*(p.days||0) + Math.round(base2*1.5)*(p.nights||0) + (p.bonus||0));
     return `<tr><td>${p.month}</td><td>${p.days||0}</td><td style="color:var(--purple)">${p.nights||0}</td><td>${p.rate||402} ₴</td><td>${p.kpi||402} ₴</td><td>${p.rating||0} ₴</td><td>${p.bonus||0} ₴</td><td><b>${total.toLocaleString('uk')} ₴</b></td><td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td></tr>`;
   }).join('');
 }
@@ -2664,7 +2664,7 @@ function openOfferModal(){
   offerSelectedDay=null;
   const now=new Date();
   const key=mkey(now.getFullYear(),now.getMonth());
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   let html='';
   for(let d=1;d<=last;d++){
@@ -2718,7 +2718,7 @@ async function proposeExchange(offerId){
   if(!ex||ex.status!=='open') return;
   const now=new Date();
   const key=mkey(ex.year,ex.month-1);
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myShiftId=mySched[ex.day]||'off';
   // Зміна ініціатора запиту буде responder
   ex.status='pending';
@@ -2908,12 +2908,12 @@ function renderMonthly(){
     const nv=existing.nights!==undefined?existing.nights:autoNights;
     const bv=existing.bonus||0;
     const base=(emp.rate||402)+(emp.kpi||402);
-    const total=Math.round(base*dv + base*1.5*nv + (emp.rating||0) + bv);
+    const baseR=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0); const total=Math.round(baseR*dv + Math.round(baseR*1.5)*nv + bv);
     return `<div class="emp-sal-card">
       <div class="esc-name">${emp.name}</div>
       <div class="esc-role">${emp.role}</div>
       <div class="esc-row"><span>База за зміну</span><span style="font-family:'DM Mono',monospace">${base} ₴</span></div>
-      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${Math.round(base*1.5)} ₴</span></div>
+      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${Math.round(((emp.rate||402)+(emp.kpi||402)+(emp.rating||0))*1.5)} ₴</span></div>
       <div class="esc-row"><span>Авто з графіку (ден/ніч)</span><span style="color:var(--muted);font-size:12px">${autoDays}д / ${autoNights}н</span></div>
       <div class="esc-row"><span>Денних змін</span><input class="esc-input" type="number" id="days-${emp.id}" value="${dv}" oninput="recalcCard(${emp.id})"></div>
       <div class="esc-row"><span style="color:var(--purple)">🌙 Нічних змін</span><input class="esc-input" type="number" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="border-color:rgba(167,139,250,.4)"></div>
@@ -2929,8 +2929,8 @@ function recalcCard(id){
   const days=+document.getElementById(`days-${id}`)?.value||0;
   const nights=+document.getElementById(`nights-${id}`)?.value||0;
   const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
-  const base=(emp.rate||402)+(emp.kpi||402);
-  const total=Math.round(base*days + base*1.5*nights + (emp.rating||0) + bonus);
+  const base=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0);
+  const total=Math.round(base*days + Math.round(base*1.5)*nights + bonus);
   document.getElementById(`total-${id}`).textContent=total.toLocaleString('uk')+' ₴';
 }
 
