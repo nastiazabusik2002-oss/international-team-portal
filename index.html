@@ -1069,7 +1069,7 @@ function renderEmpCal(){
     } else { mcBox.style.display='none'; }
   }
   const key=mkey(empCalY,empCalM);
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
   const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
   // Count off-wishes per day across all agents (for lічильник)
@@ -2687,7 +2687,7 @@ function openOfferModal(){
   offerSelectedDay=null;
   const now=new Date();
   const key=mkey(now.getFullYear(),now.getMonth());
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   let html='';
   for(let d=1;d<=last;d++){
@@ -2741,7 +2741,7 @@ async function proposeExchange(offerId){
   if(!ex||ex.status!=='open') return;
   const now=new Date();
   const key=mkey(ex.year,ex.month-1);
-  const mySched=(db.schedule[key]||{})[me.data.id]||{};
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myShiftId=mySched[ex.day]||'off';
   // Зміна ініціатора запиту буде responder
   ex.status='pending';
