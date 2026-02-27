@@ -418,20 +418,38 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="nav-tab" onclick="empTab('perf',this)">📊 Продуктивність</div>
       <div class="nav-tab" onclick="empTab('announce',this)">📢 Оголошення</div>
       <div class="nav-tab" onclick="empTab('links',this)">🔗 Посилання</div>
+      <div class="nav-tab" onclick="empTab('notes',this)">📝 Нотатки</div>
+      <div class="nav-tab" onclick="empTab('kudos',this)">🙏 Подяки</div>
     </div>
     <div class="content">
       <div id="etab-home" class="etab">
-        <div class="page-h" id="emp-greeting"></div>
-        <div class="page-sub" id="emp-role-sub"></div>
+        <div style="display:flex;align-items:center;gap:18px;margin-bottom:6px">
+          <div id="emp-avatar" style="flex-shrink:0"></div>
+          <div>
+            <div class="page-h" id="emp-greeting"></div>
+            <div class="page-sub" id="emp-role-sub"></div>
+          </div>
+        </div>
+        <!-- Таймер зміни -->
+        <div id="emp-shift-timer" style="margin-bottom:12px"></div>
         <div class="shift-today-row" id="emp-today-row"></div>
         <div id="emp-home-announce"></div>
         <div id="emp-bday-banner" style="margin-bottom:4px"></div>
         <div id="emp-home-reviews"></div>
+
+        <!-- Настрій дня -->
+        <div id="emp-mood-block" style="margin-bottom:16px"></div>
+
+        <!-- Швидкі посилання -->
+        <div id="emp-quick-links" style="margin-bottom:16px"></div>
         
         <div class="sec-title">МОЇ ПОКАЗНИКИ</div>
         <div class="cards-row" id="emp-cards"></div>
         <div id="emp-kpi-link-block" style="margin-top:14px"></div>
         <div id="emp-home-perf" style="margin-top:14px"></div>
+
+        <!-- Досягнення -->
+        <div id="emp-achievements" style="margin-top:16px"></div>
       </div>
       <div id="etab-schedule" class="etab" style="display:none">
         <div class="page-h">МІЙ ГРАФІК</div>
@@ -540,6 +558,57 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div class="page-h">ПОСИЛАННЯ</div>
         <div class="page-sub">Важливі ресурси</div>
         <div class="links-grid" id="emp-links-grid"></div>
+      </div>
+
+      <div id="etab-notes" class="etab" style="display:none">
+        <div class="page-h">МОЇ НОТАТКИ</div>
+        <div class="page-sub">Особистий нотатник — видно тільки тобі</div>
+
+        <!-- Форма додавання -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:12px">
+            <input type="text" id="note-text-input" placeholder="Напиши нотатку, питання для 1:1, тікет..." style="background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:.2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNote()}">
+            <button onclick="addNote()" style="background:var(--accent);color:#0d0d14;border:none;border-radius:10px;padding:12px 20px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">+ Додати</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="setNoteType('note')" id="ntype-note" class="ntype-btn active-ntype" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--muted2);font-family:'DM Sans',sans-serif;transition:.15s">📝 Нотатка</button>
+            <button onclick="setNoteType('question')" id="ntype-question" class="ntype-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--muted2);font-family:'DM Sans',sans-serif;transition:.15s">💬 Питання 1:1</button>
+            <button onclick="setNoteType('ticket')" id="ntype-ticket" class="ntype-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--muted2);font-family:'DM Sans',sans-serif;transition:.15s">🎫 Тікет</button>
+            <button onclick="setNoteType('reminder')" id="ntype-reminder" class="ntype-btn" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--muted2);font-family:'DM Sans',sans-serif;transition:.15s">⏰ Нагадування</button>
+          </div>
+        </div>
+
+        <!-- Список нотаток -->
+        <div id="notes-list"></div>
+      </div>
+      <div id="etab-kudos" class="etab" style="display:none">
+        <div class="page-h">ДОШКА ПОДЯК</div>
+        <div class="page-sub">Подякуй колезі — це видно всій команді 💛</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+          <div style="margin-bottom:12px">
+            <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Кому</label>
+            <select id="kudos-to" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+              <option value="">— Вибери колегу —</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Повідомлення</label>
+            <textarea id="kudos-text" rows="3" placeholder="Напиши що тебе надихнуло або за що дякуєш..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none;transition:.2s;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Емодзі настрою</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="kudos-emoji-row">
+              <button onclick="selectKudosEmoji(this,'💛')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">💛</button>
+              <button onclick="selectKudosEmoji(this,'🔥')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">🔥</button>
+              <button onclick="selectKudosEmoji(this,'💪')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">💪</button>
+              <button onclick="selectKudosEmoji(this,'🌟')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">🌟</button>
+              <button onclick="selectKudosEmoji(this,'🫶')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">🫶</button>
+              <button onclick="selectKudosEmoji(this,'🎉')" class="kudos-emoji-btn" style="font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer">🎉</button>
+            </div>
+          </div>
+          <button onclick="sendKudos()" style="background:var(--accent);color:#0d0d14;border:none;border-radius:10px;padding:12px 24px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer">💛 Надіслати подяку</button>
+        </div>
+        <div id="kudos-list"></div>
       </div>
     </div>
   </div>
@@ -979,6 +1048,408 @@ function empTab(tab,el){
   if(tab==='announce'){renderAnnounceEmp();}
   if(tab==='reviews'){renderEmpReviews();}
   if(tab==='perf'){renderEmpPerf();}
+  if(tab==='notes'){renderNotes();}
+  if(tab==='kudos'){renderKudosList();}
+}
+
+// ══ NOTES ══
+let currentNoteType = 'note';
+
+function setNoteType(type){
+  currentNoteType = type;
+  document.querySelectorAll('.ntype-btn').forEach(b=>{
+    const isActive = b.id === 'ntype-'+type;
+    const colors = {note:'var(--teal)',question:'var(--purple)',ticket:'var(--blue)',reminder:'var(--orange)'};
+    b.style.background = isActive ? 'var(--surface3)' : 'var(--surface2)';
+    b.style.borderColor = isActive ? colors[type] : 'var(--border)';
+    b.style.color = isActive ? colors[type] : 'var(--muted2)';
+  });
+}
+
+function getNotes(){
+  if(!me||me.type!=='employee') return [];
+  return ((db.personalNotes||{})[me.data.id]||(db.personalNotes||{})[String(me.data.id)])||[];
+}
+
+function renderNotes(){
+  const list = document.getElementById('notes-list');
+  if(!list) return;
+  const notes = getNotes();
+  if(notes.length===0){
+    list.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">
+      <div style="font-size:36px;margin-bottom:12px">📝</div>
+      <div>Поки що нотаток немає</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.6">Додай питання для 1:1, тікет або просто нотатку</div>
+    </div>`;
+    return;
+  }
+  const typeConfig = {
+    note:     {icon:'📝', label:'Нотатка',       color:'var(--teal)'},
+    question: {icon:'💬', label:'Питання 1:1',   color:'var(--purple)'},
+    ticket:   {icon:'🎫', label:'Тікет',          color:'var(--blue)'},
+    reminder: {icon:'⏰', label:'Нагадування',    color:'var(--orange)'}
+  };
+  list.innerHTML = notes.slice().reverse().map((n,ri)=>{
+    const i = notes.length-1-ri;
+    const cfg = typeConfig[n.type]||typeConfig.note;
+    const date = new Date(n.createdAt).toLocaleDateString('uk',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;transition:.2s;${n.done?'opacity:.5':''}">
+      <div style="font-size:22px;margin-top:2px">${cfg.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${cfg.color};border:1px solid ${cfg.color};border-radius:5px;padding:2px 7px">${cfg.label}</span>
+          <span style="font-size:11px;color:var(--muted)">${date}</span>
+          ${n.done?`<span style="font-size:10px;color:var(--green);border:1px solid var(--green);border-radius:5px;padding:2px 7px">✓ Готово</span>`:''}
+        </div>
+        <div style="font-size:14px;line-height:1.5;word-break:break-word;${n.done?'text-decoration:line-through;color:var(--muted)':''}">${n.text}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="toggleNotesDone(${i})" title="${n.done?'Відновити':'Позначити виконаним'}" style="background:${n.done?'var(--green-dim)':'var(--surface2)'};border:1px solid ${n.done?'var(--green)':'var(--border)'};border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px;color:${n.done?'var(--green)':'var(--muted)'}">✓</button>
+        <button onclick="deleteNote(${i})" title="Видалити" style="background:var(--red-dim);border:1px solid var(--red);border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px;color:var(--red)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addNote(){
+  const input = document.getElementById('note-text-input');
+  const text = input.value.trim();
+  if(!text) return;
+  if(!db.personalNotes) db.personalNotes={};
+  const id = me.data.id;
+  if(!db.personalNotes[id]) db.personalNotes[id]=[];
+  db.personalNotes[id].push({text, type:currentNoteType, createdAt:Date.now(), done:false});
+  input.value='';
+  await saveDB();
+  renderNotes();
+}
+
+async function toggleNotesDone(i){
+  const id = me.data.id;
+  if(!db.personalNotes||!db.personalNotes[id]) return;
+  db.personalNotes[id][i].done = !db.personalNotes[id][i].done;
+  await saveDB();
+  renderNotes();
+}
+
+async function deleteNote(i){
+  const id = me.data.id;
+  if(!db.personalNotes||!db.personalNotes[id]) return;
+  if(!confirm('Видалити нотатку?')) return;
+  db.personalNotes[id].splice(i,1);
+  await saveDB();
+  renderNotes();
+}
+
+// ══ SHIFT TIMER ══
+let _timerInterval = null;
+function renderShiftTimer(){
+  const el = document.getElementById('emp-shift-timer');
+  if(!el || !me || me.type !== 'employee') return;
+  if(_timerInterval) clearInterval(_timerInterval);
+  function update(){
+    const now = new Date();
+    const key = mkey(now.getFullYear(), now.getMonth());
+    const sched = (db.schedule[key]||{});
+    const empSched = sched[me.data.id] || sched[String(me.data.id)] || {};
+    const shiftId = empSched[now.getDate()] || 'off';
+    if(shiftId === 'off' || shiftId === 'vacation'){
+      el.innerHTML = '';
+      return;
+    }
+    const sh = getShift(shiftId);
+    if(!sh.time){ el.innerHTML=''; return; }
+    const [startStr, endStr] = sh.time.split('–');
+    const [sh_,sm_] = startStr.split(':').map(Number);
+    const [eh_,em_] = endStr.split(':').map(Number);
+    const start = new Date(now); start.setHours(sh_,sm_,0,0);
+    const end = new Date(now); end.setHours(eh_,em_,0,0);
+    if(eh_ < sh_) end.setDate(end.getDate()+1); // нічна зміна
+    const totalMs = end - start;
+    const elapsedMs = now - start;
+    if(elapsedMs < 0){ el.innerHTML=''; return; } // зміна ще не почалась
+    if(elapsedMs > totalMs){ el.innerHTML=''; return; } // вже закінчилась
+    const leftMs = totalMs - elapsedMs;
+    const pct = Math.min(100, (elapsedMs/totalMs)*100);
+    const h = Math.floor(leftMs/3600000);
+    const m = Math.floor((leftMs%3600000)/60000);
+    const s = Math.floor((leftMs%60000)/1000);
+    const timeStr = h>0 ? `${h}г ${m}хв` : m>0 ? `${m}хв ${s}с` : `${s}с`;
+    el.innerHTML = `<div style="background:var(--surface);border:1px solid ${sh.color}33;border-radius:12px;padding:14px 18px;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">⏱ Поточна зміна</span>
+        <span style="font-size:13px;font-family:'DM Mono',monospace;color:${sh.color}">${sh.label}</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:6px;height:6px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${pct.toFixed(1)}%;background:${sh.color};border-radius:6px;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:12px;color:var(--muted)">${sh.time}</span>
+        <span style="font-size:13px;font-family:'DM Mono',monospace;color:var(--text)">залишилось <b style="color:${sh.color}">${timeStr}</b></span>
+      </div>
+    </div>`;
+  }
+  update();
+  _timerInterval = setInterval(update, 1000);
+}
+
+// ══ MOOD ══
+const MOODS = [
+  {val:5, emoji:'😄', label:'Відмінно', color:'var(--green)'},
+  {val:4, emoji:'🙂', label:'Добре',    color:'var(--blue)'},
+  {val:3, emoji:'😐', label:'Нормально',color:'var(--accent)'},
+  {val:2, emoji:'😕', label:'Не дуже',  color:'var(--orange)'},
+  {val:1, emoji:'😞', label:'Погано',   color:'var(--red)'},
+];
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function renderMoodBlock(){
+  const el = document.getElementById('emp-mood-block');
+  if(!el||!me||me.type!=='employee') return;
+  const id = me.data.id;
+  const todayMood = ((db.moods||{})[id]||{})[todayKey()];
+  if(todayMood){
+    const m = MOODS.find(x=>x.val===todayMood)||MOODS[2];
+    el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:28px">${m.emoji}</span>
+      <div>
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Настрій сьогодні</div>
+        <div style="font-size:14px;font-weight:600;color:${m.color}">${m.label}</div>
+      </div>
+      <button onclick="resetMood()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer">змінити</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px">
+    <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">😊 Як твій настрій сьогодні?</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${MOODS.map(m=>`<button onclick="saveMood(${m.val})" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:20px;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:3px" title="${m.label}" onmouseover="this.style.borderColor='${m.color}';this.style.background='${m.color}22'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+        ${m.emoji}<span style="font-size:9px;color:var(--muted)">${m.label}</span>
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+async function saveMood(val){
+  if(!db.moods) db.moods={};
+  const id=me.data.id;
+  if(!db.moods[id]) db.moods[id]={};
+  db.moods[id][todayKey()]=val;
+  await saveDB();
+  renderMoodBlock();
+}
+function resetMood(){
+  if(!db.moods||!db.moods[me.data.id]) return;
+  delete db.moods[me.data.id][todayKey()];
+  renderMoodBlock();
+}
+
+// ══ QUICK LINKS ══
+function renderQuickLinks(){
+  const el = document.getElementById('emp-quick-links');
+  if(!el) return;
+  const featured = (db.globalLinks||[]).filter(l=>l.featured);
+  if(!featured.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">⚡ ШВИДКИЙ ДОСТУП</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${featured.map(l=>`<a href="${l.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--text);font-size:13px;font-weight:500;transition:.15s" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+        <span style="font-size:18px">${l.icon||'🔗'}</span>${l.name}
+      </a>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ══ ACHIEVEMENTS ══
+function renderAchievements(){
+  const el = document.getElementById('emp-achievements');
+  if(!el||!me||me.type!=='employee') return;
+  const e = me.data;
+  const id = e.id;
+  const allBadges = [
+    { id:'first_shift',  icon:'🌅', title:'Перша зміна',       desc:'Ти вийшов на першу зміну!',        check: ()=> Object.values(db.schedule||{}).some(m=>(m[id]||m[String(id)])&&Object.values(m[id]||m[String(id)]||{}).some(v=>v&&v!=='off')) },
+    { id:'ten_shifts',   icon:'💪', title:'10 змін',            desc:'Вже 10 змін у твоєму графіку',     check: ()=>{ let c=0; Object.values(db.schedule||{}).forEach(m=>{const s=m[id]||m[String(id)]||{}; Object.values(s).forEach(v=>{if(v&&v!=='off')c++;})}); return c>=10; } },
+    { id:'kudos_sent',   icon:'💛', title:'Щира душа',          desc:'Надіслав першу подяку колезі',      check: ()=> (db.kudos||[]).some(k=>k.fromId==id||k.fromId==String(id)) },
+    { id:'kudos_recv',   icon:'🌟', title:'Зірка команди',      desc:'Отримав подяку від колеги',         check: ()=> (db.kudos||[]).some(k=>k.toId==id||k.toId==String(id)) },
+    { id:'mood_week',    icon:'😊', title:'Тиждень настрою',    desc:'Відмічав настрій 7 днів поспіль',   check: ()=>{ const m=db.moods&&(db.moods[id]||db.moods[String(id)])||{}; return Object.keys(m).length>=7; } },
+    { id:'note_keeper',  icon:'📝', title:'Нотатник',           desc:'Створив 5 нотаток',                 check: ()=> ((db.personalNotes||{})[id]||(db.personalNotes||{})[String(id)]||[]).length>=5 },
+  ];
+  const earned = allBadges.filter(b=>b.check());
+  const locked = allBadges.filter(b=>!b.check());
+  if(allBadges.length===0){ el.innerHTML=''; return; }
+  el.innerHTML=`<div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">🏆 МОЇ ДОСЯГНЕННЯ</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${earned.map(b=>`<div title="${b.desc}" style="background:var(--accent-dim);border:1px solid rgba(245,200,66,.4);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:default">
+        <span style="font-size:22px">${b.icon}</span>
+        <div><div style="font-size:12px;font-weight:600;color:var(--accent)">${b.title}</div><div style="font-size:10px;color:var(--muted)">${b.desc}</div></div>
+      </div>`).join('')}
+      ${locked.map(b=>`<div title="${b.desc}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;opacity:.4;cursor:default;filter:grayscale(1)">
+        <span style="font-size:22px">${b.icon}</span>
+        <div><div style="font-size:12px;font-weight:600;color:var(--muted)">${b.title}</div><div style="font-size:10px;color:var(--muted)">${b.desc}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ══ KUDOS ══
+let selectedKudosEmoji = '💛';
+function selectKudosEmoji(btn, emoji){
+  selectedKudosEmoji = emoji;
+  document.querySelectorAll('.kudos-emoji-btn').forEach(b=>{
+    b.style.background='var(--surface2)'; b.style.borderColor='var(--border)';
+  });
+  btn.style.background='var(--accent-dim)'; btn.style.borderColor='var(--accent)';
+}
+function renderKudosList(){
+  // Заповнюємо select колег
+  const sel = document.getElementById('kudos-to');
+  if(sel && me && me.type==='employee'){
+    sel.innerHTML='<option value="">— Вибери колегу —</option>'+
+      db.staff.filter(s=>s.id!=me.data.id).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }
+  const list = document.getElementById('kudos-list');
+  if(!list) return;
+  const kudos = (db.kudos||[]).slice().reverse();
+  if(!kudos.length){
+    list.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:36px;margin-bottom:12px">🙏</div>
+      <div>Поки що подяк немає — будь першим!</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = kudos.map(k=>{
+    const from = db.staff.find(s=>s.id==k.fromId||String(s.id)==String(k.fromId));
+    const to   = db.staff.find(s=>s.id==k.toId  ||String(s.id)==String(k.toId));
+    const date = new Date(k.createdAt).toLocaleDateString('uk',{day:'numeric',month:'short'});
+    const isMe = me && me.type==='employee' && (k.toId==me.data.id||String(k.toId)==String(me.data.id));
+    return `<div style="background:var(--surface);border:1px solid ${isMe?'rgba(245,200,66,.4)':'var(--border)'};border-radius:14px;padding:16px 18px;margin-bottom:10px;${isMe?'background:var(--accent-dim)':''}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:26px">${k.emoji||'💛'}</span>
+        <div style="flex:1">
+          <span style="font-size:13px;font-weight:600">${from?from.name.split(' ')[0]:'?'}</span>
+          <span style="color:var(--muted);font-size:12px"> → </span>
+          <span style="font-size:13px;font-weight:600;color:${isMe?'var(--accent)':'var(--text)'}">${to?to.name.split(' ')[0]:'?'}${isMe?' (ти)':''}</span>
+        </div>
+        <span style="font-size:11px;color:var(--muted)">${date}</span>
+      </div>
+      <div style="font-size:14px;line-height:1.5;color:var(--text);padding-left:36px">${k.text}</div>
+    </div>`;
+  }).join('');
+}
+async function sendKudos(){
+  const toId = +document.getElementById('kudos-to').value;
+  const text = document.getElementById('kudos-text').value.trim();
+  if(!toId){ alert('Вибери колегу'); return; }
+  if(!text){ alert('Напиши повідомлення'); return; }
+  if(!db.kudos) db.kudos=[];
+  db.kudos.push({fromId:me.data.id, toId, text, emoji:selectedKudosEmoji, createdAt:Date.now()});
+  document.getElementById('kudos-text').value='';
+  document.getElementById('kudos-to').value='';
+  await saveDB();
+  renderKudosList();
+  renderAchievements();
+  alert('💛 Подяку надіслано!');
+}
+
+function generateAvatar(name, isBoy){
+  // Кольори волосся — унікальні для кожного імені
+  const hairColors = ['#3d2314','#1a0a00','#8B4513','#c8860a','#2c1810','#4a3728','#6b3a2a','#1c1c1c','#5c3317','#7a4a1e','#d4956a','#2d1b0e'];
+  const skinColors = ['#fde0c8','#f5cba7','#fdd9b5','#f0c896','#fce0bd','#f7d4a0'];
+  const nameHash = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const hairColor = hairColors[nameHash % hairColors.length];
+  const skinColor = skinColors[nameHash % skinColors.length];
+  const accentColor = isBoy ? '#5b9cf6' : '#f472b6';
+  const accentDim = isBoy ? 'rgba(91,156,246,.2)' : 'rgba(244,114,182,.2)';
+
+  if(isBoy){
+    return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:50%;border:2px solid ${accentColor};background:${accentDim}">
+      <!-- Шия -->
+      <rect x="33" y="50" width="14" height="10" rx="4" fill="${skinColor}"/>
+      <!-- Тіло (сорочка) -->
+      <rect x="20" y="58" width="40" height="28" rx="10" fill="${accentColor}"/>
+      <!-- Комір -->
+      <polygon points="35,58 40,66 45,58" fill="white" opacity="0.6"/>
+      <!-- Голова -->
+      <ellipse cx="40" cy="36" rx="18" ry="19" fill="${skinColor}"/>
+      <!-- Волосся -->
+      <ellipse cx="40" cy="22" rx="18" ry="10" fill="${hairColor}"/>
+      <rect x="22" y="20" width="36" height="14" rx="4" fill="${hairColor}"/>
+      <!-- Вуха -->
+      <ellipse cx="22" cy="37" rx="3.5" ry="4" fill="${skinColor}"/>
+      <ellipse cx="58" cy="37" rx="3.5" ry="4" fill="${skinColor}"/>
+      <!-- Очі -->
+      <ellipse cx="33" cy="36" rx="4" ry="4.5" fill="white"/>
+      <ellipse cx="47" cy="36" rx="4" ry="4.5" fill="white"/>
+      <circle cx="34" cy="37" r="2.5" fill="#2d1b0e"/>
+      <circle cx="48" cy="37" r="2.5" fill="#2d1b0e"/>
+      <circle cx="34.8" cy="36.2" r="0.9" fill="white"/>
+      <circle cx="48.8" cy="36.2" r="0.9" fill="white"/>
+      <!-- Брови -->
+      <path d="M29 31 Q33 29 37 31" stroke="${hairColor}" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path d="M43 31 Q47 29 51 31" stroke="${hairColor}" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <!-- Ніс -->
+      <ellipse cx="40" cy="42" rx="2" ry="1.2" fill="${skinColor}" style="filter:brightness(0.88)"/>
+      <!-- Посмішка -->
+      <path d="M34 46 Q40 51 46 46" stroke="#c0724a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    </svg>`;
+  } else {
+    // Довжина волосся — варіюємо
+    const hairStyle = nameHash % 3;
+    const blushColor = 'rgba(255,150,150,0.35)';
+    return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:50%;border:2px solid ${accentColor};background:${accentDim}">
+      <!-- Волосся ззаду (довге) -->
+      ${hairStyle===0
+        ? `<ellipse cx="40" cy="50" rx="21" ry="26" fill="${hairColor}"/>`
+        : hairStyle===1
+        ? `<rect x="18" y="28" width="8" height="36" rx="4" fill="${hairColor}"/><rect x="54" y="28" width="8" height="36" rx="4" fill="${hairColor}"/>`
+        : `<ellipse cx="40" cy="52" rx="20" ry="24" fill="${hairColor}"/>`
+      }
+      <!-- Шия -->
+      <rect x="33" y="50" width="14" height="10" rx="4" fill="${skinColor}"/>
+      <!-- Тіло -->
+      <rect x="20" y="58" width="40" height="28" rx="10" fill="${accentColor}"/>
+      <!-- Серденько на одязі -->
+      <text x="36" y="74" font-size="11" fill="white" opacity="0.7">♥</text>
+      <!-- Голова -->
+      <ellipse cx="40" cy="36" rx="18" ry="19" fill="${skinColor}"/>
+      <!-- Волосся зверху -->
+      <ellipse cx="40" cy="20" rx="18" ry="10" fill="${hairColor}"/>
+      <rect x="22" y="18" width="36" height="16" rx="6" fill="${hairColor}"/>
+      <!-- Прикраса у волоссі -->
+      <circle cx="${hairStyle===1?30:52}" cy="22" r="3.5" fill="${accentColor}" opacity="0.9"/>
+      <circle cx="${hairStyle===1?30:52}" cy="22" r="1.8" fill="white" opacity="0.7"/>
+      <!-- Вуха -->
+      <ellipse cx="22" cy="37" rx="3.5" ry="4" fill="${skinColor}"/>
+      <ellipse cx="58" cy="37" rx="3.5" ry="4" fill="${skinColor}"/>
+      <!-- Сережки -->
+      <circle cx="22" cy="40" r="2" fill="${accentColor}"/>
+      <circle cx="58" cy="40" r="2" fill="${accentColor}"/>
+      <!-- Рум'янець -->
+      <ellipse cx="30" cy="42" rx="5" ry="3" fill="${blushColor}"/>
+      <ellipse cx="50" cy="42" rx="5" ry="3" fill="${blushColor}"/>
+      <!-- Очі -->
+      <ellipse cx="33" cy="36" rx="4.2" ry="4.8" fill="white"/>
+      <ellipse cx="47" cy="36" rx="4.2" ry="4.8" fill="white"/>
+      <circle cx="34" cy="37" r="2.8" fill="#2d1b0e"/>
+      <circle cx="48" cy="37" r="2.8" fill="#2d1b0e"/>
+      <circle cx="34.9" cy="36" r="1" fill="white"/>
+      <circle cx="48.9" cy="36" r="1" fill="white"/>
+      <!-- Вії -->
+      <path d="M29 32 Q30 30 31 32" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <path d="M32 31 Q33 29 34 31" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <path d="M35 32 Q36 30 37 32" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <path d="M43 32 Q44 30 45 32" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <path d="M46 31 Q47 29 48 31" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <path d="M49 32 Q50 30 51 32" stroke="${hairColor}" stroke-width="1.2" fill="none"/>
+      <!-- Брови -->
+      <path d="M29 30.5 Q33 28.5 37 30.5" stroke="${hairColor}" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <path d="M43 30.5 Q47 28.5 51 30.5" stroke="${hairColor}" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <!-- Ніс -->
+      <ellipse cx="40" cy="42" rx="1.8" ry="1.1" fill="${skinColor}" style="filter:brightness(0.88)"/>
+      <!-- Губи -->
+      <path d="M35 46.5 Q37.5 45 40 46.5 Q42.5 45 45 46.5" stroke="#e07070" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M35 46.5 Q40 50.5 45 46.5" stroke="#e07070" stroke-width="1.5" fill="rgba(224,112,112,0.2)" stroke-linecap="round"/>
+    </svg>`;
+  }
 }
 
 function renderEmployee(){
@@ -987,6 +1458,11 @@ function renderEmployee(){
   const gr=h<12?'ДОБРОГО РАНКУ':h<18?'ДОБРИЙ ДЕНЬ':'ДОБРИЙ ВЕЧІР';
   document.getElementById('emp-greeting').textContent=gr+', '+e.name.split(' ')[0].toUpperCase();
   document.getElementById('emp-role-sub').textContent=e.role;
+  // Аватар
+  const boyNames=['Вова','Нікіта','Mikita','Vova'];
+  const firstName=e.name.split(' ')[0];
+  const isBoy=boyNames.some(n=>firstName.toLowerCase()===n.toLowerCase());
+  document.getElementById('emp-avatar').innerHTML=generateAvatar(firstName,isBoy);
   renderTodayTomorrow();
   const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
   document.getElementById('emp-cards').innerHTML=`
@@ -1004,6 +1480,10 @@ function renderEmployee(){
   renderHomePerfCards();
   renderKpiLinkBlock();
   renderHomeReviewsBadge();
+  renderShiftTimer();
+  renderMoodBlock();
+  renderQuickLinks();
+  renderAchievements();
 }
 
 function renderTodayTomorrow(){
@@ -3061,16 +3541,31 @@ async function saveEmp(){
 // ── LINKS ADMIN ──
 function renderLinksEditor(){
   document.getElementById('adm-links-editor').innerHTML=(db.globalLinks||[]).map((l,i)=>`
-    <div class="link-row">
-      <input type="text" value="${l.name}" placeholder="Назва" id="gl-n-${i}">
-      <input type="text" value="${l.url}" placeholder="https://..." id="gl-u-${i}">
-      <input type="text" value="${l.icon||'🔗'}" placeholder="🔗" id="gl-i-${i}">
+    <div class="link-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <input type="text" value="${l.name}" placeholder="Назва" id="gl-n-${i}" style="flex:1">
+      <input type="text" value="${l.url}" placeholder="https://..." id="gl-u-${i}" style="flex:2">
+      <input type="text" value="${l.icon||'🔗'}" placeholder="🔗" id="gl-i-${i}" style="width:52px;text-align:center">
+      <button onclick="toggleLinkFeatured(${i})" title="Швидке посилання на головній" style="background:${l.featured?'rgba(245,200,66,.2)':'var(--surface2)'};border:1px solid ${l.featured?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;cursor:pointer;font-size:14px;transition:.15s" id="gl-feat-${i}">⭐</button>
       <button class="del-btn" onclick="removeLink(${i})">×</button>
     </div>`).join('');
 }
-function addGlobalLink(){db.globalLinks=getLinksForm();db.globalLinks.push({name:'',url:'',icon:'🔗',desc:''});renderLinksEditor();}
+function toggleLinkFeatured(i){
+  const links=getLinksForm();
+  links[i].featured=!links[i].featured;
+  db.globalLinks=links;
+  renderLinksEditor();
+  // відновлюємо стан зірок
+  db.globalLinks.forEach((l,idx)=>{
+    const btn=document.getElementById('gl-feat-'+idx);
+    if(btn){
+      btn.style.background=l.featured?'rgba(245,200,66,.2)':'var(--surface2)';
+      btn.style.borderColor=l.featured?'var(--accent)':'var(--border)';
+    }
+  });
+}
+function addGlobalLink(){db.globalLinks=getLinksForm();db.globalLinks.push({name:'',url:'',icon:'🔗',desc:'',featured:false});renderLinksEditor();}
 function removeLink(i){db.globalLinks=getLinksForm();db.globalLinks.splice(i,1);renderLinksEditor();}
-function getLinksForm(){return (db.globalLinks||[]).map((_,i)=>({name:document.getElementById(`gl-n-${i}`)?.value||'',url:document.getElementById(`gl-u-${i}`)?.value||'',icon:document.getElementById(`gl-i-${i}`)?.value||'🔗',desc:''}));}
+function getLinksForm(){return (db.globalLinks||[]).map((_,i)=>({name:document.getElementById(`gl-n-${i}`)?.value||'',url:document.getElementById(`gl-u-${i}`)?.value||'',icon:document.getElementById(`gl-i-${i}`)?.value||'🔗',desc:'',featured:db.globalLinks[i]?.featured||false}));}
 async function saveLinks(){db.globalLinks=getLinksForm();await saveDB();alert('✅ Посилання збережено!');}
 
 // ── UTILS ──
@@ -3082,5 +3577,211 @@ document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',f
 // ═══ INIT ═══
 (async()=>{await loadDB();buildLoginSel();})();
 </script>
+<!-- SEASONAL ANIMATION -->
+<canvas id="season-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0;transition:opacity 1s"></canvas>
+<script>
+(function(){
+  const canvas = document.getElementById('season-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animId = null;
+  let currentSeason = null;
+
+  function getSeason(){
+    const m = new Date().getMonth(); // 0-11
+    if(m>=2&&m<=4) return 'spring';
+    if(m>=5&&m<=7) return 'summer';
+    if(m>=8&&m<=10) return 'autumn';
+    return 'winter';
+  }
+
+  const SEASONS = {
+    winter: {
+      emoji: ['❄','❅','❆','·'],
+      count: 60,
+      colors: ['#ffffff','#b3e5fc','#e1f5fe','#90caf9'],
+      speedY: [0.5, 1.5],
+      speedX: [-0.5, 0.5],
+      size: [8, 18],
+      wobble: true,
+      opacity: 0.55
+    },
+    spring: {
+      emoji: ['🌸','✿','❀','꽃'],
+      count: 35,
+      colors: ['#f48fb1','#f06292','#fce4ec','#f8bbd0','#ff80ab'],
+      speedY: [0.4, 1.0],
+      speedX: [-0.8, 0.8],
+      size: [10, 22],
+      wobble: true,
+      opacity: 0.65
+    },
+    autumn: {
+      emoji: ['🍂','🍁','leaf'],
+      count: 40,
+      colors: ['#ff8f00','#f57f17','#e65100','#ffd54f','#ffb300'],
+      speedY: [0.6, 1.4],
+      speedX: [-1, 1],
+      size: [10, 20],
+      wobble: true,
+      opacity: 0.6
+    },
+    summer: {
+      emoji: ['sun'],
+      count: 1,
+      colors: ['#ffd600'],
+      speedY: [0],
+      speedX: [0],
+      size: [80, 80],
+      wobble: false,
+      opacity: 0.18
+    }
+  };
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  function createParticle(season){
+    const cfg = SEASONS[season];
+    const e = cfg.emoji[Math.floor(Math.random()*cfg.emoji.length)];
+    return {
+      x: rand(0, window.innerWidth),
+      y: season==='summer' ? 60 : rand(-60, -10),
+      size: rand(cfg.size[0], cfg.size[1]),
+      speedY: rand(cfg.speedY[0], cfg.speedY[1]),
+      speedX: rand(cfg.speedX[0], cfg.speedX[1]),
+      color: cfg.colors[Math.floor(Math.random()*cfg.colors.length)],
+      emoji: e,
+      angle: rand(0, Math.PI*2),
+      angleSpeed: rand(-0.02, 0.02),
+      wobbleT: rand(0, Math.PI*2),
+      opacity: rand(0.3, 1.0)
+    };
+  }
+
+  function drawParticle(p, season){
+    ctx.save();
+    ctx.globalAlpha = p.opacity * SEASONS[season].opacity;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+
+    if(season === 'summer'){
+      // Намалювати сонечко
+      const r = p.size;
+      ctx.fillStyle = '#ffd600';
+      ctx.shadowColor = '#ffd600';
+      ctx.shadowBlur = 40;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI*2);
+      ctx.fill();
+      // Промені
+      ctx.strokeStyle = '#ffd600';
+      ctx.lineWidth = 4;
+      for(let i=0;i<12;i++){
+        ctx.save();
+        ctx.rotate(i*Math.PI/6);
+        ctx.beginPath();
+        ctx.moveTo(r+8, 0);
+        ctx.lineTo(r+22, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
+    } else if(season==='autumn' && p.emoji==='leaf'){
+      // Намалювати листочок
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size/2, p.size/3, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-p.size/2, 0);
+      ctx.lineTo(p.size/2, 0);
+      ctx.stroke();
+    } else if(p.emoji==='·'){
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size/4, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      ctx.font = p.size+'px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.emoji, 0, 0);
+    }
+    ctx.restore();
+  }
+
+  function animate(){
+    const season = currentSeason;
+    const cfg = SEASONS[season];
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if(season === 'summer'){
+      // Сонечко фіксоване у куті
+      particles[0].x = window.innerWidth - 100;
+      particles[0].y = 80;
+      particles[0].angle += 0.003;
+      drawParticle(particles[0], season);
+    } else {
+      particles.forEach((p, i) => {
+        p.y += p.speedY;
+        p.wobbleT += 0.03;
+        p.x += p.speedX + (cfg.wobble ? Math.sin(p.wobbleT)*0.5 : 0);
+        p.angle += p.angleSpeed;
+
+        if(p.y > window.innerHeight + 30 || p.x < -60 || p.x > window.innerWidth + 60){
+          particles[i] = createParticle(season);
+          particles[i].y = -20;
+        }
+        drawParticle(p, season);
+      });
+    }
+    animId = requestAnimationFrame(animate);
+  }
+
+  function startSeason(season){
+    if(animId) cancelAnimationFrame(animId);
+    particles = [];
+    currentSeason = season;
+    const count = SEASONS[season].count;
+    for(let i=0;i<count;i++){
+      const p = createParticle(season);
+      if(season !== 'summer') p.y = rand(0, window.innerHeight); // розкидати з початку
+      particles.push(p);
+    }
+    canvas.style.opacity = '1';
+    animate();
+  }
+
+  // Показуємо анімацію тільки для агентів (не адмін)
+  function checkAndStart(){
+    const season = getSeason();
+    // Перевіряємо чи відображається головна сторінка агента
+    const homeTab = document.getElementById('etab-home');
+    const app = document.getElementById('app');
+    if(app && app.style.display !== 'none' && homeTab && homeTab.style.display !== 'none'){
+      if(currentSeason !== season) startSeason(season);
+    } else {
+      if(animId){ cancelAnimationFrame(animId); animId=null; }
+      canvas.style.opacity = '0';
+      currentSeason = null;
+    }
+  }
+
+  // Слідкуємо за змінами вкладок
+  const observer = new MutationObserver(checkAndStart);
+  observer.observe(document.body, {subtree:true, attributes:true, attributeFilter:['style','class']});
+
+  window.addEventListener('resize', ()=>{ if(currentSeason) startSeason(currentSeason); });
+
+  // Перевіряємо кожні 2 секунди
+  setInterval(checkAndStart, 2000);
+})();
+</script>
+
 </body>
 </html>
