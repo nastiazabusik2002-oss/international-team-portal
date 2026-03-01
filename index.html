@@ -858,7 +858,25 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="field"><label>Посада</label><input type="text" id="m-role"></div>
       <div class="field"><label>Ставка за день (₴)</label><input type="number" id="m-rate" value="402"></div>
       <div class="field"><label>KPI за день (₴)</label><input type="number" id="m-kpi" value="402"></div>
-      <div class="field"><label>Рейтинг місяця (₴)</label><input type="number" id="m-rating" value="0"></div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Рейтинг за день (₴)</label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <input type="number" id="m-rating" value="0" style="flex:1;min-width:100px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+            <input type="checkbox" id="m-rating-high" style="accent-color:var(--accent);width:15px;height:15px">
+            ⭐ Високий рейтинг
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+            <input type="radio" name="m-rating-type" id="m-rating-std" value="standard" checked style="accent-color:var(--accent);width:15px;height:15px">
+            Стандартний
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+            <input type="radio" name="m-rating-type" id="m-rating-hi" value="high" style="accent-color:var(--accent);width:15px;height:15px">
+            ⭐ Високий
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Рейтинг множиться на кількість змін у місяці</div>
+      </div>
       <div class="field"><label>Пароль</label><input type="text" id="m-pass"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="m-bday" placeholder="напр. 09-03"></div>
       <div class="field" style="grid-column:1/-1"><label>📊 Посилання на карту якості (Google Drive)</label><input type="text" id="m-kpilink" placeholder="https://docs.google.com/..."></div>
@@ -879,7 +897,20 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="field"><label>Посада</label><input type="text" id="new-role" value="Агент"></div>
       <div class="field"><label>Ставка за день (₴)</label><input type="number" id="new-rate" value="402"></div>
       <div class="field"><label>KPI за день (₴)</label><input type="number" id="new-kpi" value="402"></div>
-      <div class="field"><label>Рейтинг місяця (₴)</label><input type="number" id="new-rating" value="0"></div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Рейтинг за день (₴)</label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <input type="number" id="new-rating" value="0" style="flex:1;min-width:100px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+            <input type="radio" name="new-rating-type" id="new-rating-std" value="standard" checked style="accent-color:var(--accent);width:15px;height:15px">
+            Стандартний
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+            <input type="radio" name="new-rating-type" id="new-rating-hi" value="high" style="accent-color:var(--accent);width:15px;height:15px">
+            ⭐ Високий
+          </label>
+        </div>
+      </div>
       <div class="field"><label>Пароль</label><input type="text" id="new-pass" value="1234"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="new-bday" placeholder="напр. 09-03"></div>
     </div>
@@ -1875,8 +1906,10 @@ function renderPayments(){
   if(!pmts.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Виплат ще немає</td></tr>';return;}
   tbody.innerHTML=pmts.map(p=>{
     const base=(p.rate||402)+(p.kpi||402);
-    const total=Math.round(base*(p.days||0) + base*1.5*(p.nights||0) + (p.rating||0) + (p.bonus||0));
-    return `<tr><td>${p.month}</td><td>${p.days||0}</td><td style="color:var(--purple)">${p.nights||0}</td><td>${p.rate||402} ₴</td><td>${p.kpi||402} ₴</td><td>${p.rating||0} ₴</td><td>${p.bonus||0} ₴</td><td><b>${total.toLocaleString('uk')} ₴</b></td><td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td></tr>`;
+    const pBase=p.base||(( p.rate||402)+(p.kpi||402)+(p.rating||0));
+    const total=p.total||Math.round(pBase*(p.days||0) + Math.round(pBase*1.5)*(p.nights||0) + (p.bonus||0));
+    const rtBadge=p.ratingType==='high'?'⭐':'';
+    return `<tr><td>${p.month}</td><td>${p.days||0}</td><td style="color:var(--purple)">${p.nights||0}</td><td>${p.rate||402} ₴</td><td>${p.kpi||402} ₴</td><td>${rtBadge}${p.rating||0} ₴</td><td>${p.bonus||0} ₴</td><td><b>${total.toLocaleString('uk')} ₴</b></td><td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td></tr>`;
   }).join('');
 }
 
@@ -3463,17 +3496,23 @@ function renderMonthly(){
     const dv=existing.days!==undefined?existing.days:autoDays;
     const nv=existing.nights!==undefined?existing.nights:autoNights;
     const bv=existing.bonus||0;
-    const base=(emp.rate||402)+(emp.kpi||402);
-    const total=Math.round(base*dv + base*1.5*nv + (emp.rating||0) + bv);
+    const rating=emp.rating||0;
+    const ratingType=emp.ratingType||'standard';
+    const base=(emp.rate||402)+(emp.kpi||402)+rating;
+    const nightBase=Math.round(base*1.5);
+    const total=Math.round(base*dv + nightBase*nv + bv);
+    const ratingBadge=ratingType==='high'?'<span style="font-size:10px;background:rgba(245,200,66,.2);border:1px solid var(--accent);border-radius:4px;padding:1px 6px;color:var(--accent);margin-left:6px">⭐ Високий</span>':'<span style="font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted);margin-left:6px">Стандартний</span>';
     return `<div class="emp-sal-card">
       <div class="esc-name">${emp.name}</div>
       <div class="esc-role">${emp.role}</div>
-      <div class="esc-row"><span>База за зміну</span><span style="font-family:'DM Mono',monospace">${base} ₴</span></div>
-      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${Math.round(base*1.5)} ₴</span></div>
+      <div class="esc-row"><span>Ставка за день</span><span style="font-family:'DM Mono',monospace">${emp.rate||402} ₴</span></div>
+      <div class="esc-row"><span>KPI за день</span><span style="font-family:'DM Mono',monospace;color:var(--blue)">${emp.kpi||402} ₴</span></div>
+      <div class="esc-row"><span>Рейтинг за день ${ratingBadge}</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${rating} ₴</span></div>
+      <div class="esc-row" style="background:var(--surface2);border-radius:8px;padding:8px 10px;margin:4px 0"><span style="font-weight:600">База за зміну</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${base} ₴</span></div>
+      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${nightBase} ₴</span></div>
       <div class="esc-row"><span>Авто з графіку (ден/ніч)</span><span style="color:var(--muted);font-size:12px">${autoDays}д / ${autoNights}н</span></div>
       <div class="esc-row"><span>Денних змін</span><input class="esc-input" type="number" id="days-${emp.id}" value="${dv}" oninput="recalcCard(${emp.id})"></div>
       <div class="esc-row"><span style="color:var(--purple)">🌙 Нічних змін</span><input class="esc-input" type="number" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="border-color:rgba(167,139,250,.4)"></div>
-      <div class="esc-row"><span>Рейтинг</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${emp.rating||0} ₴</span></div>
       <div class="esc-row"><span>Бонус</span><input class="esc-input" type="number" id="bonus-${emp.id}" value="${bv}" oninput="recalcCard(${emp.id})"></div>
       <div class="esc-row" style="padding-top:10px;margin-top:4px;border-top:1px solid var(--border)"><span>РАЗОМ</span><span class="esc-total" id="total-${emp.id}">${total.toLocaleString('uk')} ₴</span></div>
     </div>`;
@@ -3485,8 +3524,8 @@ function recalcCard(id){
   const days=+document.getElementById(`days-${id}`)?.value||0;
   const nights=+document.getElementById(`nights-${id}`)?.value||0;
   const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
-  const base=(emp.rate||402)+(emp.kpi||402);
-  const total=Math.round(base*days + base*1.5*nights + (emp.rating||0) + bonus);
+  const base=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0);
+  const total=Math.round(base*days + Math.round(base*1.5)*nights + bonus);
   document.getElementById(`total-${id}`).textContent=total.toLocaleString('uk')+' ₴';
 }
 
@@ -3499,7 +3538,9 @@ async function saveMonthly(){
     const bonus=+document.getElementById(`bonus-${emp.id}`)?.value||0;
     if(!emp.payments) emp.payments=[];
     const idx=emp.payments.findIndex(p=>p.monthKey===key);
-    const entry={monthKey:key,month:label,days,nights,bonus,rate:emp.rate||402,kpi:emp.kpi||402,rating:emp.rating||0,status:'paid'};
+    const base=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0);
+    const total=Math.round(base*days + Math.round(base*1.5)*nights + bonus);
+    const entry={monthKey:key,month:label,days,nights,bonus,rate:emp.rate||402,kpi:emp.kpi||402,rating:emp.rating||0,ratingType:emp.ratingType||'standard',base,total,status:'paid'};
     if(idx>=0) emp.payments[idx]=entry; else emp.payments.push(entry);
   });
   await saveDB();
@@ -3518,6 +3559,7 @@ async function addAgent(){
     rate:+document.getElementById('new-rate').value||402,
     kpi:+document.getElementById('new-kpi').value||402,
     rating:+document.getElementById('new-rating').value||0,
+    ratingType:document.getElementById('new-rating-hi')?.checked?'high':'standard',
     payments:[]
   };
   db.staff.push(agent);
@@ -3547,6 +3589,9 @@ function openEmpModal(id){
   document.getElementById('m-rate').value=e.rate||402;
   document.getElementById('m-kpi').value=e.kpi||402;
   document.getElementById('m-rating').value=e.rating||0;
+  const hiRadio=document.getElementById('m-rating-hi');
+  const stdRadio=document.getElementById('m-rating-std');
+  if(hiRadio && stdRadio){ if(e.ratingType==='high'){hiRadio.checked=true;}else{stdRadio.checked=true;} }
   document.getElementById('m-pass').value=e.pass;
   document.getElementById('m-bday').value=e.birthday||'';
   document.getElementById('m-kpilink').value=e.kpiLink||'';
@@ -3560,6 +3605,7 @@ async function saveEmp(){
   e.rate=+document.getElementById('m-rate').value;
   e.kpi=+document.getElementById('m-kpi').value;
   e.rating=+document.getElementById('m-rating').value;
+  e.ratingType=document.getElementById('m-rating-hi')?.checked?'high':'standard';
   e.pass=document.getElementById('m-pass').value;
   e.birthday=document.getElementById('m-bday').value.trim();
   e.kpiLink=document.getElementById('m-kpilink').value.trim();
