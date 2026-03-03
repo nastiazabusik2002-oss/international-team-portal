@@ -201,6 +201,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .sched-table td{padding:3px 3px;border:1px solid var(--border);vertical-align:middle;text-align:center}
 .sched-table .name-col{min-width:120px;padding:8px 12px;font-weight:500;font-size:12px;background:var(--surface2);position:sticky;left:0;z-index:1;text-align:left;white-space:nowrap}
 .sched-select{background:var(--bg);border:none;border-radius:5px;color:var(--text);padding:4px 2px;font-size:10px;width:100%;cursor:pointer;outline:none;font-family:'DM Mono',monospace;text-align:center}
+
+/* NEW: shift cell pill */
+.shift-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:38px;min-width:52px;border-radius:6px;cursor:pointer;padding:3px 4px;gap:1px;transition:.15s;border:1px solid transparent;user-select:none}
+.shift-cell:hover{filter:brightness(1.15);border-color:rgba(255,255,255,.2)}
+.shift-cell-time{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;line-height:1}
+.shift-cell-label{font-size:8px;opacity:.8;line-height:1;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shift-cell-off{color:var(--muted);font-size:13px;opacity:.4}
+
+/* Shift picker popup */
+.shift-picker{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:200px;max-width:280px}
+.shift-picker-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.shift-picker-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer;margin-bottom:4px;font-family:'DM Sans',sans-serif;font-size:13px;transition:.15s;text-align:left}
+.shift-picker-btn:hover{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.06)}
+.shift-picker-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.shift-picker-clear{background:none;border:1px dashed var(--border2);color:var(--muted);border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;margin-top:4px;transition:.15s}
+.shift-picker-clear:hover{border-color:var(--red);color:var(--red)}
 .today-col-h{background:rgba(245,200,66,.15)!important;color:var(--accent)!important}
 .today-col{background:rgba(245,200,66,.03)!important}
 .you-row .name-col{border-left:2px solid var(--accent)}
@@ -387,9 +403,21 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div class="login-box">
     <div class="login-logo">INTERNATIONAL TEAM</div>
     <div class="login-tagline">Робоча платформа</div>
-    <div class="field"><label>Оберіть акаунт</label><select id="login-sel"></select></div>
-    <div class="field"><label>Пароль</label><input type="password" id="login-pass" placeholder="••••••••" onkeypress="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn-primary" onclick="doLogin()">Увійти</button>
+    <div class="field">
+      <label>Відділ</label>
+      <select id="login-team" onchange="onTeamSelect()">
+        <option value="">— Оберіть відділ —</option>
+      </select>
+    </div>
+    <div class="field" id="login-account-field" style="display:none">
+      <label>Акаунт</label>
+      <select id="login-sel"></select>
+    </div>
+    <div class="field" id="login-pass-field" style="display:none">
+      <label>Пароль</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()" id="login-btn" style="display:none">Увійти</button>
     <div class="err" id="login-err">Невірний пароль</div>
   </div>
 </div>
@@ -420,6 +448,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="nav-tab" onclick="empTab('links',this)">🔗 Посилання</div>
       <div class="nav-tab" onclick="empTab('notes',this)">📝 Нотатки</div>
       <div class="nav-tab" onclick="empTab('kudos',this)">🙏 Подяки</div>
+      <div class="nav-tab" onclick="empTab('company',this)">🏢 Компанія</div>
+      <div class="nav-tab" onclick="empTab('remarks',this)" id="emp-remarks-tab" style="display:none">📋 Зауваження</div>
     </div>
     <div class="content">
       <div id="etab-home" class="etab">
@@ -616,6 +646,33 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         </div>
         <div id="kudos-list"></div>
       </div>
+
+      <!-- REMARKS TAB (shown only for audited teams) -->
+      <div id="etab-remarks" class="etab" style="display:none">
+        <div class="page-h">МОЇ ЗАУВАЖЕННЯ</div>
+        <div class="page-sub">Зауваження від аудиторів</div>
+        <div id="emp-remarks-list"></div>
+      </div>
+
+      <!-- COMPANY TAB -->
+      <div id="etab-company" class="etab" style="display:none">
+        <div class="page-h">КОМПАНІЯ</div>
+        <div class="page-sub">Загальний графік всіх команд та настрій</div>
+
+        <!-- Moods section -->
+        <div class="sec-title">НАСТРІЙ КОМПАНІЇ СЬОГОДНІ</div>
+        <div id="company-moods-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:28px"></div>
+
+        <!-- Company schedule per team -->
+        <div class="sec-title">ГРАФІКИ КОМАНД</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <button class="cal-nav" onclick="companyCalNav(-1)">‹</button>
+          <div class="cal-month-title" id="company-cal-title"></div>
+          <button class="cal-nav" onclick="companyCalNav(1)">›</button>
+        </div>
+        <div id="company-sched-container"></div>
+      </div>
+
     </div>
   </div>
 
@@ -623,10 +680,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div id="admin-view" style="display:none">
     <div class="content">
       <div class="page-h">ПАНЕЛЬ УПРАВЛІННЯ</div>
-      <div class="page-sub">Адміністратор</div>
+      <div class="page-sub" id="adm-panel-sub">Адміністратор</div>
       <div class="notice-box">💡 Всі зміни зберігаються у спільному сховищі та одразу видні співробітникам</div>
       <div class="admin-tabs">
         <button class="adm-tab active" onclick="admTab('staff',this)">👥 Агенти</button>
+        <button class="adm-tab" onclick="admTab('shifttypes',this)">🎨 Типи змін</button>
         <button class="adm-tab" onclick="admTab('schedule',this)">📅 Графік</button>
         <button class="adm-tab" onclick="admTab('wishes',this)">💌 Побажання</button>
         <button class="adm-tab" onclick="admTab('comments',this)">💬 Нотатки</button>
@@ -638,6 +696,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button class="adm-tab" onclick="admTab('links',this)">🔗 Посилання</button>
         <button class="adm-tab" onclick="admTab('kudos',this)">🙏 Подяки</button>
         <button class="adm-tab" onclick="admTab('mood',this)">😊 Настрій</button>
+        <button class="adm-tab" onclick="admTab('remarks',this)" id="adm-remarks-tab" style="display:none">📋 Зауваження</button>
+        <button class="adm-tab" onclick="admTab('company',this)">🏢 Компанія</button>
       </div>
       <div class="adm-section active" id="adm-staff">
         <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -647,6 +707,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
         <div class="tbl-wrap"><table class="tbl" id="adm-staff-table"><thead><tr><th>Ім'я</th><th>Посада</th><th>🎂 ДН</th><th>Ставка</th><th>KPI</th><th>Рейтинг</th><th>Пароль</th><th></th></tr></thead><tbody id="adm-staff-list"></tbody></table></div>
       </div>
+      <div class="adm-section" id="adm-shifttypes">
+        <div class="page-h">ТИПИ ЗМІН</div>
+        <div class="page-sub">Налаштуй свої зміни — колір, час, назва</div>
+        <div id="adm-shift-types-content"></div>
+      </div>
+
       <div class="adm-section" id="adm-schedule">
         <div id="adm-bday-bar" style="margin-bottom:12px;flex-wrap:wrap;display:flex"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
@@ -788,7 +854,134 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <div id="adm-mood-table"></div>
         </div>
       </div>
+
+      <div class="adm-section" id="adm-remarks">
+        <div class="page-h">ЗАУВАЖЕННЯ АУДИТОРІВ</div>
+        <div class="page-sub">Зауваження по вашій команді</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <select id="adm-remarks-month" onchange="renderAdmRemarks()" style="background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none"></select>
+          <select id="adm-remarks-agent" onchange="renderAdmRemarks()" style="background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+            <option value="">Всі агенти</option>
+          </select>
+          <select id="adm-remarks-type" onchange="renderAdmRemarks()" style="background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+            <option value="">Всі типи</option>
+            <option value="chat">💬 Чат</option>
+            <option value="call">📞 Дзвінок</option>
+            <option value="email">✉️ Лист</option>
+          </select>
+        </div>
+        <div id="adm-remarks-list"></div>
+      </div>
+
+      <div class="adm-section" id="adm-company">
+        <div class="page-h">КОМПАНІЯ</div>
+        <div class="page-sub">Загальний графік всіх команд та настрій</div>
+        <div class="sec-title">НАСТРІЙ КОМПАНІЇ СЬОГОДНІ</div>
+        <div id="adm-company-moods-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:28px"></div>
+        <div class="sec-title">ГРАФІКИ КОМАНД</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <button class="cal-nav" onclick="admCompanyCalNav(-1)">‹</button>
+          <div class="cal-month-title" id="adm-company-cal-title"></div>
+          <button class="cal-nav" onclick="admCompanyCalNav(1)">›</button>
+        </div>
+        <div id="adm-company-sched-container"></div>
+      </div>
+
     </div>
+  </div>
+</div>
+
+<!-- ═══ AUDITOR VIEW ═══ -->
+<div id="auditor-view" style="display:none">
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="auditorTab('remarks',this)">📋 Зауваження</div>
+    <div class="nav-tab" onclick="auditorTab('history',this)">📁 Архів</div>
+    <div class="nav-tab" onclick="auditorTab('schedule',this)">📅 Мій графік</div>
+    <div class="nav-tab" onclick="auditorTab('company',this)">🏢 Компанія</div>
+  </div>
+  <div class="content">
+
+    <!-- ADD REMARK TAB -->
+    <div id="atab-remarks" class="etab">
+      <div class="page-h">ЗАУВАЖЕННЯ</div>
+      <div class="page-sub">Оберіть команду та агента</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Команда</label>
+          <select id="audit-team-sel" onchange="onAuditTeamChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+            <option value="">— Оберіть команду —</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Агент</label>
+          <select id="audit-agent-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+            <option value="">— спочатку оберіть команду —</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Тип</label>
+          <select id="audit-type-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+            <option value="chat">💬 Чат</option>
+            <option value="call">📞 Дзвінок</option>
+            <option value="email">✉️ Лист</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Місяць</label>
+          <select id="audit-month-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none"></select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Зауваження</label>
+        <textarea id="audit-text" rows="4" placeholder="Опишіть зауваження детально..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+
+      <button class="btn-save" onclick="submitRemark()">📋 Додати зауваження</button>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="atab-history" class="etab" style="display:none">
+      <div class="page-h">АРХІВ ЗАУВАЖЕНЬ</div>
+      <div class="page-sub">Всі зауваження які ви внесли</div>
+      <div id="audit-history-list"></div>
+    </div>
+
+    <!-- SCHEDULE TAB -->
+    <div id="atab-schedule" class="etab" style="display:none">
+      <div class="page-h">МІЙ ГРАФІК</div>
+      <div class="page-sub">Зміни на місяць</div>
+      <div class="cal-header">
+        <button class="cal-nav" onclick="auditorCalNav(-1)">‹</button>
+        <div class="cal-month-title" id="auditor-cal-title"></div>
+        <button class="cal-nav" onclick="auditorCalNav(1)">›</button>
+      </div>
+      <div style="margin-bottom:14px" id="auditor-legend"></div>
+      <div class="cal-grid">
+        <div class="cal-weekdays" id="auditor-cal-wds"></div>
+        <div class="cal-days" id="auditor-cal-days"></div>
+      </div>
+    </div>
+
+    <!-- COMPANY TAB -->
+    <div id="atab-company" class="etab" style="display:none">
+      <div class="page-h">КОМПАНІЯ</div>
+      <div class="page-sub">Загальний графік всіх команд та настрій</div>
+      <div class="sec-title">НАСТРІЙ КОМПАНІЇ СЬОГОДНІ</div>
+      <div id="auditor-company-moods" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:28px"></div>
+      <div class="sec-title">ГРАФІКИ КОМАНД</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <button class="cal-nav" onclick="auditorCompanyCalNav(-1)">‹</button>
+        <div class="cal-month-title" id="auditor-company-cal-title"></div>
+        <button class="cal-nav" onclick="auditorCompanyCalNav(1)">›</button>
+      </div>
+      <div id="auditor-company-sched"></div>
+    </div>
+
   </div>
 </div>
 
@@ -938,24 +1131,103 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 <script>
 // ══ SHIFT TYPES ══
-const SHIFTS = [
-  { id:'off',  label:'Вихідний',   short:'—',     time:'',      cls:'sh-off', color:'#5a5a7a' },
-  { id:'s1',   label:'8–16 чати',         short:'08 ч',  time:'08:00–16:00', cls:'sh-1', color:'#5b9cf6' },
-  { id:'s2',   label:'8–16 листи+фідбек', short:'08 л',  time:'08:00–16:00', cls:'sh-mail', color:'#00cfff' },
-  { id:'s3',   label:'10–18 чати',        short:'10 ч',  time:'10:00–18:00', cls:'sh-3', color:'#a78bfa' },
-  { id:'s4',   label:'11–19 листи+фідбек (сб/нд)', short:'11 л', time:'11:00–19:00', cls:'sh-mail', color:'#00cfff' },
-  { id:'s5',   label:'12–20 фідбек+листи/чати',    short:'12 ф', time:'12:00–20:00', cls:'sh-5', color:'#2dd4bf' },
-  { id:'s6',   label:'16–24 чати',        short:'16 ч',  time:'16:00–24:00', cls:'sh-6', color:'#f472b6' },
-  { id:'s6b',  label:'16–24 листи+фідбек',short:'16 л',  time:'16:00–24:00', cls:'sh-mail', color:'#00cfff' },
-  { id:'s7',   label:'00–8 чати+фідбек+листи', short:'00',  time:'00:00–08:00', cls:'sh-7', color:'#f87171' },
-  { id:'vacation', label:'Відпустка', short:'🏖',  time:'', cls:'sh-vac', color:'#38bdf8' },
+// ══ SHIFT PALETTE — 10 colors team leads can pick ══
+const SHIFT_COLORS = [
+  { id:'c1',  hex:'#5b9cf6', name:'Синій'      },
+  { id:'c2',  hex:'#4ade80', name:'Зелений'    },
+  { id:'c3',  hex:'#a78bfa', name:'Фіолетовий' },
+  { id:'c4',  hex:'#fb923c', name:'Помаранчевий'},
+  { id:'c5',  hex:'#2dd4bf', name:'Бірюзовий'  },
+  { id:'c6',  hex:'#f472b6', name:'Рожевий'    },
+  { id:'c7',  hex:'#f87171', name:'Червоний'   },
+  { id:'c8',  hex:'#facc15', name:'Жовтий'     },
+  { id:'c9',  hex:'#00cfff', name:'Блакитний'  },
+  { id:'c10', hex:'#86efac', name:'Мʼятний'   },
 ];
 
-function getShift(id){ return SHIFTS.find(s=>s.id===id) || SHIFTS[0]; }
+// db.shiftTypes[teamId] = [ {id, label, time, color(hex)}, ... ]
+// Always includes virtual 'off' and 'vacation'
+const SHIFT_OFF     = { id:'off',      label:'Вихідний', time:'',    color:'#5a5a7a', short:'—'   };
+const SHIFT_VACATION= { id:'vacation', label:'Відпустка',time:'',    color:'#38bdf8', short:'🏖'  };
+
+// Default shift types per team (created on first load)
+const DEFAULT_SHIFT_TYPES = [
+  { label:'Ранкова',  time:'09:00', color:'#5b9cf6' },
+  { label:'Денна',    time:'13:00', color:'#4ade80' },
+  { label:'Вечірня',  time:'17:00', color:'#a78bfa' },
+  { label:'Нічна',    time:'22:00', color:'#f87171' },
+];
+
+function getTeamShifts(teamId){
+  const tid = teamId || (me && (me.teamId || (me.data && (me.data.teamId||1)))) || 1;
+  if(!db.shiftTypes) db.shiftTypes = {};
+  if(!db.shiftTypes[tid]){
+    // Create defaults
+    db.shiftTypes[tid] = DEFAULT_SHIFT_TYPES.map((s,i)=>({
+      id: 'ts_'+tid+'_'+i, label:s.label, time:s.time, color:s.color
+    }));
+  }
+  return db.shiftTypes[tid];
+}
+
+function getShift(id){
+  if(!id || id==='off') return SHIFT_OFF;
+  if(id==='vacation') return SHIFT_VACATION;
+  // Search across all team shifts
+  if(db.shiftTypes){
+    for(const arr of Object.values(db.shiftTypes)){
+      const found = arr.find(s=>s.id===id);
+      if(found) return found;
+    }
+  }
+  // Legacy support for old sh-* ids
+  const LEGACY = {
+    's1':{label:'08:00',time:'08:00',color:'#5b9cf6'},
+    's2':{label:'08 л',time:'08:00',color:'#00cfff'},
+    's3':{label:'10:00',time:'10:00',color:'#a78bfa'},
+    's4':{label:'11 л',time:'11:00',color:'#00cfff'},
+    's5':{label:'12:00',time:'12:00',color:'#2dd4bf'},
+    's6':{label:'16:00',time:'16:00',color:'#f472b6'},
+    's6b':{label:'16 л',time:'16:00',color:'#00cfff'},
+    's7':{label:'00:00',time:'00:00',color:'#f87171'},
+  };
+  if(LEGACY[id]) return {...LEGACY[id], id, short:LEGACY[id].label};
+  return SHIFT_OFF;
+}
+
+// Helper: short display for a shift
+function shiftShort(sh){ return sh.time || sh.label || sh.short || '—'; }
+function shiftLabel(sh){ return (sh.label&&sh.time) ? sh.label+' '+sh.time : (sh.label||sh.time||'—'); }
+
+// Legacy SHIFTS array for backward compat (wishes, exchange)
+const SHIFTS = [
+  SHIFT_OFF,
+  SHIFT_VACATION,
+];
 
 const MONTHS_UK = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
-const ADMIN_PASS = '1234';
+// ══ TEAMS CONFIG ══
+const TL_PASS = '20rhenbqnsvksl26';
+const TEAMS = [
+  { id: 1, name: 'Chat',                        lead: 'Настя Забусик',       pass: TL_PASS },
+  { id: 2, name: 'Air Customer Care',           lead: 'Kobylianskyi Yurii',  pass: TL_PASS },
+  { id: 3, name: 'Customer Care UA/B2B',        lead: 'Maslii Oleksandra',   pass: TL_PASS },
+  { id: 4, name: 'Post Sales Support',          lead: 'Luchko Yaroslav',     pass: TL_PASS },
+  { id: 5, name: 'Ticketing Support',           lead: 'Sheliakova Anastasiia', pass: TL_PASS },
+  { id: 6, name: 'Customer Experience & Relations', lead: 'Snihur Viktoriia', pass: TL_PASS },
+  { id: 7, name: 'Involuntary Issues Support',  lead: 'Turchyn Uliana',      pass: TL_PASS },
+];
+
+// ══ INITIAL STAFF PER TEAM (for buildDefault) ══
+const INITIAL_STAFF_BY_TEAM = {
+  2: ['Jana Aganitševa','Waleed Albeetar','Sofiia Bobyliak','Svitlana Bublyk','Anna Chernyk','Marta Detsyk','Orest Dubetskyi','Yelyzaveta Kalchenko','Solomiia Koba','Kateryna Laptashynska','Tetiana Lebid','Yurii Loboda','Olesia Lytvynchuk','Mariia Nabit','Krystyna Namliuk','Nataliia Stepanenko','Danylo Sudomyr','Maryana Symchuk'],
+  3: ['Marta Alieksandruk','Andriian Chmyr','Anastasiia Dovhopol','Olesia Hapchuk','Roman Havronskyi','Roman Hyrenko','Halyna Ivasiuk','Valeriia Kislicina','Anastasiia Kohut','Andrii Kostrytskyi','Viktoriia Kosyk','Maryna Lantukh','Marta Levytska','Yuliia Maksymenko','Melaniia Mykhaliuk','Maryna Nakonechna','Oleksandra Oliinyk','Veronika Pukalo','Sofiia Radkevych','Olena Romaniuk','Oksana Romanyshyn','Sofia Rososhyk','Oksana Rubizhna','Vita Sushinets','Anna Velychko'],
+  4: ['Mykhailo Davydenko','Beata Kempinska','Anastasiia Kozachuk','Serhii Kulinichev','Olena Lukianchuk','Svitlana Lychak','Andrii Pylypyshen','Marta Romaniv','Alla Sheludchenko'],
+  5: ['Natalia Andrusyshyn','Anastasiia Barbara','Vladyslav Demidov','Oleksandr Denysiuk','Volodymyr Hii','Yuliana Huliieva','Anastasiia Katelo','Nazar Korol','Anna Kotovska','Pavlo Kotyliuk','Kateryna Kozachok','Yurii Kraievskyi','Uliana Ksondz','Mariia Lepska','Yuliia Makarchuk','Bohdan Mamchur','Anastasiia Matychak','Mariana Mykhailichko','Yuliia Repetska','Yelyzaveta Savchenko','Oleh Shevchuk','Anastasia Shmeha','Vasyl Stakhiv','Zoriana-Mariia Stakhiv','Viktor Vilson','Nazar Votkanych','Valeriia Yaroshenko','Diana Yurchuk'],
+  6: ['Oksana Balukh','Roksolana Drohomyretska','Anna Dzisiak','Tetiana Kondratiuk','Yuliia Myskiv','Yuliia Shkoropad','Kateryna Sholom','Khrystyna Vatamaniuk'],
+  7: ['Olena Babii','Volodymyr Burdyk','Artur Chekalin','Mariia Filimonova','Maksym Halenko','Solomiia Holovata','Anastasiia Kolesnyk','Olha Kostrytska','Ihor Kutsyna','Yulianna Onufrak','Ostap Shcherban','Iryna Shevchuk','Viktoriia Shloser','Roman Stepanyk'],
+};
 
 // ══ STATE ══
 let db = {}, me = null, editingId = null;
@@ -979,7 +1251,45 @@ async function loadDB(){
     const res = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value', {headers: SB_HDR});
     if(res.ok){
       const rows = await res.json();
-      if(rows.length && rows[0].value){ db=JSON.parse(rows[0].value); return; }
+      if(rows.length && rows[0].value){
+        db=JSON.parse(rows[0].value);
+        // ── MIGRATION v1: assign teamId=1 to existing Chat staff ──
+        if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
+        // ── MIGRATION v3: fix reversed Lastname Firstname → Firstname Lastname ──
+        // Build lookup: all correct names flattened
+        const allCorrect = [];
+        Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([tid, names]) =>
+          names.forEach(n => allCorrect.push({correct: n, teamId: parseInt(tid)}))
+        );
+        if(db.staff) db.staff.forEach(s => {
+          if(s.teamId === 1) return; // skip Chat team (already correct)
+          const parts = s.name.trim().split(' ');
+          if(parts.length >= 2){
+            // Try reversed: if "Lastname Firstname" → check "Firstname Lastname"
+            const reversed = parts.slice(1).join(' ') + ' ' + parts[0];
+            const match = allCorrect.find(x => x.correct === reversed);
+            if(match){ s.name = match.correct; s.teamId = match.teamId; }
+          }
+        });
+        // ── MIGRATION v2: add staff from other teams if not yet present ──
+        let migrated = false;
+        Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([teamId, names]) => {
+          names.forEach(name => {
+            const exists = db.staff.find(s=>s.name===name);
+            if(!exists){
+              db.staff.push({id:db.nextId++,name,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:'',teamId:parseInt(teamId)});
+              migrated = true;
+            }
+          });
+        });
+        // Save after migration so changes persist
+        if(migrated || !db._migrated_v3){
+          db._migrated_v3 = true;
+          // Save async without blocking
+          setTimeout(()=>saveDB(), 500);
+        }
+        return;
+      }
     }
   }catch(e){ console.warn('Supabase load error:',e); }
   db=buildDefault();
@@ -1013,14 +1323,25 @@ async function saveDB(){
 }
 
 function buildDefault(){
-  const names=['Андріяна Носаль','Софа Гронська','Сабіна Сафіулова','Катя Козицька',
+  const chatNames=['Андріяна Носаль','Софа Гронська','Сабіна Сафіулова','Катя Козицька',
     'Христя Лещишин','Наталя Чикулаєва','Христя Малко','Наталя Грицан',
     'Марічка Подвадцятник','Наталя Телятинська','Нікіта Крапівной',
     'Вова Вульчин','Настя Волосянко','Маша Івасюк'];
   const bdays={'Андріяна Носаль':'09-03','Софа Гронська':'09-23','Сабіна Сафіулова':'06-30','Катя Козицька':'11-10','Христя Лещишин':'04-10','Наталя Чикулаєва':'11-05','Христя Малко':'05-16','Наталя Грицан':'10-24','Марічка Подвадцятник':'04-05','Наталя Телятинська':'09-02','Нікіта Крапівной':'12-16','Вова Вульчин':'06-11','Настя Волосянко':'09-08','Маша Івасюк':'05-19'};
+
+  let staff = chatNames.map((n,i)=>({id:i+1,name:n,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:bdays[n]||'',teamId:1}));
+  let nextId = staff.length + 1;
+
+  // Add staff from other teams
+  Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([teamId, names]) => {
+    names.forEach(name => {
+      staff.push({id: nextId++, name, role:'Агент', pass:'1234', rate:402, kpi:402, rating:0, payments:[], birthday:'', teamId: parseInt(teamId)});
+    });
+  });
+
   return {
-    staff: names.map((n,i)=>({id:i+1,name:n,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:bdays[n]||''})),
-    nextId: names.length+1,
+    staff,
+    nextId,
     schedule:{},
     exchanges:[],
     globalLinks:[
@@ -1030,24 +1351,79 @@ function buildDefault(){
   };
 }
 
+// ══ TEAM FILTER — повертає тільки співробітників поточного тім ліда ══
+function myStaff(){
+  if(me && me.type==='admin' && me.teamId){
+    return db.staff.filter(s=> (s.teamId||1) === me.teamId);
+  }
+  return db.staff;
+}
+
+// ══ TEAM FILTER — для employee: повертає колег по своїй команді ══
+function myTeamStaff(){
+  if(me && me.type==='employee'){
+    const tid = me.data.teamId||1;
+    return db.staff.filter(s=>(s.teamId||1)===tid);
+  }
+  return myStaff();
+}
+
 // ══ AUTH ══
 function buildLoginSel(){
-  document.getElementById('login-sel').innerHTML=
-    '<option value="admin">👑 Адміністратор</option>'+
-    db.staff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const teamSel = document.getElementById('login-team');
+  teamSel.innerHTML = '<option value="">— Оберіть відділ —</option>' +
+    TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('login-account-field').style.display='none';
+  document.getElementById('login-pass-field').style.display='none';
+  document.getElementById('login-btn').style.display='none';
+  document.getElementById('login-sel').innerHTML='';
+}
+
+function onTeamSelect(){
+  const teamId = parseInt(document.getElementById('login-team').value);
+  const accField = document.getElementById('login-account-field');
+  const passField = document.getElementById('login-pass-field');
+  const btn = document.getElementById('login-btn');
+  if(!teamId){ accField.style.display='none'; passField.style.display='none'; btn.style.display='none'; return; }
+  const team = TEAMS.find(t=>t.id===teamId);
+  const staff = (db && db.staff) ? db.staff : [];
+  const teamStaff = staff.filter(s=>(s.teamId||1)===teamId);
+  const sel = document.getElementById('login-sel');
+  sel.innerHTML = `<option value="tl_${teamId}">👑 ${team.lead} (Тім лід)</option>` +
+    teamStaff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  accField.style.display='block';
+  passField.style.display='block';
+  btn.style.display='block';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-err').style.display='none';
+}
+
+// Auditors: Customer Experience members (teamId 6) get auditor role
+const AUDITOR_TEAM_ID = 6;
+const AUDITED_TEAM_IDS = [1, 2, 3]; // Chat, Air Customer Care, UA/B2B
+
+function isAuditor(emp){
+  return emp && (emp.teamId||1) === AUDITOR_TEAM_ID;
 }
 
 function doLogin(){
   const sel=document.getElementById('login-sel').value;
   const pass=document.getElementById('login-pass').value;
   const err=document.getElementById('login-err');
-  if(sel==='admin'){
-    if(pass!==ADMIN_PASS){err.style.display='block';return;}
-    me={type:'admin'};
+  if(sel.startsWith('tl_')){
+    const teamId = parseInt(sel.replace('tl_',''));
+    const team = TEAMS.find(t=>t.id===teamId);
+    if(!team||pass!==team.pass){err.style.display='block';return;}
+    me={type:'admin', teamId: team.id, teamName: team.name, leadName: team.lead};
   } else {
     const emp=db.staff.find(s=>s.id==sel);
     if(!emp||pass!==emp.pass){err.style.display='block';return;}
-    me={type:'employee',data:emp};
+    // Customer Experience members → auditor role
+    if(isAuditor(emp)){
+      me={type:'auditor', data:emp};
+    } else {
+      me={type:'employee', data:emp};
+    }
   }
   err.style.display='none';
   document.getElementById('login-pass').value='';
@@ -1062,6 +1438,7 @@ function logout(){
   me=null;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-team').value='';
   buildLoginSel();
 }
 
@@ -1069,13 +1446,21 @@ function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   if(me.type==='admin'){
-    document.getElementById('topbar-name').textContent='Адміністратор';
+    document.getElementById('topbar-name').textContent= me.leadName ? me.leadName.split(' ')[0]+' · '+me.teamName : 'Адміністратор';
     document.getElementById('emp-view').style.display='none';
+    document.getElementById('auditor-view').style.display='none';
     document.getElementById('admin-view').style.display='block';
     renderAdmin();
+  } else if(me.type==='auditor'){
+    document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0]+' · Аудитор';
+    document.getElementById('emp-view').style.display='none';
+    document.getElementById('admin-view').style.display='none';
+    document.getElementById('auditor-view').style.display='block';
+    renderAuditorView();
   } else {
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0];
     document.getElementById('emp-view').style.display='block';
+    document.getElementById('auditor-view').style.display='none';
     document.getElementById('admin-view').style.display='none';
     renderEmployee();
   }
@@ -1083,8 +1468,11 @@ function showApp(){
 
 // ══ LEGEND ══
 function renderLegend(containerId){
+  const teamId = me && (me.teamId || (me.data && (me.data.teamId||1))) || 1;
+  const shifts = getTeamShifts(teamId);
   document.getElementById(containerId).innerHTML=`<div class="shift-legend">`+
-    SHIFTS.slice(1).map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label} (${s.time})</div>`).join('')+
+    shifts.map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}${s.time?' ('+s.time+')':''}</div>`).join('')+
+    `<div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>Відпустка</div>`+
     `</div>`;
 }
 
@@ -1103,6 +1491,8 @@ function empTab(tab,el){
   if(tab==='perf'){renderEmpPerf();}
   if(tab==='notes'){renderNotes();}
   if(tab==='kudos'){renderKudosList();}
+  if(tab==='company'){renderCompanyTab();}
+  if(tab==='remarks'){renderEmpRemarks();}
 }
 
 // ══ NOTES ══
@@ -1356,7 +1746,7 @@ function renderKudosList(){
   // Заповнюємо select колег + тім лід
   const sel = document.getElementById('kudos-to');
   if(sel && me && me.type==='employee'){
-    const others = db.staff.filter(s=>s.id!=me.data.id).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    const others = myTeamStaff().filter(s=>s.id!=me.data.id).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
     sel.innerHTML='<option value="">— Вибери колегу —</option>'+others+'<option value="teamlead">👑 Тім Лід</option>';
   }
   const list = document.getElementById('kudos-list');
@@ -1514,12 +1904,22 @@ function generateAvatar(name, isBoy){
 
 function renderEmployee(){
   const e=me.data;
+  // Show remarks tab only for agents in audited teams
+  const remarksTab = document.getElementById('emp-remarks-tab');
+  if(remarksTab) remarksTab.style.display = AUDITED_TEAM_IDS.includes(e.teamId||1) ? 'block' : 'none';
   const h=new Date().getHours();
   const gr=h<12?'ДОБРОГО РАНКУ':h<18?'ДОБРИЙ ДЕНЬ':'ДОБРИЙ ВЕЧІР';
   document.getElementById('emp-greeting').textContent=gr+', '+e.name.split(' ')[0].toUpperCase();
   document.getElementById('emp-role-sub').textContent=e.role;
   // Аватар
-  const boyNames=['Вова','Нікіта','Mikita','Vova'];
+  const boyNames=['Вова','Нікіта','Mikita','Vova',
+    // Ukrainian/international male names from all teams
+    'Waleed','Orest','Danylo','Yurii','Roman','Andriian','Andrii','Mykhailo','Serhii',
+    'Vladyslav','Oleksandr','Volodymyr','Nazar','Pavlo','Bohdan','Oleh','Vasyl',
+    'Viktor','Artur','Maksym','Ihor','Ostap','Yaroslav','Kobylianskyi','Luchko',
+    'Ярослав','Юрій','Роман','Андрій','Сергій','Данило','Микита','Владислав',
+    'Олександр','Олег','Богдан','Михайло','Василь','Назар','Павло','Максим','Ігор',
+    'Остап','Артур','Владислав','Дмитро','Олег'];
   const firstName=e.name.split(' ')[0];
   const isBoy=boyNames.some(n=>firstName.toLowerCase()===n.toLowerCase());
   document.getElementById('emp-avatar').innerHTML=generateAvatar(firstName,isBoy);
@@ -1563,7 +1963,7 @@ function renderTodayTomorrow(){
       <div class="stc-label">${label}</div>
       <div class="stc-date">${dateStr}</div>
       ${isOff?`<div class="stc-off">ВИХІДНИЙ</div>`:
-        `<div class="stc-time" style="color:${sh.color}">${sh.time||sh.short}</div>
+        `<div class="stc-time" style="color:${sh.color}">${sh.time||sh.label||'—'}</div>
          <div class="stc-type" style="color:${sh.color}">${sh.label}</div>`}
     </div>`;
   }
@@ -1619,7 +2019,7 @@ function renderEmpCal(){
   // Count off-wishes per day across all agents (for lічильник)
   const offWishCount={};
   if(isNextMonth){
-    db.staff.forEach(emp=>{
+    myStaff().forEach(emp=>{
       const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
       Object.entries(ew).forEach(([day,w])=>{
         if(w&&w.shift==='off'){
@@ -1636,7 +2036,7 @@ function renderEmpCal(){
     const bdayHtml=bdayPeople.length?`<div style="font-size:10px;color:var(--pink);margin-top:2px" title="${bdayPeople.map(e=>e.name).join(', ')}">${bdayPeople.map(e=>'🎂'+e.name.split(' ')[0]).join(' ')}</div>`:'';
     const shiftHtml=sh.id==='off'
       ?`<div style="font-size:10px;color:var(--muted)">—</div>`
-      :`<div class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</div>`;
+      :`<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:0 auto;min-width:46px"><div class="shift-cell-time" style="font-size:10px">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?'<div class="shift-cell-label">'+sh.label+'</div>':''}</div>`;
     const commentObj=typeof comment==='object'?comment:{};
     const hasCmt=commentObj.overtime||commentObj.late;
     const cParts=[];
@@ -1680,10 +2080,12 @@ function openWishModal(day,key){
   const cur=myWishes[day]||{};
   document.getElementById('wish-modal-title').textContent=`ПОБАЖАННЯ — ${day} ЧИСЛО`;
   const sel=document.getElementById('wm-shift');
+  const teamId = me&&me.data?(me.data.teamId||1):1;
+  const tshifts = getTeamShifts(teamId);
   sel.innerHTML=`<option value="">— без побажань —</option><option value="off"${cur.shift==='off'?' selected':''}>Вихідний 🌙</option>`;
-  SHIFTS.slice(1).forEach(s=>{
+  tshifts.forEach(s=>{
     const opt=document.createElement('option');
-    opt.value=s.id; opt.textContent=s.short+' — '+s.label;
+    opt.value=s.id; opt.textContent=(s.time||'')+(s.label?' — '+s.label:'');
     if(cur.shift===s.id) opt.selected=true;
     sel.appendChild(opt);
   });
@@ -1773,14 +2175,13 @@ function renderCalDays(containerId,year,month,cellFn){
 }
 
 // Team calendar
-function teamCalNav(d){teamCalM+=d;if(teamCalM<0){teamCalM=11;teamCalY--;}if(teamCalM>11){teamCalM=0;teamCalY++;}renderTeamCal();}
 function renderTeamCal(){
   document.getElementById('team-cal-title').textContent=MONTHS_UK[teamCalM]+' '+teamCalY;
   renderLegend('team-legend');
-  renderSchedTable('team-sched-table',teamCalY,teamCalM,false);
+  renderSchedTable('team-sched-table',teamCalY,teamCalM,false, me&&me.type==='employee' ? myTeamStaff() : null);
 }
 
-function renderSchedTable(tableId,year,month,editable){
+function renderSchedTable(tableId,year,month,editable, staffOverride){
   const key=mkey(year,month);
   const sched=db.schedule[key]||{};
   const last=new Date(year,month+1,0).getDate();
@@ -1821,7 +2222,7 @@ function renderSchedTable(tableId,year,month,editable){
   thead+='</tr></thead>';
 
   let tbody='<tbody>';
-  db.staff.forEach(emp=>{
+  (staffOverride || myStaff()).forEach(emp=>{
     const empSched=sched[emp.id]||{};
     const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
     let shiftCount=0;
@@ -1837,13 +2238,24 @@ function renderSchedTable(tableId,year,month,editable){
       if(isToday) bg='rgba(245,200,66,.07)';
       else if(wknd) bg='rgba(245,200,66,.13)';
       if(editable){
-        const opts=SHIFTS.map(s=>`<option value="${s.id}" ${shiftId===s.id?'selected':''}>${s.short||'—'}</option>`).join('');
         const empWish=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
         const w=empWish[d];
-        const wishBadge=w?`<div style="font-size:8px;color:var(--accent);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;margin-top:1px" title="${w.comment||''}">${w.shift?(w.shift==='off'?'🌙вих':getShift(w.shift).short):''}${w.comment?' 💬':''}</div>`:'';
-        cells+=`<td style="padding:2px;background:${bg}"><select class="sched-select" data-emp="${emp.id}" data-day="${d}" style="color:${sh.color};background:${bg||'var(--surface2)'}" onchange="this.style.color=getShift(this.value).color;this.style.background=bg||'var(--surface2)'">${opts}</select>${wishBadge}</td>`;
+        const wishBadge=w?`<div style="font-size:8px;color:var(--accent);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;margin-top:2px" title="${w.comment||''}">${w.shift?(w.shift==='off'?'🌙вих':shiftShort(getShift(w.shift))):''}${w.comment?' 💬':''}</div>`:'';
+        const cellHtml = shiftId==='off'
+          ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">—</div>`
+          : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color}" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">
+              <div class="shift-cell-time">${sh.time||sh.label||'?'}</div>
+              ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
+             </div>`;
+        cells+=`<td style="padding:2px;background:${bg};text-align:center">${cellHtml}${wishBadge}</td>`;
       } else {
-        cells+=`<td style="background:${bg};text-align:center">${hasShift?`<span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33;font-size:10px">${sh.short}</span>`:`<span style="color:var(--muted);font-size:11px">—</span>`}</td>`;
+        if(shiftId==='vacation'){
+          cells+=`<td style="background:${bg};text-align:center"><span class="shift-pill sh-vac">🏖</span></td>`;
+        } else if(hasShift){
+          cells+=`<td style="background:${bg};text-align:center"><div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:auto"><div class="shift-cell-time">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}</div></td>`;
+        } else {
+          cells+=`<td style="background:${bg};text-align:center"><span style="color:var(--muted);font-size:11px">—</span></td>`;
+        }
       }
     });
     tbody+=`<tr ${isMe?'class="you-row"':''}>`;
@@ -1864,7 +2276,7 @@ function renderSchedTable(tableId,year,month,editable){
     if(isToday) bg='rgba(245,200,66,.08)';
     else if(wknd) bg='rgba(245,200,66,.06)';
     let count=0;
-    db.staff.forEach(emp=>{
+    myStaff().forEach(emp=>{
       const shiftId=((sched[emp.id]||{})[d])||'off';
       if(shiftId&&shiftId!=='off'&&shiftId!=='vac') count++;
     });
@@ -2150,7 +2562,7 @@ function renderTeamPerfTable(){
   if(!weeks.length) return '<div class="empty-state">Даних ще немає</div>';
   const curWeek  = weeks[weeks.length-1];
   const prevWeek = weeks[weeks.length-2]||null;
-  const rows = db.staff.map(emp=>{
+  const rows = myStaff().map(emp=>{
     const empData=(db.perf&&db.perf[emp.id])||[];
     const cur =empData.find(d=>d.week===curWeek)||null;
     const prev=prevWeek?(empData.find(d=>d.week===prevWeek)||null):null;
@@ -2196,7 +2608,7 @@ function addPerfWeek(){
   if(!label){ alert('Вкажіть назву тижня (напр. 23–29 черв)'); return; }
   if(!db.perf) db.perf = {};
   // Add empty row for each agent if not exists
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     if(!db.perf[emp.id]) db.perf[emp.id]=[];
     if(!db.perf[emp.id].find(d=>d.week===label)){
       db.perf[emp.id].push({week:label, letters:0, chats:0, shiftChats:0, shifts:0});
@@ -2257,7 +2669,7 @@ function renderPerfInputTable(week){
   const tbody = document.getElementById('perf-input-body');
   if(!tbody) return;
   
-  tbody.innerHTML = db.staff.map(emp=>{
+  tbody.innerHTML = myStaff().map(emp=>{
     const empData = (db.perf && db.perf[emp.id]) || [];
     const row = empData.find(d=>d.week===selWeek) || {letters:0,chats:0,shiftChats:0,shifts:0};
     const l  = row.letters||0;
@@ -2299,7 +2711,7 @@ async function savePerfWeek(){
   const selWeek = selEl.value;
   if(!db.perf) db.perf={};
   
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const l  = +document.getElementById(`pl-${emp.id}`)?.value||0;
     const ch = +document.getElementById(`pc-${emp.id}`)?.value||0;
     const sc = +document.getElementById(`psc-${emp.id}`)?.value||0;  // змін чатів
@@ -2324,7 +2736,7 @@ async function deletePerfWeek(){
   if(!selEl) return;
   const selWeek = selEl.value;
   if(!confirm(`Видалити тиждень "${selWeek}"? Це незворотно.`)) return;
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     if(db.perf && db.perf[emp.id])
       db.perf[emp.id] = db.perf[emp.id].filter(d=>d.week!==selWeek);
   });
@@ -2340,7 +2752,7 @@ function renderAdmPerfRanking(){
   const curWeek  = weeks[weeks.length-1];
   const prevWeek = weeks[weeks.length-2]||null;
   
-  const rows = db.staff.map(emp=>{
+  const rows = myStaff().map(emp=>{
     const empData = (db.perf&&db.perf[emp.id])||[];
     const cur  = empData.find(d=>d.week===curWeek)||null;
     const prev = prevWeek ? (empData.find(d=>d.week===prevWeek)||null) : null;
@@ -2382,7 +2794,7 @@ function exportPerfExcel(){
   const headers = ['Агент','Тиждень','Листи','Чати','К-сть змін чатів','К-сть змін заг.','Ср.чатів/зміну','Ср.закрито загалом','Total'];
   const rows = [headers.join(';')];
   
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const empData = (db.perf&&db.perf[emp.id])||[];
     weeks.forEach(w=>{
       const d = empData.find(r=>r.week===w);
@@ -2404,9 +2816,9 @@ function exportPerfExcel(){
   const lastWeek = weeks[weeks.length-1];
   rows.push('');
   rows.push(['РАЗОМ',lastWeek,'','',
-    db.staff.reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.chats:0);},0),
+    myStaff().reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.chats:0);},0),
     '','','','',
-    db.staff.reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.total:0);},0)
+    myStaff().reduce((s,e)=>{ const d=(db.perf&&db.perf[e.id]||[]).find(r=>r.week===lastWeek); return s+(d?d.total:0);},0)
   ].join(';'));
   
   const BOM = '\uFEFF';
@@ -2454,7 +2866,7 @@ function renderBdayBanner(){
   // Show on employee home — upcoming birthdays in next 7 days
   const el = document.getElementById('emp-bday-banner');
   if(!el) return;
-  const upcoming = db.staff.map(emp=>({emp, info:getBdayInfo(emp)}))
+  const upcoming = myStaff().map(emp=>({emp, info:getBdayInfo(emp)}))
     .filter(x=>x.info&&x.info.isSoon)
     .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
   if(!upcoming.length){el.innerHTML='';return;}
@@ -2473,7 +2885,7 @@ function renderBdayBanner(){
 
 function renderAdmBdayBanner(){
   // Show in schedule header for admin
-  const upcoming = db.staff.map(emp=>({emp, info:getBdayInfo(emp)}))
+  const upcoming = myStaff().map(emp=>({emp, info:getBdayInfo(emp)}))
     .filter(x=>x.info&&x.info.isSoon)
     .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
   return upcoming.map(({emp,info})=>{
@@ -2489,7 +2901,7 @@ function renderAdmBdayBanner(){
 // Check if a specific calendar day has a birthday
 function getDayBdays(year, month, day){
   // month is 0-based
-  return db.staff.filter(emp=>{
+  return myStaff().filter(emp=>{
     if(!emp.birthday) return false;
     const [mm,dd] = emp.birthday.split('-').map(Number);
     return mm-1===month && dd===day;
@@ -2514,7 +2926,7 @@ function renderAdmWishes(){
   const notesEl=document.getElementById('wishes-month-notes');
   if(notesEl){
     const key2=mkey(wishesAdmY,wishesAdmM);
-    const notes=db.staff.map(emp=>{
+    const notes=myStaff().map(emp=>{
       const note=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key2+'_note']||'';
       return note?{name:emp.name,note}:null;
     }).filter(Boolean);
@@ -2537,7 +2949,7 @@ function renderAdmWishes(){
 
   // Pre-count off-wishes per day
   const admOffCount={};
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const ew=((wishes[emp.id]||wishes[String(emp.id)]||{})[key])||{};
     Object.entries(ew).forEach(([day,w])=>{
       if(w&&w.shift==='off') admOffCount[day]=(admOffCount[day]||0)+1;
@@ -2565,12 +2977,12 @@ function renderAdmWishes(){
   });
   thead+='</tr></thead>';
 
-  // Shift select options HTML (reuse)
-  const shiftOpts=SHIFTS.map(s=>`<option value="${s.id}">${s.short}</option>`).join('');
+  // Shift options for wishes table
+  const teamShiftsForWishes = getTeamShifts(me&&me.teamId||1);
 
-  // Body — one row per agent with wish display + editable schedule select
+  // Body — one row per agent with wish display + clickable schedule cell
   let tbody='<tbody>';
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const empWishes=(wishes[emp.id]||wishes[String(emp.id)]||{})[key]||{};
     const empSched=existSched[emp.id]||{};
     const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -2589,21 +3001,20 @@ function renderAdmWishes(){
       let wishBadge='';
       if(w){
         const ws=w.shift?getShift(w.shift):null;
-        const wLabel=(ws&&w.shift!=='off')?ws.short:(w.shift==='off'?'🌙':'' );
+        const wLabel=(ws&&w.shift!=='off')?(ws.time||ws.label||ws.short):(w.shift==='off'?'🌙':'' );
         const wComment=w.comment?` title="${w.comment}"`:'';
         const offOver=w.shift==='off'&&(admOffCount[d]||0)>=4;
         wishBadge=`<div${wComment} style="font-size:9px;color:${offOver?'var(--red)':'var(--accent)'};background:${offOver?'rgba(248,113,113,.1)':'rgba(245,200,66,.1)'};border:1px dashed ${offOver?'rgba(248,113,113,.4)':'rgba(245,200,66,.35)'};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}</div>`;
       }
 
-      // Editable schedule select
-      const opts=`<option value="off"${curSched==='off'?' selected':''}>—</option>`+
-        SHIFTS.slice(1).map(s=>`<option value="${s.id}"${curSched===s.id?' selected':''}>${s.short}</option>`).join('');
+      // Clickable shift cell
+      const cellHtml = curSched==='off'
+        ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')" style="min-height:28px;min-width:44px">—</div>`
+        : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};min-height:28px;min-width:44px" onclick="openShiftPicker(event,${emp.id},${d},'${key}')"><div class="shift-cell-time" style="font-size:10px">${sh.time||sh.label||'?'}</div></div>`;
 
       tbody+=`<td style="background:${cellBg};padding:2px;text-align:center;vertical-align:middle">
         ${wishBadge}
-        <select class="wish-sched-sel" data-emp="${emp.id}" data-day="${d}" style="width:62px;font-size:10px;background:var(--bg);border:1px solid ${curSched!=='off'?sh.color+'55':'var(--border)'};border-radius:4px;color:${sh.color};padding:2px 2px;outline:none;cursor:pointer" onchange="onWishSchedChange(this)">
-          ${opts}
-        </select>
+        ${cellHtml}
       </td>`;
     });
     tbody+='</tr>';
@@ -2612,31 +3023,13 @@ function renderAdmWishes(){
   table.innerHTML=thead+tbody;
 }
 
-function onWishSchedChange(sel){
-  const sh=getShift(sel.value);
-  sel.style.borderColor=sel.value!=='off'?sh.color+'55':'var(--border)';
-  sel.style.color=sh.color;
-}
+function onWishSchedChange(sel){} // legacy stub
 
 async function saveWishesAsSchedule(){
-  const key=mkey(wishesAdmY,wishesAdmM);
-  if(!db.schedule) db.schedule={};
-  if(!db.schedule[key]) db.schedule[key]={};
-  // Init all staff
-  db.staff.forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
-
-  document.querySelectorAll('.wish-sched-sel').forEach(sel=>{
-    const empId=+sel.dataset.emp;
-    const day=+sel.dataset.day;
-    const val=sel.value;
-    if(!db.schedule[key][empId]) db.schedule[key][empId]={};
-    if(val&&val!=='off') db.schedule[key][empId][day]=val;
-    else delete db.schedule[key][empId][day];
-  });
-
+  // Cells already saved directly via openShiftPicker/applyShift
   await saveDB();
   const hint=document.getElementById('wishes-save-hint');
-  if(hint){ hint.textContent='✅ Збережено! Графік оновлено.'; hint.style.color='var(--green)'; setTimeout(()=>{ hint.textContent='Зміни в рядку «ГРАФІК» збережуться в основний розклад'; hint.style.color=''; },3000); }
+  if(hint){ hint.textContent='✅ Збережено!'; hint.style.color='var(--green)'; setTimeout(()=>{ hint.textContent='Зміни зберігаються автоматично при кліку на клітинку'; hint.style.color=''; },3000); }
 }
 
 
@@ -2659,7 +3052,7 @@ function renderAnalytics(){
   const last=new Date(analyticsY,analyticsM+1,0).getDate();
 
   // ── Per-agent shift stats ──
-  const stats=db.staff.map(emp=>{
+  const stats=myStaff().map(emp=>{
     const empSched=sched[emp.id]||sched[String(emp.id)]||{};
     let total=0,nights=0,offDays=0,vacation=0;
     for(let d=1;d<=last;d++){
@@ -2757,7 +3150,7 @@ function renderAdmComments(){
 
   // Collect all entries
   let rows = [];
-  db.staff.forEach(emp => {
+  myStaff().forEach(emp => {
     // dayComments keys are stored as strings (JSON serialization)
     const empC = comments[emp.id] || comments[String(emp.id)] || {};
     Object.entries(empC).forEach(([mk, days]) => {
@@ -2774,7 +3167,7 @@ function renderAdmComments(){
 
   // Build per-agent summary (all time)
   const summary = {};
-  db.staff.forEach(emp => { summary[emp.id]={overtimeMins:0, lateMins:0, lateCount:0}; });
+  myStaff().forEach(emp => { summary[emp.id]={overtimeMins:0, lateMins:0, lateCount:0}; });
   rows.forEach(r => {
     const sid = r.emp.id;
     if(!summary[sid]) summary[sid]={overtimeMins:0,lateMins:0,lateCount:0};
@@ -2797,7 +3190,7 @@ function renderAdmComments(){
           <th style="color:var(--red)">🕐 Запізнення (хвилин)</th>
         </tr></thead>
         <tbody>
-          ${db.staff.map(emp => {
+          ${myStaff().map(emp => {
             const s=summary[emp.id]||{overtimeMins:0,lateMins:0,lateCount:0};
             const hasData=s.overtimeMins||s.lateMins;
             return `<tr style="${hasData?'':'opacity:.4'}">
@@ -2892,14 +3285,14 @@ function renderAdmReviews(){
   };
   let html = '<thead><tr>';
   html += '<th style="text-align:left;min-width:130px">Reviews</th>';
-  db.staff.forEach(emp => { html += `<th style="min-width:44px;text-align:center">${initials(emp)}</th>`; });
+  myStaff().forEach(emp => { html += `<th style="min-width:44px;text-align:center">${initials(emp)}</th>`; });
   html += '</tr></thead>';
 
   html += '<tbody>';
   sites.forEach((site, si) => {
     html += '<tr>';
     html += `<td style="font-size:12px">${site} <button onclick="removeReviewSite(${si})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:10px;margin-left:4px" title="Видалити">✕</button></td>`;
-    db.staff.forEach(emp => {
+    myStaff().forEach(emp => {
       const val = (data[si]&&data[si][emp.id]) || 0;
       html += `<td style="text-align:center;padding:2px"><input type="number" min="0" class="esc-input" id="rv-${si}-${emp.id}" value="${val}" oninput="recalcReviewRow(${si})" style="width:46px;text-align:center;padding:4px"></td>`;
     });
@@ -2910,7 +3303,7 @@ function renderAdmReviews(){
   html += '<tr style="border-top:2px solid var(--border2)">';
   html += '<td style="font-weight:600;font-size:11px;color:var(--muted2);letter-spacing:1px">ВІДГУКІВ ∑</td>';
   let grandTotal = 0;
-  db.staff.forEach(emp => {
+  myStaff().forEach(emp => {
     let empTotal = 0;
     sites.forEach((_, si) => { empTotal += (data[si]&&data[si][emp.id])||0; });
     grandTotal += empTotal;
@@ -2921,7 +3314,7 @@ function renderAdmReviews(){
   // UAH row: sum per agent
   html += '<tr style="border-top:1px solid var(--border)">';
   html += '<td style="font-weight:600;font-size:11px;color:var(--teal);letter-spacing:1px">СУМА ₴</td>';
-  db.staff.forEach(emp => {
+  myStaff().forEach(emp => {
     let empTotal = 0;
     sites.forEach((_, si) => { empTotal += (data[si]&&data[si][emp.id])||0; });
     html += `<td id="rv-emp-uah-${emp.id}" style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--teal);font-size:12px">${(empTotal*200).toLocaleString('uk')}</td>`;
@@ -2937,7 +3330,7 @@ function recalcReviewRow(si){
   const rv = (db.reviews&&db.reviews[k])||{sites:[],data:{}};
   const sites = rv.sites||[];
   // Recalc agent totals + uah
-  db.staff.forEach(emp => {
+  myStaff().forEach(emp => {
     let empTotal = 0;
     sites.forEach((_, i) => { empTotal += +document.getElementById(`rv-${i}-${emp.id}`)?.value||0; });
     const el    = document.getElementById(`rv-emp-${emp.id}`);
@@ -2966,7 +3359,7 @@ async function saveReviews(){
   rv.data = {};
   rv.sites.forEach((_, si) => {
     rv.data[si] = {};
-    db.staff.forEach(emp => {
+    myStaff().forEach(emp => {
       const val = +document.getElementById(`rv-${si}-${emp.id}`)?.value||0;
       if(val) rv.data[si][emp.id] = val;
     });
@@ -2980,15 +3373,15 @@ async function exportReviewsExcel(){
   const k = getReviewsMkey();
   const rv = (db.reviews&&db.reviews[k])||{sites:[],data:{}};
   const initials = emp => { const p=emp.name.split(' '); return (p[0]?p[0][0]:'')+(p[1]?p[1][0]:''); };
-  const header = ['Reviews', ...db.staff.map(e=>initials(e)), 'Разом', 'Сума ₴'].join(';');
+  const header = ['Reviews', ...myStaff().map(e=>initials(e)), 'Разом', 'Сума ₴'].join(';');
   const rows = [header];
   rv.sites.forEach((site, si) => {
     let total = 0;
-    const cols = db.staff.map(emp => { const v=(rv.data[si]&&rv.data[si][emp.id])||0; total+=v; return v; });
+    const cols = myStaff().map(emp => { const v=(rv.data[si]&&rv.data[si][emp.id])||0; total+=v; return v; });
     rows.push([site, ...cols, total, total*200].join(';'));
   });
   // Agent totals
-  const agentTotals = db.staff.map(emp => {
+  const agentTotals = myStaff().map(emp => {
     return rv.sites.reduce((s,_,si)=>(rv.data[si]&&rv.data[si][emp.id])||0+s, 0);
   });
   rows.push(['РАЗОМ', ...agentTotals, agentTotals.reduce((a,b)=>a+b,0), agentTotals.reduce((a,b)=>a+b,0)*200].join(';'));
@@ -3187,7 +3580,7 @@ function renderExchange(){
       const sh=getShift(ex.shiftId);
       html+=`<div class="exchange-offer">
         <div class="exo-left">
-          <div class="exo-name">📤 ${ex.day} ${MONTHS_UK[ex.month-1]} — <span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label}</div>
+          <div class="exo-name">📤 ${ex.day} ${MONTHS_UK[ex.month-1]} — <span style="font-family:'DM Mono',monospace;color:${sh.color};font-weight:600">${sh.time||sh.label||'?'}</span> ${sh.label&&sh.time?sh.label:''}</div>
           <div class="exo-msg" style="margin-top:4px">Очікує пропозицій від колег</div>
           ${ex.comment?`<div class="exo-msg">💬 ${ex.comment}</div>`:''}
         </div>
@@ -3233,7 +3626,7 @@ function renderExchange(){
         <div class="exo-left">
           <div class="exo-name">${ex.fromName}</div>
           <div class="exo-date">📅 ${ex.day} ${MONTHS_UK[ex.month-1]} ${ex.year}</div>
-          <div class="exo-shift" style="margin-top:4px"><span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label} ${sh.time?'('+sh.time+')':''}</div>
+          <div class="exo-shift" style="margin-top:4px"><span style="font-family:'DM Mono',monospace;color:${sh.color};font-weight:600">${sh.time||sh.label||'?'}</span> ${sh.label&&sh.time?sh.label+' ':''}${sh.time?'('+sh.time+')':''}</div>
           ${ex.comment?`<div class="exo-msg">💬 ${ex.comment}</div>`:''}
         </div>
         ${alreadyApplied
@@ -3259,7 +3652,7 @@ function openOfferModal(){
     const sh=getShift(shiftId);
     const hasShift=shiftId&&shiftId!=='off';
     html+=`<div class="day-pick-btn ${hasShift?'has-shift':'no-shift'}" onclick="selectOfferDay(${d},'${shiftId}')" id="opd-${d}">`+
-      `${d}<br><span style="font-size:9px;color:${sh.color}">${sh.short||'—'}</span></div>`;
+      `${d}<br><span style="font-size:9px;color:${sh.color}">${sh.time||sh.label||'—'}</span></div>`;
   }
   document.getElementById('offer-day-picker').innerHTML=html;
   document.getElementById('offer-shift-preview').innerHTML='';
@@ -3274,7 +3667,7 @@ function selectOfferDay(day,shiftId){
   const sh=getShift(shiftId);
   document.getElementById('offer-shift-preview').innerHTML=shiftId==='off'
     ?`<span style="color:var(--muted)">Це вихідний — зміни немає</span>`
-    :`<span class="shift-pill ${sh.cls}" style="border-color:${sh.color}33">${sh.short}</span> ${sh.label} (${sh.time})`;
+    :`<span style="font-family:'DM Mono',monospace;color:${sh.color};font-weight:600">${sh.time||sh.label||'?'}</span> ${sh.label&&sh.time?sh.label:''}${sh.time?' ('+sh.time+')':''}` ;
 }
 
 async function submitOffer(){
@@ -3375,6 +3768,7 @@ function admTab(tab,el){
   document.getElementById('adm-'+tab).classList.add('active');
   el.classList.add('active');
   if(tab==='schedule'){renderAdmSched(); document.getElementById('adm-bday-bar').innerHTML=renderAdmBdayBanner();}
+  if(tab==='shifttypes'){renderShiftTypesManager();}
   if(tab==='monthly'){renderMonthly();}
   if(tab==='links'){renderLinksEditor();}
   if(tab==='announce'){renderAnnounceAdmin();}
@@ -3385,12 +3779,21 @@ function admTab(tab,el){
   if(tab==='reviews'){renderAdmReviews();}
   if(tab==='kudos'){renderAdmKudos();}
   if(tab==='mood'){renderAdmMood();}
+  if(tab==='remarks'){initAdmRemarksFilters(); renderAdmRemarks();}
+  if(tab==='company'){renderAdmCompanyTab();}
 }
 
-function renderAdmin(){ renderAdmStaff(); }
+function renderAdmin(){
+  const sub = document.getElementById('adm-panel-sub');
+  if(sub && me && me.teamName) sub.textContent = '👑 Команда: ' + me.teamName + ' · ' + me.leadName;
+  // Show remarks tab only for TLs of audited teams
+  const remarksTab = document.getElementById('adm-remarks-tab');
+  if(remarksTab) remarksTab.style.display = AUDITED_TEAM_IDS.includes(me&&me.teamId) ? 'block' : 'none';
+  renderAdmStaff();
+}
 
 function renderAdmStaff(){
-  document.getElementById('adm-staff-list').innerHTML=db.staff.map(e=>`
+  document.getElementById('adm-staff-list').innerHTML=myStaff().map(e=>`
     <tr>
       <td><b>${e.name}</b></td>
       <td style="color:var(--muted)">${e.role}</td>
@@ -3412,7 +3815,7 @@ function renderAdmSched(){
   renderLegend('adm-legend');
   const key=mkey(admSchedY,admSchedM);
   if(!db.schedule[key]) db.schedule[key]={};
-  db.staff.forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
+  myStaff().forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
   renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
 }
 
@@ -3469,15 +3872,9 @@ async function setDayEmoji(day,emoji){
 }
 
 async function saveSchedule(){
-  const key=mkey(admSchedY,admSchedM);
-  if(!db.schedule[key]) db.schedule[key]={};
-  document.querySelectorAll('#adm-sched-table select.sched-select').forEach(sel=>{
-    const empId=+sel.dataset.emp, day=+sel.dataset.day;
-    if(!db.schedule[key][empId]) db.schedule[key][empId]={};
-    db.schedule[key][empId][day]=sel.value;
-  });
   await saveDB();
-  alert('✅ Графік збережено!');
+  const btn = event && event.target;
+  if(btn){ const orig=btn.textContent; btn.textContent='✅ Збережено!'; setTimeout(()=>btn.textContent=orig,2000); }
 }
 
 // ── MONTHLY ──
@@ -3486,7 +3883,7 @@ function renderMonthly(){
   document.getElementById('monthly-title').textContent=MONTHS_UK[monthlyM]+' '+monthlyY;
   const key=mkey(monthlyY,monthlyM);
   const sched=db.schedule[key]||{};
-  document.getElementById('monthly-grid').innerHTML=db.staff.map(emp=>{
+  document.getElementById('monthly-grid').innerHTML=myStaff().map(emp=>{
     const empSched=sched[emp.id]||{};
     // Auto-count: night shift = s7 (00-8)
     const allShifts=Object.values(empSched).filter(v=>v&&v!=='off');
@@ -3520,7 +3917,7 @@ function renderMonthly(){
 }
 
 function recalcCard(id){
-  const emp=db.staff.find(s=>s.id===id);
+  const emp=myStaff().find(s=>s.id===id);
   const days=+document.getElementById(`days-${id}`)?.value||0;
   const nights=+document.getElementById(`nights-${id}`)?.value||0;
   const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
@@ -3532,7 +3929,7 @@ function recalcCard(id){
 async function saveMonthly(){
   const key=mkey(monthlyY,monthlyM);
   const label=MONTHS_UK[monthlyM]+' '+monthlyY;
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const days=+document.getElementById(`days-${emp.id}`)?.value||0;
     const nights=+document.getElementById(`nights-${emp.id}`)?.value||0;
     const bonus=+document.getElementById(`bonus-${emp.id}`)?.value||0;
@@ -3560,7 +3957,8 @@ async function addAgent(){
     kpi:+document.getElementById('new-kpi').value||402,
     rating:+document.getElementById('new-rating').value||0,
     ratingType:document.getElementById('new-rating-hi')?.checked?'high':'standard',
-    payments:[]
+    payments:[],
+    teamId: me && me.teamId ? me.teamId : 1
   };
   db.staff.push(agent);
   await saveDB();
@@ -3570,7 +3968,7 @@ async function addAgent(){
 }
 
 async function removeAgent(id){
-  const emp=db.staff.find(s=>s.id===id);
+  const emp=myStaff().find(s=>s.id===id);
   if(!emp) return;
   if(!confirm(`Видалити ${emp.name}? Це незворотна дія.`)) return;
   db.staff=db.staff.filter(s=>s.id!==id);
@@ -3582,7 +3980,7 @@ async function removeAgent(id){
 // ── EMP MODAL ──
 function openEmpModal(id){
   editingId=id;
-  const e=db.staff.find(s=>s.id===id);
+  const e=myStaff().find(s=>s.id===id);
   document.getElementById('modal-name-h').textContent=e.name.toUpperCase();
   document.getElementById('m-name').value=e.name;
   document.getElementById('m-role').value=e.role;
@@ -3599,7 +3997,7 @@ function openEmpModal(id){
 }
 
 async function saveEmp(){
-  const e=db.staff.find(s=>s.id===editingId);
+  const e=myStaff().find(s=>s.id===editingId);
   e.name=document.getElementById('m-name').value;
   e.role=document.getElementById('m-role').value;
   e.rate=+document.getElementById('m-rate').value;
@@ -3630,9 +4028,9 @@ function renderAdmKudos(){
   }
   list.innerHTML = kudos.map((k,i)=>{
     const realIdx = kudos.length-1-i;
-    const from = k.anon ? null : db.staff.find(s=>s.id==k.fromId||String(s.id)==String(k.fromId));
+    const from = k.anon ? null : myStaff().find(s=>s.id==k.fromId||String(s.id)==String(k.fromId));
     const fromName = k.anon ? '🎭 Анонім' : (from?from.name:'Невідомо');
-    const to = k.toId==='teamlead' ? '👑 Тім Лід' : (db.staff.find(s=>s.id==k.toId||String(s.id)==String(k.toId))?.name||'?');
+    const to = k.toId==='teamlead' ? '👑 Тім Лід' : (myStaff().find(s=>s.id==k.toId||String(s.id)==String(k.toId))?.name||'?');
     const date = new Date(k.createdAt).toLocaleDateString('uk',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
     return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">
       <span style="font-size:24px;flex-shrink:0">${k.emoji||'💛'}</span>
@@ -3682,7 +4080,7 @@ function renderAdmMood(){
       <th style="text-align:center">Сер.</th>
     </tr></thead><tbody>`;
 
-  db.staff.forEach(emp=>{
+  myStaff().forEach(emp=>{
     const moods = (db.moods||{})[emp.id]||(db.moods||{})[String(emp.id)]||{};
     const vals = days.map(d=>moods[d.key]||null);
     const filled = vals.filter(v=>v!==null);
@@ -3699,7 +4097,7 @@ function renderAdmMood(){
 
   // Підсумок по сьогодні
   const todayKey2 = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
-  const todayMoods = db.staff.map(emp=>{
+  const todayMoods = myStaff().map(emp=>{
     const m = (db.moods||{})[emp.id]||(db.moods||{})[String(emp.id)]||{};
     return m[todayKey2]||null;
   }).filter(v=>v!==null);
@@ -3709,7 +4107,7 @@ function renderAdmMood(){
   html = `<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="dash-kard" style="flex:1;min-width:140px">
       <div class="dash-label">Відповіли сьогодні</div>
-      <div class="dash-val" style="color:var(--blue)">${responded}<span style="font-size:14px;color:var(--muted)">/${db.staff.length}</span></div>
+      <div class="dash-val" style="color:var(--blue)">${responded}<span style="font-size:14px;color:var(--muted)">/${myStaff().length}</span></div>
     </div>
     <div class="dash-kard" style="flex:1;min-width:140px">
       <div class="dash-label">Середній настрій</div>
@@ -3963,6 +4361,713 @@ document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',f
   // Перевіряємо кожні 2 секунди
   setInterval(checkAndStart, 2000);
 })();
+
+// ══ SHIFT PICKER ══
+let _pickerEmpId=null, _pickerDay=null, _pickerKey=null, _pickerEl=null;
+
+function openShiftPicker(e, empId, day, key){
+  e.stopPropagation();
+  closeShiftPicker();
+  _pickerEmpId=empId; _pickerDay=day; _pickerKey=key; _pickerEl=e.currentTarget;
+
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const shifts = getTeamShifts(teamId);
+  const curId = (db.schedule[key]&&db.schedule[key][empId]&&db.schedule[key][empId][day])||'off';
+
+  let html = `<div class="shift-picker-title">ВИБІР ЗМІНИ · День ${day}</div>`;
+  // Custom shifts
+  shifts.forEach(s=>{
+    const active = curId===s.id;
+    html+=`<button class="shift-picker-btn" onclick="applyShift('${s.id}')" style="${active?`background:${s.color}22;border-color:${s.color}88;`:''}" >
+      <div class="shift-picker-dot" style="background:${s.color}"></div>
+      <div>
+        <div style="font-weight:600;font-size:13px;color:${s.color}">${s.time||'—'}</div>
+        <div style="font-size:11px;color:var(--muted2)">${s.label}</div>
+      </div>
+      ${active?'<span style="margin-left:auto;color:'+s.color+'">✓</span>':''}
+    </button>`;
+  });
+  // Vacation
+  html+=`<button class="shift-picker-btn" onclick="applyShift('vacation')" style="${curId==='vacation'?'background:rgba(56,189,248,.1);border-color:#38bdf8;':''}">
+    <div class="shift-picker-dot" style="background:#38bdf8"></div>
+    <div style="font-weight:600;font-size:13px;color:#38bdf8">🏖 Відпустка</div>
+  </button>`;
+  // Clear = off
+  html+=`<button class="shift-picker-clear" onclick="applyShift('off')">✕ Вихідний / очистити</button>`;
+
+  const picker = document.createElement('div');
+  picker.className='shift-picker'; picker.id='shift-picker-popup';
+  picker.innerHTML=html;
+  document.body.appendChild(picker);
+
+  // Position near cell
+  const rect=e.currentTarget.getBoundingClientRect();
+  let top=rect.bottom+6, left=rect.left;
+  if(left+290>window.innerWidth) left=window.innerWidth-295;
+  if(top+400>window.innerHeight) top=rect.top-picker.offsetHeight-6;
+  picker.style.top=top+'px'; picker.style.left=left+'px';
+
+  setTimeout(()=>document.addEventListener('click',closeShiftPicker,{once:true}),10);
+}
+
+function closeShiftPicker(){
+  const p=document.getElementById('shift-picker-popup');
+  if(p) p.remove();
+}
+
+async function applyShift(shiftId){
+  closeShiftPicker();
+  if(!_pickerKey||!_pickerEmpId) return;
+  if(!db.schedule[_pickerKey]) db.schedule[_pickerKey]={};
+  if(!db.schedule[_pickerKey][_pickerEmpId]) db.schedule[_pickerKey][_pickerEmpId]={};
+  db.schedule[_pickerKey][_pickerEmpId][_pickerDay] = shiftId;
+  // Re-render just the cell visually
+  renderAdmSched();
+  // Auto-save after short delay
+  clearTimeout(window._schedSaveTimer);
+  window._schedSaveTimer = setTimeout(()=>saveDB(), 1500);
+}
+
+// ══ SHIFT TYPES MANAGER ══
+function renderShiftTypesManager(){
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const shifts = getTeamShifts(teamId);
+  const el = document.getElementById('adm-shift-types-content');
+  if(!el) return;
+
+  const colorBtns = SHIFT_COLORS.map(c=>
+    `<button onclick="selectPickerColor('${c.hex}')" title="${c.name}"
+      style="width:26px;height:26px;border-radius:50%;background:${c.hex};border:2px solid transparent;cursor:pointer;transition:.15s"
+      id="pcolor_${c.hex.replace('#','')}"
+      onmouseover="this.style.borderColor='white'" onmouseout="updateColorBtns()"></button>`
+  ).join('');
+
+  el.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+      <div class="sec-title" style="margin-top:0">ДОДАТИ ТИП ЗМІНИ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px">
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Назва</label>
+          <input id="new-shift-label" type="text" placeholder="напр. Чати" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Час початку</label>
+          <input id="new-shift-time" type="text" placeholder="09:00" maxlength="5" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Mono',monospace;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <button class="btn-add" onclick="addShiftType()" style="white-space:nowrap;height:42px">+ Додати</button>
+      </div>
+      <div style="margin-bottom:6px">
+        <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Колір</label>
+        <div id="shift-color-picker" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${colorBtns}</div>
+      </div>
+      <input type="hidden" id="new-shift-color" value="${SHIFT_COLORS[0].hex}">
+    </div>
+
+    <div class="sec-title">МОЇ ТИПИ ЗМІН</div>
+    ${shifts.length===0?'<div class="empty-state">Додайте перший тип зміни вище</div>':
+      `<div style="display:flex;flex-direction:column;gap:8px">
+        ${shifts.map((s,i)=>`
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px">
+            <div style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px;color:${s.color}">${s.time||'—'}</div>
+              <div style="font-size:12px;color:var(--muted2)">${s.label}</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              ${i>0?`<button class="btn-sm" onclick="moveShiftType(${i},-1)" style="padding:4px 8px">↑</button>`:''}
+              ${i<shifts.length-1?`<button class="btn-sm" onclick="moveShiftType(${i},1)" style="padding:4px 8px">↓</button>`:''}
+              <button class="btn-sm red" onclick="deleteShiftType('${s.id}')">🗑</button>
+            </div>
+          </div>`).join('')}
+      </div>`
+    }`;
+  // Highlight selected color
+  updateColorBtns();
+}
+
+let _selectedShiftColor = SHIFT_COLORS[0].hex;
+function selectPickerColor(hex){
+  _selectedShiftColor = hex;
+  document.getElementById('new-shift-color').value = hex;
+  updateColorBtns();
+}
+function updateColorBtns(){
+  SHIFT_COLORS.forEach(c=>{
+    const btn = document.getElementById('pcolor_'+c.hex.replace('#',''));
+    if(btn) btn.style.borderColor = c.hex===_selectedShiftColor ? 'white' : 'transparent';
+  });
+}
+
+function addShiftType(){
+  const label = document.getElementById('new-shift-label').value.trim();
+  const time  = document.getElementById('new-shift-time').value.trim();
+  const color = _selectedShiftColor || SHIFT_COLORS[0].hex;
+  if(!label && !time){ alert('Вкажіть назву або час'); return; }
+  const teamId = me && me.teamId ? me.teamId : 1;
+  if(!db.shiftTypes) db.shiftTypes={};
+  if(!db.shiftTypes[teamId]) db.shiftTypes[teamId]=[];
+  const id = 'ts_'+teamId+'_'+Date.now();
+  db.shiftTypes[teamId].push({id, label:label||time, time, color});
+  document.getElementById('new-shift-label').value='';
+  document.getElementById('new-shift-time').value='';
+  saveDB();
+  renderShiftTypesManager();
+}
+
+function deleteShiftType(id){
+  const teamId = me && me.teamId ? me.teamId : 1;
+  if(!db.shiftTypes||!db.shiftTypes[teamId]) return;
+  db.shiftTypes[teamId] = db.shiftTypes[teamId].filter(s=>s.id!==id);
+  saveDB();
+  renderShiftTypesManager();
+}
+
+function moveShiftType(idx, dir){
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const arr = db.shiftTypes[teamId];
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=arr.length) return;
+  [arr[idx],arr[newIdx]]=[arr[newIdx],arr[idx]];
+  saveDB();
+  renderShiftTypesManager();
+}
+
+// ══ AUDITOR SYSTEM ══
+// db.remarks = [ {id, auditorId, auditorName, agentId, agentName, teamId, type, text, month, createdAt} ]
+
+function auditorTab(tab, el){
+  document.querySelectorAll('#auditor-view .etab').forEach(e=>e.style.display='none');
+  document.querySelectorAll('#auditor-view .nav-tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('atab-'+tab).style.display='block';
+  el.classList.add('active');
+  if(tab==='history')  renderAuditorHistory();
+  if(tab==='schedule') renderAuditorCal();
+  if(tab==='company')  renderAuditorCompanyTab();
+}
+
+let auditorCalY, auditorCalM;
+function auditorCalNav(d){
+  auditorCalM+=d;
+  if(auditorCalM<0){auditorCalM=11;auditorCalY--;}
+  if(auditorCalM>11){auditorCalM=0;auditorCalY++;}
+  renderAuditorCal();
+}
+
+function renderAuditorCal(){
+  const now = new Date();
+  if(auditorCalY===undefined){ auditorCalY=now.getFullYear(); auditorCalM=now.getMonth(); }
+  document.getElementById('auditor-cal-title').textContent = MONTHS_UK[auditorCalM]+' '+auditorCalY;
+
+  // Weekday headers
+  const wds = document.getElementById('auditor-cal-wds');
+  if(wds) wds.innerHTML = DAYS_UK.map(d=>`<div class="cal-wd">${d}</div>`).join('');
+
+  // Legend
+  renderLegend('auditor-legend');
+
+  const emp = me.data;
+  const key = mkey(auditorCalY, auditorCalM);
+  const sched = (db.schedule[key]||{})[emp.id]||{};
+  const first = new Date(auditorCalY, auditorCalM, 1);
+  const last  = new Date(auditorCalY, auditorCalM+1, 0).getDate();
+  const startDow = (first.getDay()+6)%7;
+
+  const container = document.getElementById('auditor-cal-days');
+  container.innerHTML = '';
+
+  // Empty cells
+  for(let i=0;i<startDow;i++){
+    const d=document.createElement('div'); d.className='cal-day empty'; container.appendChild(d);
+  }
+
+  for(let day=1; day<=last; day++){
+    const isToday = now.getDate()===day && now.getMonth()===auditorCalM && now.getFullYear()===auditorCalY;
+    const shiftId = sched[day]||'off';
+    const sh = getShift(shiftId);
+    const hasShift = shiftId && shiftId!=='off';
+
+    const div = document.createElement('div');
+    div.className = 'cal-day'+(isToday?' today-day':'');
+    div.innerHTML = `<div class="cal-day-num">${day}</div>`+
+      (hasShift
+        ? `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:2px auto;min-width:42px">
+            <div class="shift-cell-time" style="font-size:11px">${sh.time||sh.label||'?'}</div>
+            ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
+           </div>`
+        : `<div style="color:var(--muted);font-size:11px;text-align:center;padding:4px">—</div>`);
+    container.appendChild(div);
+  }
+}
+
+let auditorCompanyCalY, auditorCompanyCalM;
+function auditorCompanyCalNav(d){
+  auditorCompanyCalM+=d;
+  if(auditorCompanyCalM<0){auditorCompanyCalM=11;auditorCompanyCalY--;}
+  if(auditorCompanyCalM>11){auditorCompanyCalM=0;auditorCompanyCalY++;}
+  renderAuditorCompanySchedules();
+}
+
+function renderAuditorCompanyTab(){
+  const now = new Date();
+  if(auditorCompanyCalY===undefined){ auditorCompanyCalY=now.getFullYear(); auditorCompanyCalM=now.getMonth(); }
+
+  // Moods
+  const moodsEl = document.getElementById('auditor-company-moods');
+  if(moodsEl){
+    const todayKey = ()=>{ const n=new Date(); return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate(); };
+    const moods = db.moods||{};
+    moodsEl.innerHTML = TEAMS.map(team=>{
+      const members = db.staff.filter(s=>(s.teamId||1)===team.id);
+      if(!members.length) return '';
+      let total=0, count=0;
+      members.forEach(emp=>{ const v=(moods[emp.id]||moods[String(emp.id)]||{})[todayKey()]; if(v){total+=v;count++;} });
+      const avg = count?(total/count).toFixed(1):null;
+      const emoji = avg?(avg>=4.5?'😄':avg>=3.5?'😊':avg>=2.5?'😐':avg>=1.5?'😔':'😞'):'—';
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px">
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">${team.name}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:32px">${emoji}</span>
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent)">${avg||'?'}</div>
+            <div style="font-size:11px;color:var(--muted)">${count} із ${members.length} відповіли</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderAuditorCompanySchedules();
+}
+
+function renderAuditorCompanySchedules(){
+  document.getElementById('auditor-company-cal-title').textContent = MONTHS_UK[auditorCompanyCalM]+' '+auditorCompanyCalY;
+  const container = document.getElementById('auditor-company-sched');
+  if(!container) return;
+  const key = auditorCompanyCalY+'-'+(String(auditorCompanyCalM+1).padStart(2,'0'));
+  const sched = db.schedule[key]||{};
+  const last = new Date(auditorCompanyCalY,auditorCompanyCalM+1,0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  const now = new Date();
+  const isNow = now.getMonth()===auditorCompanyCalM && now.getFullYear()===auditorCompanyCalY;
+  function isWeekend(d){ const dow=new Date(auditorCompanyCalY,auditorCompanyCalM,d).getDay(); return dow===0||dow===6; }
+
+  let html = '';
+  TEAMS.forEach(team=>{
+    const members = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!members.length) return;
+    const isMyTeam = (me.data.teamId||1)===team.id;
+
+    let thead = `<thead><tr><th class="name-col" style="min-width:130px;${isMyTeam?'color:var(--accent)':''}">${team.name}</th>`;
+    days.forEach(d=>{
+      const dt=new Date(auditorCompanyCalY,auditorCompanyCalM,d);
+      const dow=DAYS_UK[(dt.getDay()+6)%7];
+      const isToday=isNow&&now.getDate()===d;
+      const wknd=isWeekend(d);
+      const bg=isToday?'rgba(245,200,66,.2)':wknd?'rgba(167,139,250,.1)':'';
+      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px"><div style="opacity:.6">${dow}</div><div style="font-family:'DM Mono',monospace;font-size:11px">${d}</div></th>`;
+    });
+    thead+='</tr></thead>';
+
+    let tbody='<tbody>';
+    members.forEach(emp=>{
+      const empSched=sched[emp.id]||{};
+      const isMe = emp.id===me.data.id;
+      let cells='';
+      days.forEach(d=>{
+        const isToday=isNow&&now.getDate()===d;
+        const wknd=isWeekend(d);
+        const shiftId=empSched[d]||'off';
+        const sh=getShift(shiftId);
+        const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
+        cells+=`<td style="background:${bg};padding:2px;text-align:center">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+        </td>`;
+      });
+      const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
+      tbody+=`<tr style="${isMe?'background:rgba(245,200,66,.04);':''}">`+
+        `<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px;${isMe?'color:var(--accent);font-weight:700':''}">${shortName}${isMe?' 👈':''}</td>${cells}</tr>`;
+    });
+    tbody+='</tbody>';
+
+    html+=`<div style="margin-bottom:24px"><div class="sched-wrap" style="border-radius:12px;overflow-x:auto;border:1px solid ${isMyTeam?'rgba(245,200,66,.3)':'var(--border)'}"><table class="sched-table" style="min-width:600px">${thead}${tbody}</table></div></div>`;
+  });
+  container.innerHTML = html||'<div class="empty-state">Немає даних</div>';
+}
+
+function renderAuditorView(){
+  // Populate team select
+  const teamSel = document.getElementById('audit-team-sel');
+  teamSel.innerHTML = '<option value="">— Оберіть команду —</option>' +
+    AUDITED_TEAM_IDS.map(tid=>{
+      const t = TEAMS.find(x=>x.id===tid);
+      return t ? `<option value="${tid}">${t.name}</option>` : '';
+    }).join('');
+
+  // Populate month select (last 12 months)
+  const mSel = document.getElementById('audit-month-sel');
+  const now = new Date();
+  mSel.innerHTML = '';
+  for(let i=0; i<12; i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0'));
+    const label = MONTHS_UK[d.getMonth()]+' '+d.getFullYear();
+    mSel.innerHTML += `<option value="${val}">${label}</option>`;
+  }
+}
+
+function onAuditTeamChange(){
+  const teamId = parseInt(document.getElementById('audit-team-sel').value);
+  const agentSel = document.getElementById('audit-agent-sel');
+  if(!teamId){ agentSel.innerHTML='<option value="">— спочатку оберіть команду —</option>'; return; }
+  const agents = db.staff.filter(s=>(s.teamId||1)===teamId);
+  agentSel.innerHTML = '<option value="">— Оберіть агента —</option>' +
+    agents.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+async function submitRemark(){
+  const agentId = parseInt(document.getElementById('audit-agent-sel').value);
+  const teamId  = parseInt(document.getElementById('audit-team-sel').value);
+  const type    = document.getElementById('audit-type-sel').value;
+  const month   = document.getElementById('audit-month-sel').value;
+  const text    = document.getElementById('audit-text').value.trim();
+
+  if(!agentId){ alert('Оберіть агента'); return; }
+  if(!text)   { alert('Введіть текст зауваження'); return; }
+
+  const agent = db.staff.find(s=>s.id===agentId);
+  if(!db.remarks) db.remarks = [];
+
+  const remark = {
+    id: Date.now(),
+    auditorId:   me.data.id,
+    auditorName: me.data.name,
+    agentId,
+    agentName:   agent ? agent.name : '?',
+    teamId,
+    type,
+    text,
+    month,
+    createdAt: new Date().toISOString()
+  };
+  db.remarks.push(remark);
+  await saveDB();
+
+  // Clear form
+  document.getElementById('audit-text').value = '';
+  document.getElementById('audit-agent-sel').value = '';
+
+  // Show confirmation
+  const btn = document.querySelector('#atab-remarks .btn-save');
+  const orig = btn.textContent;
+  btn.textContent = '✅ Зауваження додано!';
+  setTimeout(()=>btn.textContent=orig, 2500);
+}
+
+function renderAuditorHistory(){
+  const el = document.getElementById('audit-history-list');
+  if(!el) return;
+  const remarks = (db.remarks||[]).filter(r=>r.auditorId===me.data.id).slice().reverse();
+  if(!remarks.length){
+    el.innerHTML='<div class="empty-state" style="padding:40px">Ви ще не внесли жодного зауваження</div>';
+    return;
+  }
+  const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
+  el.innerHTML = remarks.map(r=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:18px">${TYPE_ICON[r.type]||'📋'}</span>
+        <div style="font-weight:600;font-size:14px">${r.agentName}</div>
+        <div style="font-size:11px;color:var(--muted);background:var(--surface2);border-radius:6px;padding:2px 8px">${teamNameById(r.teamId)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkMonth(r.month)} · ${formatRemarkDate(r.createdAt)}</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted2);line-height:1.5">${r.text}</div>
+    </div>`).join('');
+}
+
+// ── Admin remarks view (for TLs of audited teams) ──
+function initAdmRemarksFilters(){
+  const mSel = document.getElementById('adm-remarks-month');
+  if(!mSel) return;
+  const now = new Date();
+  mSel.innerHTML = '<option value="">Всі місяці</option>';
+  for(let i=0; i<12; i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0'));
+    mSel.innerHTML += `<option value="${val}" ${i===0?'selected':''}>${MONTHS_UK[d.getMonth()]+' '+d.getFullYear()}</option>`;
+  }
+  const agSel = document.getElementById('adm-remarks-agent');
+  agSel.innerHTML = '<option value="">Всі агенти</option>' +
+    myStaff().map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function renderAdmRemarks(){
+  const el = document.getElementById('adm-remarks-list');
+  if(!el) return;
+  const monthFilter = document.getElementById('adm-remarks-month')?.value||'';
+  const agentFilter = parseInt(document.getElementById('adm-remarks-agent')?.value)||0;
+  const typeFilter  = document.getElementById('adm-remarks-type')?.value||'';
+
+  const myTeamId = me && me.teamId;
+  let remarks = (db.remarks||[]).filter(r=>(r.teamId===myTeamId));
+  if(monthFilter) remarks = remarks.filter(r=>r.month===monthFilter);
+  if(agentFilter) remarks = remarks.filter(r=>r.agentId===agentFilter);
+  if(typeFilter)  remarks = remarks.filter(r=>r.type===typeFilter);
+  remarks = remarks.slice().reverse();
+
+  if(!remarks.length){
+    el.innerHTML='<div class="empty-state" style="padding:40px">Зауважень за обраний період немає</div>';
+    return;
+  }
+
+  // Group by agent
+  const byAgent = {};
+  remarks.forEach(r=>{ if(!byAgent[r.agentId]) byAgent[r.agentId]=[]; byAgent[r.agentId].push(r); });
+  const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
+
+  el.innerHTML = Object.entries(byAgent).map(([agId, rems])=>{
+    const agent = db.staff.find(s=>s.id==agId);
+    return `<div style="margin-bottom:20px">
+      <div class="sec-title" style="margin-top:0">${agent?agent.name:'Агент'} <span style="color:var(--muted);font-weight:400;font-size:11px">${rems.length} зауваж.</span></div>
+      ${rems.map(r=>`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <span>${TYPE_ICON[r.type]||'📋'}</span>
+            <span style="font-size:11px;color:var(--muted2);background:var(--surface2);padding:2px 8px;border-radius:6px">${formatRemarkMonth(r.month)}</span>
+            <span style="font-size:11px;color:var(--muted)">від ${r.auditorName.split(' ')[0]}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkDate(r.createdAt)}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5">${r.text}</div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── Employee: see own remarks ──
+function renderEmpRemarks(){
+  const el = document.getElementById('emp-remarks-list');
+  if(!el) return;
+  const empId = me.data.id;
+  const remarks = (db.remarks||[]).filter(r=>r.agentId===empId).slice().reverse();
+  if(!remarks.length){
+    el.innerHTML='<div class="empty-state" style="padding:40px"><div style="font-size:36px;margin-bottom:12px">📋</div><div>Зауважень від аудиторів поки немає</div></div>';
+    return;
+  }
+  const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
+  el.innerHTML = remarks.map(r=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:18px">${TYPE_ICON[r.type]||'📋'}</span>
+        <span style="font-size:12px;color:var(--muted2);background:var(--surface2);padding:2px 8px;border-radius:6px">${formatRemarkMonth(r.month)}</span>
+        <span style="font-size:11px;color:var(--muted)">від аудитора</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkDate(r.createdAt)}</span>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.text}</div>
+    </div>`).join('');
+}
+
+// ── Helpers ──
+function teamNameById(id){ const t=TEAMS.find(x=>x.id===id); return t?t.name:'?'; }
+function formatRemarkMonth(m){ if(!m) return ''; const [y,mo]=m.split('-'); return MONTHS_UK[parseInt(mo)-1]+' '+y; }
+function formatRemarkDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('uk',{day:'numeric',month:'short'}); }
+
+// ══ ADMIN COMPANY TAB ══
+let admCompanyCalY, admCompanyCalM;
+
+function admCompanyCalNav(d){
+  admCompanyCalM+=d;
+  if(admCompanyCalM<0){admCompanyCalM=11;admCompanyCalY--;}
+  if(admCompanyCalM>11){admCompanyCalM=0;admCompanyCalY++;}
+  renderAdmCompanySchedules();
+}
+
+function renderAdmCompanyTab(){
+  const now = new Date();
+  if(admCompanyCalY===undefined){ admCompanyCalY=now.getFullYear(); admCompanyCalM=now.getMonth(); }
+  // Moods
+  const moodsEl = document.getElementById('adm-company-moods-grid');
+  if(moodsEl){
+    const todayKey = ()=>{ const n=new Date(); return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate(); };
+    const moods = db.moods || {};
+    const html = TEAMS.map(team=>{
+      const members = db.staff.filter(s=>(s.teamId||1)===team.id);
+      if(!members.length) return '';
+      let total=0, count=0;
+      members.forEach(emp=>{ const v=(moods[emp.id]||moods[String(emp.id)]||{})[todayKey()]; if(v){total+=v;count++;} });
+      const avg = count?(total/count).toFixed(1):null;
+      const emoji = avg?(avg>=4.5?'😄':avg>=3.5?'😊':avg>=2.5?'😐':avg>=1.5?'😔':'😞'):'—';
+      const isMyTeam = team.id === (me&&me.teamId);
+      return `<div style="background:var(--surface);border:1px solid ${isMyTeam?'rgba(245,200,66,.4)':'var(--border)'};border-radius:14px;padding:16px 18px">
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${isMyTeam?'var(--accent)':'var(--muted)'};margin-bottom:8px">${team.name}${isMyTeam?' 👈':''}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:32px">${emoji}</span>
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent)">${avg||'?'}</div>
+            <div style="font-size:11px;color:var(--muted)">${count} із ${members.length} відповіли</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    moodsEl.innerHTML = html;
+  }
+  renderAdmCompanySchedules();
+}
+
+function renderAdmCompanySchedules(){
+  const titleEl = document.getElementById('adm-company-cal-title');
+  if(titleEl) titleEl.textContent = MONTHS_UK[admCompanyCalM]+' '+admCompanyCalY;
+  const container = document.getElementById('adm-company-sched-container');
+  if(!container) return;
+  const key = admCompanyCalY+'-'+(String(admCompanyCalM+1).padStart(2,'0'));
+  const sched = db.schedule[key]||{};
+  const last = new Date(admCompanyCalY,admCompanyCalM+1,0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  const now = new Date();
+  const isNow = now.getMonth()===admCompanyCalM && now.getFullYear()===admCompanyCalY;
+  function isWeekend(d){ const dow=new Date(admCompanyCalY,admCompanyCalM,d).getDay(); return dow===0||dow===6; }
+  let html = '';
+  TEAMS.forEach(team=>{
+    const members = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!members.length) return;
+    const isMyTeam = team.id === (me&&me.teamId);
+    let thead = `<thead><tr><th class="name-col" style="min-width:130px;${isMyTeam?'color:var(--accent)':''}">${team.name}</th>`;
+    days.forEach(d=>{
+      const dt=new Date(admCompanyCalY,admCompanyCalM,d);
+      const dow=DAYS_UK[(dt.getDay()+6)%7];
+      const isToday=isNow&&now.getDate()===d;
+      const wknd=isWeekend(d);
+      const bg=isToday?'rgba(245,200,66,.2)':wknd?'rgba(167,139,250,.1)':'';
+      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px"><div style="opacity:.6">${dow}</div><div style="font-family:'DM Mono',monospace;font-size:11px">${d}</div></th>`;
+    });
+    thead+='</tr></thead>';
+    let tbody='<tbody>';
+    members.forEach(emp=>{
+      const empSched=sched[emp.id]||{};
+      let cells='';
+      days.forEach(d=>{
+        const isToday=isNow&&now.getDate()===d;
+        const wknd=isWeekend(d);
+        const shiftId=empSched[d]||'off';
+        const sh=getShift(shiftId);
+        const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
+        const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
+        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
+      });
+      const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
+      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
+    });
+    tbody+='</tbody>';
+    html+=`<div style="margin-bottom:24px"><div class="sched-wrap" style="border-radius:12px;overflow-x:auto;border:1px solid ${isMyTeam?'rgba(245,200,66,.3)':'var(--border)'}"><table class="sched-table" style="min-width:600px">${thead}${tbody}</table></div></div>`;
+  });
+  container.innerHTML = html || '<div class="empty-state">Немає даних</div>';
+}
+
+let companyCalY, companyCalM;
+
+function companyCalNav(d){
+  companyCalM+=d;
+  if(companyCalM<0){companyCalM=11;companyCalY--;}
+  if(companyCalM>11){companyCalM=0;companyCalY++;}
+  renderCompanySchedules();
+}
+
+function renderCompanyTab(){
+  const now = new Date();
+  if(companyCalY===undefined){ companyCalY=now.getFullYear(); companyCalM=now.getMonth(); }
+  renderCompanyMoods();
+  renderCompanySchedules();
+}
+
+function renderCompanyMoods(){
+  const el = document.getElementById('company-moods-grid');
+  if(!el) return;
+  const todayKey = ()=>{ const n=new Date(); return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate(); };
+  const moods = db.moods || {};
+  const MOOD_LABELS = {5:'😄 Відмінно',4:'😊 Добре',3:'😐 Нормально',2:'😔 Не дуже',1:'😞 Погано'};
+
+  const html = TEAMS.map(team=>{
+    const teamMembers = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!teamMembers.length) return '';
+    let total=0, count=0;
+    teamMembers.forEach(emp=>{
+      const v = (moods[emp.id]||moods[String(emp.id)]||{})[todayKey()];
+      if(v){ total+=v; count++; }
+    });
+    const avg = count ? (total/count).toFixed(1) : null;
+    const emoji = avg ? (avg>=4.5?'😄':avg>=3.5?'😊':avg>=2.5?'😐':avg>=1.5?'😔':'😞') : '—';
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">${team.name}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:32px">${emoji}</span>
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent)">${avg||'?'}</div>
+          <div style="font-size:11px;color:var(--muted)">${count} із ${teamMembers.length} відповіли</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML = html || '<div class="empty-state">Даних настрою ще немає</div>';
+}
+
+function renderCompanySchedules(){
+  document.getElementById('company-cal-title').textContent = MONTHS_UK[companyCalM]+' '+companyCalY;
+  const container = document.getElementById('company-sched-container');
+  if(!container) return;
+  const key = companyCalY+'-'+(String(companyCalM+1).padStart(2,'0'));
+  const sched = db.schedule[key]||{};
+  const last = new Date(companyCalY,companyCalM+1,0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  const now = new Date();
+  const isNow = now.getMonth()===companyCalM && now.getFullYear()===companyCalY;
+  function isWeekend(d){ const dow=new Date(companyCalY,companyCalM,d).getDay(); return dow===0||dow===6; }
+
+  let html = '';
+  TEAMS.forEach(team=>{
+    const teamMembers = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!teamMembers.length) return;
+
+    let thead = `<thead><tr><th class="name-col" style="min-width:130px">${team.name}</th>`;
+    days.forEach(d=>{
+      const dt=new Date(companyCalY,companyCalM,d);
+      const dow=DAYS_UK[(dt.getDay()+6)%7];
+      const isToday=isNow&&now.getDate()===d;
+      const wknd=isWeekend(d);
+      const bg=isToday?'rgba(245,200,66,.2)':wknd?'rgba(167,139,250,.1)':'';
+      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px">
+        <div style="opacity:.6">${dow}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px">${d}</div>
+      </th>`;
+    });
+    thead+='</tr></thead>';
+
+    let tbody='<tbody>';
+    teamMembers.forEach(emp=>{
+      const empSched=sched[emp.id]||{};
+      let cells='';
+      days.forEach(d=>{
+        const isToday=isNow&&now.getDate()===d;
+        const wknd=isWeekend(d);
+        const shiftId=empSched[d]||'off';
+        const sh=getShift(shiftId);
+        const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
+        const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
+        cells+=`<td style="background:${bg};padding:2px;text-align:center">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+        </td>`;
+      });
+      const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
+      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
+    });
+    tbody+='</tbody>';
+
+    html+=`<div style="margin-bottom:24px">
+      <div class="sched-wrap" style="border-radius:12px;overflow-x:auto;border:1px solid var(--border)">
+        <table class="sched-table" style="min-width:600px">${thead}${tbody}</table>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html || '<div class="empty-state">Немає даних</div>';
+}
+
 </script>
 
 </body>
