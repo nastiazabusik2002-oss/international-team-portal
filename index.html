@@ -1249,46 +1249,29 @@ const SB_HDR = {
 
 async function loadDB(){
   try{
-    const res = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value', {headers: SB_HDR});
+    // Try portal_v6 first (new key)
+    const res = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v6&select=value', {headers: SB_HDR});
     if(res.ok){
       const rows = await res.json();
       if(rows.length && rows[0].value){
         db=JSON.parse(rows[0].value);
         // ── MIGRATION v1: assign teamId=1 to existing Chat staff ──
         if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
-        // ── MIGRATION v3: fix reversed Lastname Firstname → Firstname Lastname ──
-        // Build lookup: all correct names flattened
-        const allCorrect = [];
-        Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([tid, names]) =>
-          names.forEach(n => allCorrect.push({correct: n, teamId: parseInt(tid)}))
-        );
-        if(db.staff) db.staff.forEach(s => {
-          if(s.teamId === 1) return; // skip Chat team (already correct)
-          const parts = s.name.trim().split(' ');
-          if(parts.length >= 2){
-            // Try reversed: if "Lastname Firstname" → check "Firstname Lastname"
-            const reversed = parts.slice(1).join(' ') + ' ' + parts[0];
-            const match = allCorrect.find(x => x.correct === reversed);
-            if(match){ s.name = match.correct; s.teamId = match.teamId; }
-          }
-        });
-        // ── MIGRATION v2: add staff from other teams if not yet present ──
-        let migrated = false;
-        Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([teamId, names]) => {
-          names.forEach(name => {
-            const exists = db.staff.find(s=>s.name===name);
-            if(!exists){
-              db.staff.push({id:db.nextId++,name,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:'',teamId:parseInt(teamId)});
-              migrated = true;
-            }
-          });
-        });
-        // Save after migration so changes persist
-        if(migrated || !db._migrated_v3){
-          db._migrated_v3 = true;
-          // Save async without blocking
-          setTimeout(()=>saveDB(), 500);
-        }
+        // Skip all further migrations if already done
+        if(db._migrated_v3){ return; }
+        // Run migrations once
+        await runMigrations();
+        return;
+      }
+    }
+    // Fallback: try portal_v3 (old key) and migrate data over
+    const res3 = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value', {headers: SB_HDR});
+    if(res3.ok){
+      const rows3 = await res3.json();
+      if(rows3.length && rows3[0].value){
+        db=JSON.parse(rows3[0].value);
+        if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
+        await runMigrations();
         return;
       }
     }
@@ -1296,21 +1279,50 @@ async function loadDB(){
   db=buildDefault();
 }
 
+async function runMigrations(){
+  // Fix reversed names
+  const allCorrect = [];
+  Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([tid, names]) =>
+    names.forEach(n => allCorrect.push({correct: n, teamId: parseInt(tid)}))
+  );
+  if(db.staff) db.staff.forEach(s => {
+    if(s.teamId === 1) return;
+    const parts = s.name.trim().split(' ');
+    if(parts.length >= 2){
+      const reversed = parts.slice(1).join(' ') + ' ' + parts[0];
+      const match = allCorrect.find(x => x.correct === reversed);
+      if(match){ s.name = match.correct; s.teamId = match.teamId; }
+    }
+  });
+  // Add missing staff from other teams
+  Object.entries(INITIAL_STAFF_BY_TEAM).forEach(([teamId, names]) => {
+    names.forEach(name => {
+      const exists = db.staff.find(s=>s.name===name);
+      if(!exists){
+        db.staff.push({id:db.nextId++,name,role:'Агент',pass:'1234',rate:402,kpi:402,rating:0,payments:[],birthday:'',teamId:parseInt(teamId)});
+      }
+    });
+  });
+  db._migrated_v3 = true;
+  await saveDB();
+}
+
 async function saveDB(){
   sbSaving();
   _isSaving=true;
   try{
     const val=JSON.stringify(db);
-    console.log('[saveDB] PATCH to Supabase, size:', val.length);
-    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3', {
-      method:'PATCH',
-      headers:{...SB_HDR,'Prefer':'return=minimal'},
-      body:JSON.stringify({value:val})
+    console.log('[saveDB] saving, size:', val.length);
+    // Use upsert so it works even if key doesn't exist yet
+    const res=await fetch(SB_URL+'/rest/v1/portal_data', {
+      method:'POST',
+      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({key:'portal_v6', value:val})
     });
-    console.log('[saveDB] PATCH status:', res.status);
+    console.log('[saveDB] status:', res.status);
     if(!res.ok){
       const errBody=await res.text();
-      throw new Error('PATCH failed: '+res.status+' '+errBody);
+      throw new Error('Save failed: '+res.status+' '+errBody);
     }
     _lastDbStr=val;
     sbOnline();
@@ -3500,7 +3512,7 @@ function sbSaving(){
 async function autoRefreshDB(){
   if(_isSaving) return; // don't overwrite during active save
   try{
-    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v3&select=value',{headers:SB_HDR});
+    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v6&select=value',{headers:SB_HDR});
     if(!res.ok){sbOffline();return;}
     const rows=await res.json();
     if(rows.length && rows[0].value){
