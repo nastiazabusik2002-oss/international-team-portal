@@ -781,8 +781,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <div class="page-sub" style="margin-bottom:0">Щотижневі дані команди</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <input type="text" id="new-week-label" class="week-input" placeholder="напр. 23–29 черв" style="width:150px">
-            <button class="btn-add" onclick="addPerfWeek()">➕ Додати тиждень</button>
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">📅 З</span>
+              <input type="date" id="week-date-from" class="week-input" style="border:none;background:none;padding:0;width:130px" onchange="autoFillWeekTo()">
+              <span style="font-size:12px;color:var(--muted)">по</span>
+              <input type="date" id="week-date-to" class="week-input" style="border:none;background:none;padding:0;width:130px">
+            </div>
+            <button class="btn-add" onclick="addPerfWeekFromDates()">➕ Додати тиждень</button>
             <button class="btn-save" onclick="exportPerfExcel()">📥 Вигрузити Excel</button>
           </div>
         </div>
@@ -1205,6 +1210,18 @@ const SHIFTS = [
   SHIFT_OFF,
   SHIFT_VACATION,
 ];
+
+
+// Визначає чи є зміна нічною (00:00) по label або time
+function isNightShift(shiftId){
+  if(!shiftId || shiftId==='off' || shiftId==='vacation') return false;
+  if(shiftId==='s7') return true;
+  const sh = getShift(shiftId);
+  if(!sh) return false;
+  const lbl = (sh.label||'').toLowerCase();
+  const time = (sh.time||'').toLowerCase();
+  return lbl.includes('нічна') || lbl.includes('нічн') || time.startsWith('00:') || time.startsWith('0:');
+}
 
 const MONTHS_UK = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
@@ -2439,7 +2456,9 @@ function renderHomePerfCards(){
   const data = (db.perf && db.perf[me.data.id]) || [];
   if(data.length===0){ el.innerHTML=''; return; }
   const latest = data[data.length-1];
-  const prev   = data[data.length-2]||null;
+  const allWeeks = [...new Set(data.map(d=>d.week))];
+  const prevWeekLabel = getPrevWeekInMonth(allWeeks, {me: data}, latest.week);
+  const prev = prevWeekLabel ? (data.find(d=>d.week===prevWeekLabel)||null) : null;
   function trendBadge(cur, prv){
     if(!prv) return '';
     const diff=cur-prv, pct=prv?((diff/prv)*100).toFixed(1):0;
@@ -2488,7 +2507,10 @@ function renderEmpPerf(){
   }
 
   const latest = data[0];
-  const prev   = data[1] || null;
+  // prev — тільки з того самого місяця
+  const allWeeksSorted = data.map(d=>d.week);
+  const prevLabel = getPrevWeekInMonth(allWeeksSorted, {_: data}, latest.week);
+  const prev = prevLabel ? (data.find(d=>d.week===prevLabel)||null) : null;
 
   function trend(cur, prv, suffix=''){
     if(!prv) return `<span class="dash-trend trend-flat">— перший тиждень</span>`;
@@ -2542,7 +2564,9 @@ function renderEmpPerf(){
         <thead><tr><th>Тиждень</th><th>Листи</th><th>Чати</th><th>Змін чатів</th><th>Змін заг.</th><th>Ср.чатів/зміну</th><th>Ср.закрито загалом</th><th>Total</th><th>Динаміка</th></tr></thead>
         <tbody>
           ${data.map((d,i)=>{
-            const p = data[i+1]||null;
+            const allW = data.map(x=>x.week);
+            const prevLabel = getPrevWeekInMonth(allW, {me: data}, d.week);
+            const p = prevLabel ? (data.find(x=>x.week===prevLabel)||null) : null;
             const diff = p ? d.total - p.total : null;
             const pct  = (p&&p.total) ? ((diff/p.total)*100).toFixed(1) : null;
             const trendHtml = diff===null ? '<span class="dash-trend trend-flat">—</span>'
@@ -2574,7 +2598,7 @@ function renderTeamPerfTable(){
   const weeks = getWeekList();
   if(!weeks.length) return '<div class="empty-state">Даних ще немає</div>';
   const curWeek  = weeks[weeks.length-1];
-  const prevWeek = weeks[weeks.length-2]||null;
+  const prevWeek = getPrevWeekInMonth(weeks, db.perf||{}, curWeek);
   const rows = myStaff().map(emp=>{
     const empData=(db.perf&&db.perf[emp.id])||[];
     const cur =empData.find(d=>d.week===curWeek)||null;
@@ -2616,19 +2640,112 @@ function renderTeamPerfTable(){
 // ── Admin perf table ──
 // db.perf[empId] = [ {week:'label', letters, chats, shiftChats, shiftLetters}, ... ]
 
-function addPerfWeek(){
-  const label = document.getElementById('new-week-label').value.trim();
-  if(!label){ alert('Вкажіть назву тижня (напр. 23–29 черв)'); return; }
+function autoFillWeekTo(){
+  const fromEl = document.getElementById('week-date-from');
+  const toEl   = document.getElementById('week-date-to');
+  if(!fromEl.value) return;
+  const from = new Date(fromEl.value);
+  const to = new Date(from);
+  to.setDate(from.getDate()+6);
+  toEl.value = to.toISOString().slice(0,10);
+}
+
+function fmtDateShort(dateStr){
+  const [y,m,d] = dateStr.split('-');
+  return `${d}.${m}`;
+}
+
+function addPerfWeekFromDates(){
+  const fromVal = document.getElementById('week-date-from').value;
+  const toVal   = document.getElementById('week-date-to').value;
+  if(!fromVal || !toVal){ alert('Вибери початок і кінець тижня'); return; }
+  const label = fmtDateShort(fromVal)+'–'+fmtDateShort(toVal);
+  const monthKey = fromVal.slice(0,7);
   if(!db.perf) db.perf = {};
-  // Add empty row for each agent if not exists
+  const autoShifts = calcAutoShifts(fromVal, toVal);
   myStaff().forEach(emp=>{
     if(!db.perf[emp.id]) db.perf[emp.id]=[];
     if(!db.perf[emp.id].find(d=>d.week===label)){
-      db.perf[emp.id].push({week:label, letters:0, chats:0, shiftChats:0, shifts:0});
+      const s = autoShifts[emp.id]||{shiftChats:0, shifts:0};
+      db.perf[emp.id].push({
+        week:label, monthKey,
+        dateFrom:fromVal, dateTo:toVal,
+        letters:0, chats:0,
+        shiftChats: s.shiftChats,
+        shifts: s.shifts
+      });
     }
   });
-  document.getElementById('new-week-label').value='';
+  document.getElementById('week-date-from').value='';
+  document.getElementById('week-date-to').value='';
   renderAdmPerf();
+}
+
+function calcAutoShifts(fromStr, toStr){
+  const from = new Date(fromStr);
+  const to   = new Date(toStr);
+  const result = {};
+  for(let d = new Date(from); d <= to; d.setDate(d.getDate()+1)){
+    const y = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
+    const key = mkey(y,mo);
+    const sched = (db.schedule&&db.schedule[key])||{};
+    myStaff().forEach(emp=>{
+      const empSched = sched[emp.id]||sched[String(emp.id)]||{};
+      const shiftId = empSched[day];
+      if(!shiftId || shiftId==='off' || shiftId==='vacation') return;
+      if(!result[emp.id]) result[emp.id]={shiftChats:0, shifts:0};
+      result[emp.id].shifts++;
+      const sh = getShift(shiftId);
+      const lbl = (sh.label||'').toLowerCase();
+      const isChat = !lbl.includes('лист') && !lbl.includes('фідбек') && !lbl.includes('feedback');
+      if(isChat) result[emp.id].shiftChats++;
+    });
+  }
+  return result;
+}
+
+function refreshAutoShifts(){
+  const selEl = document.getElementById('perf-week-sel');
+  if(!selEl) return;
+  const selWeek = selEl.value;
+  let dateFrom='', dateTo='';
+  for(const rows of Object.values(db.perf||{})){
+    const r = rows.find(x=>x.week===selWeek);
+    if(r && r.dateFrom){ dateFrom=r.dateFrom; dateTo=r.dateTo; break; }
+  }
+  if(!dateFrom){ alert('Немає дат для цього тижня'); return; }
+  const autoShifts = calcAutoShifts(dateFrom, dateTo);
+  myStaff().forEach(emp=>{
+    const s = autoShifts[emp.id]||{shiftChats:0, shifts:0};
+    const scEl = document.getElementById(`psc-${emp.id}`);
+    const stEl = document.getElementById(`pst-${emp.id}`);
+    if(scEl) scEl.value = s.shiftChats;
+    if(stEl) stEl.value = s.shifts;
+    recalcPerfRow(emp.id);
+  });
+}
+
+// Стара функція — для сумісності зі старими тижнями
+function addPerfWeek(){ addPerfWeekFromDates(); }
+
+
+
+
+function getPrevWeekInMonth(weeks, allPerfData, curWeek){
+  const curMonthKey = getCurMonthKey(allPerfData, curWeek);
+  if(!curMonthKey) return null;
+  const sameMonthWeeks = weeks.filter(w => getCurMonthKey(allPerfData, w) === curMonthKey);
+  const idx = sameMonthWeeks.indexOf(curWeek);
+  if(idx <= 0) return null;
+  return sameMonthWeeks[idx-1];
+}
+
+function getCurMonthKey(allPerfData, week){
+  for(const rows of Object.values(allPerfData||{})){
+    const found = rows.find(r=>r.week===week);
+    if(found && found.monthKey) return found.monthKey;
+  }
+  return null;
 }
 
 function getWeekList(){
@@ -2647,12 +2764,25 @@ function renderAdmPerf(){
   } else {
     // Show latest week editable table
     const curWeek = weeks[weeks.length-1];
+    const weekMeta = (()=>{
+      for(const rows of Object.values(db.perf||{})){
+        const r = rows.find(x=>x.week===curWeek);
+        if(r && r.dateFrom) return r;
+      }
+      return null;
+    })();
+    const hasDateRange = weekMeta && weekMeta.dateFrom && weekMeta.dateTo;
+    const dateRangeInfo = hasDateRange
+      ? `<span style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">📅 ${weekMeta.dateFrom} — ${weekMeta.dateTo}</span>`
+      : '';
     weeksEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div class="sec-title" style="margin-top:0;margin-bottom:0">ВВЕДЕННЯ ДАНИХ</div>
         <select id="perf-week-sel" class="col-map-select" style="width:auto" onchange="renderAdmPerf()">
           ${weeks.slice().reverse().map(w=>`<option value="${w}" ${w===curWeek?'selected':''}>${w}</option>`).join('')}
         </select>
+        ${dateRangeInfo}
+        ${hasDateRange?`<button class="btn-sm blue" onclick="refreshAutoShifts()" title="Перерахувати зміни з графіку">🔄 Оновити зміни</button>`:''}
         <button class="btn-sm red" onclick="deletePerfWeek()" style="margin-left:4px">🗑 Видалити тиждень</button>
       </div>
       <div class="tbl-wrap" style="margin-bottom:20px;overflow-x:auto">
@@ -2661,8 +2791,8 @@ function renderAdmPerf(){
             <th>Агент</th>
             <th>Листи</th>
             <th>Чати</th>
-            <th>К-сть змін чатів</th>
-            <th>К-сть змін (загальна)</th>
+            <th style="color:var(--blue)">Змін чатів 🤖</th>
+            <th style="color:var(--muted2)">Змін загалом 🤖</th>
             <th style="color:var(--blue)">Ср.чатів/зміну</th>
             <th style="color:var(--teal)">Ср.закрито загалом</th>
             <th style="color:var(--accent)">Total</th>
@@ -2670,7 +2800,10 @@ function renderAdmPerf(){
           <tbody id="perf-input-body"></tbody>
         </table>
       </div>
-      <button class="btn-save" onclick="savePerfWeek()">💾 Зберегти дані тижня</button>`;
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-save" onclick="savePerfWeek()">💾 Зберегти дані тижня</button>
+        <span style="font-size:11px;color:var(--muted)">🤖 — авто з графіку, можна змінити вручну</span>
+      </div>`;
     renderPerfInputTable(curWeek);
   }
   renderAdmPerfRanking();
@@ -2696,8 +2829,8 @@ function renderPerfInputTable(week){
       <td style="font-weight:500;white-space:nowrap">${emp.name}</td>
       <td><input type="number" min="0" class="esc-input" id="pl-${emp.id}"  value="${l}"  oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
       <td><input type="number" min="0" class="esc-input" id="pc-${emp.id}"  value="${ch}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
-      <td><input type="number" min="0" class="esc-input" id="psc-${emp.id}" value="${sc}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
-      <td><input type="number" min="0" class="esc-input" id="pst-${emp.id}" value="${st}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="psc-${emp.id}" value="${sc}" oninput="recalcPerfRow(${emp.id})" style="width:75px;border-color:rgba(91,156,246,.4);background:rgba(91,156,246,.05)"></td>
+      <td><input type="number" min="0" class="esc-input" id="pst-${emp.id}" value="${st}" oninput="recalcPerfRow(${emp.id})" style="width:75px;border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.05)"></td>
       <td id="pavg-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--blue);text-align:center;font-weight:600">${avgChat}</td>
       <td id="pavgt-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--teal);text-align:center;font-weight:600">${avgTotal}</td>
       <td id="ptot-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--accent);text-align:center;font-weight:700">${total.toLocaleString('uk')}</td>
@@ -2763,7 +2896,7 @@ function renderAdmPerfRanking(){
   const weeks = getWeekList();
   if(!weeks.length){ tbody.innerHTML='<tr><td colspan="10" class="empty-state">Даних ще немає</td></tr>'; return; }
   const curWeek  = weeks[weeks.length-1];
-  const prevWeek = weeks[weeks.length-2]||null;
+  const prevWeek = getPrevWeekInMonth(weeks, db.perf||{}, curWeek);
   
   const rows = myStaff().map(emp=>{
     const empData = (db.perf&&db.perf[emp.id])||[];
@@ -3072,7 +3205,7 @@ function renderAnalytics(){
       const sh=empSched[d];
       if(!sh||sh==='off'){offDays++;continue;}
       if(sh==='vacation'){vacation++;continue;}
-      if(sh==='s7') nights++;
+      if(isNightShift(sh)) nights++;
       total++;
     }
     // overtime/late from dayComments
@@ -3262,16 +3395,30 @@ function getReviewsMkey(){ return reviewsY+'-'+(String(reviewsM+1).padStart(2,'0
 function ensureReviewsMonth(){
   if(!db.reviews) db.reviews={};
   const k = getReviewsMkey();
-  if(!db.reviews[k]) db.reviews[k]={sites:[],data:{}};
+  if(!db.reviews[k]) db.reviews[k]={data:{}};
   return db.reviews[k];
+}
+
+function getGlobalSites(){
+  if(!db.reviewSites) db.reviewSites=[];
+  // Міграція: переносимо сайти зі старих місячних даних → глобальні
+  if(db.reviews){
+    Object.values(db.reviews).forEach(rv=>{
+      if(rv.sites && rv.sites.length){
+        rv.sites.forEach(s=>{ if(!db.reviewSites.includes(s)) db.reviewSites.push(s); });
+        delete rv.sites;
+      }
+    });
+  }
+  return db.reviewSites;
 }
 
 function addReviewSite(){
   const name = document.getElementById('new-review-site').value.trim();
   if(!name) return;
-  const rv = ensureReviewsMonth();
-  if(rv.sites.includes(name)){ alert('Цей сайт вже є'); return; }
-  rv.sites.push(name);
+  const sites = getGlobalSites();
+  if(sites.includes(name)){ alert('Цей сайт вже є'); return; }
+  sites.push(name);
   document.getElementById('new-review-site').value='';
   renderAdmReviews();
 }
@@ -3280,14 +3427,14 @@ function renderAdmReviews(){
   if(reviewsY===undefined){ const now=new Date(); reviewsY=now.getFullYear(); reviewsM=now.getMonth(); }
   document.getElementById('reviews-month-title').textContent = MONTHS_UK[reviewsM]+' '+reviewsY;
   const k = getReviewsMkey();
-  const rv = (db.reviews&&db.reviews[k]) || {sites:[],data:{}};
-  const sites = rv.sites || [];
+  const rv = (db.reviews&&db.reviews[k]) || {data:{}};
+  const sites = getGlobalSites();
   const data  = rv.data  || {};
   const table = document.getElementById('reviews-table');
   if(!table) return;
 
   if(!sites.length){
-    table.innerHTML='<tr><td class="empty-state" colspan="20">Додайте сайти вище ↑</td></tr>';
+    if(!getGlobalSites().length){ table.innerHTML='<tr><td class="empty-state" colspan="20">Додайте сайти вище ↑</td></tr>'; return; }
     return;
   }
 
@@ -3354,23 +3501,29 @@ function recalcReviewRow(si){
 }
 
 function removeReviewSite(si){
-  if(!confirm('Видалити цей сайт і всі дані по ньому?')) return;
-  const rv = ensureReviewsMonth();
-  rv.sites.splice(si, 1);
-  const newData = {};
-  Object.entries(rv.data).forEach(([k,v]) => {
-    const nk = +k; if(nk===si) return;
-    newData[nk>si?nk-1:nk] = v;
-  });
-  rv.data = newData;
+  if(!confirm('Видалити цей сайт з усіх місяців?')) return;
+  const sites = getGlobalSites();
+  sites.splice(si, 1);
+  if(db.reviews){
+    Object.values(db.reviews).forEach(rv=>{
+      if(!rv.data) return;
+      const newData = {};
+      Object.entries(rv.data).forEach(([k,v]) => {
+        const nk = +k; if(nk===si) return;
+        newData[nk>si?nk-1:nk] = v;
+      });
+      rv.data = newData;
+    });
+  }
   renderAdmReviews();
 }
 
 async function saveReviews(){
   const k = getReviewsMkey();
   const rv = ensureReviewsMonth();
+  const saveSites = getGlobalSites();
   rv.data = {};
-  rv.sites.forEach((_, si) => {
+  saveSites.forEach((_, si) => {
     rv.data[si] = {};
     myStaff().forEach(emp => {
       const val = +document.getElementById(`rv-${si}-${emp.id}`)?.value||0;
@@ -3384,18 +3537,19 @@ async function saveReviews(){
 
 async function exportReviewsExcel(){
   const k = getReviewsMkey();
-  const rv = (db.reviews&&db.reviews[k])||{sites:[],data:{}};
+  const rv = (db.reviews&&db.reviews[k])||{data:{}};
+  const exportSites = getGlobalSites();
   const initials = emp => { const p=emp.name.split(' '); return (p[0]?p[0][0]:'')+(p[1]?p[1][0]:''); };
   const header = ['Reviews', ...myStaff().map(e=>initials(e)), 'Разом', 'Сума ₴'].join(';');
   const rows = [header];
-  rv.sites.forEach((site, si) => {
+  exportSites.forEach((site, si) => {
     let total = 0;
     const cols = myStaff().map(emp => { const v=(rv.data[si]&&rv.data[si][emp.id])||0; total+=v; return v; });
     rows.push([site, ...cols, total, total*200].join(';'));
   });
   // Agent totals
   const agentTotals = myStaff().map(emp => {
-    return rv.sites.reduce((s,_,si)=>(rv.data[si]&&rv.data[si][emp.id])||0+s, 0);
+    return exportSites.reduce((s,_,si)=>(rv.data[si]&&rv.data[si][emp.id])||0+s, 0);
   });
   rows.push(['РАЗОМ', ...agentTotals, agentTotals.reduce((a,b)=>a+b,0), agentTotals.reduce((a,b)=>a+b,0)*200].join(';'));
   const BOM='\uFEFF';
@@ -3417,10 +3571,11 @@ function renderEmpReviews(){
     let y=now.getFullYear(), m=now.getMonth()-i;
     if(m<0){m+=12;y--;}
     const k=y+'-'+(String(m+1).padStart(2,'0'));
-    const rv=(db.reviews&&db.reviews[k])||{sites:[],data:{}};
-    if(!rv.sites.length) continue;
+    const rv=(db.reviews&&db.reviews[k])||{data:{}};
+    const rvSites=getGlobalSites();
+    if(!rvSites.length) continue;
     let myTotal=0;
-    const siteRows = rv.sites.map((site,si)=>{
+    const siteRows = rvSites.map((site,si)=>{
       const val=(rv.data[si]&&rv.data[si][me.data.id])||0;
       myTotal+=val;
       return val>0?`<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(44,44,69,.3)">
@@ -3449,9 +3604,10 @@ function renderHomeReviewsBadge(){
   if(!el) return;
   const now=new Date();
   const k=now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0'));
-  const rv=(db.reviews&&db.reviews[k])||{sites:[],data:{}};
+  const rv=(db.reviews&&db.reviews[k])||{data:{}};
+  const bdgSites=getGlobalSites();
   let myTotal=0;
-  rv.sites.forEach((_,si)=>{ myTotal+=(rv.data[si]&&rv.data[si][me.data.id])||0; });
+  bdgSites.forEach((_,si)=>{ myTotal+=(rv.data[si]&&rv.data[si][me.data.id])||0; });
   if(!myTotal){el.innerHTML='';return;}
   el.innerHTML=`<div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:12px">
     <span style="font-size:18px">⭐</span>
@@ -3898,9 +4054,9 @@ function renderMonthly(){
   const sched=db.schedule[key]||{};
   document.getElementById('monthly-grid').innerHTML=myStaff().map(emp=>{
     const empSched=sched[emp.id]||{};
-    // Auto-count: night shift = s7 (00-8)
-    const allShifts=Object.values(empSched).filter(v=>v&&v!=='off');
-    const autoNights=allShifts.filter(v=>v==='s7').length;
+    // Auto-count: нічна = label "нічн" або time "00:xx"
+    const allShifts=Object.values(empSched).filter(v=>v&&v!=='off'&&v!=='vacation');
+    const autoNights=allShifts.filter(v=>isNightShift(v)).length;
     const autoDays=allShifts.length-autoNights;
     const existing=(emp.payments||[]).find(p=>p.monthKey===key)||{};
     const dv=existing.days!==undefined?existing.days:autoDays;
