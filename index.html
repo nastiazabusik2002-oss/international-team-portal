@@ -374,6 +374,8 @@ table.tbl tr:hover td{background:rgba(255,255,255,.015)}
 .week-selector{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .week-selector label{font-size:12px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase}
 .week-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:.2s}
+input[type="date"]{color-scheme:dark}
+body.theme-light input[type="date"]{color-scheme:light}
 .week-input:focus{border-color:var(--accent)}
 .preview-table{width:100%;border-collapse:collapse;font-size:12px}
 .preview-table th{padding:8px 10px;background:var(--surface2);text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
@@ -716,13 +718,18 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
       <div class="adm-section" id="adm-schedule">
         <div id="adm-bday-bar" style="margin-bottom:12px;flex-wrap:wrap;display:flex"></div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
           <button class="cal-nav" onclick="admSchedNav(-1)">‹</button>
           <div class="cal-month-title" id="adm-sched-title"></div>
           <button class="cal-nav" onclick="admSchedNav(1)">›</button>
           <button class="btn-save" onclick="saveSchedule()">Зберегти графік</button>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm" onclick="clearSchedAgent()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити графік одного агента">🗑 Агент</button>
+            <button class="btn-sm" onclick="clearSchedMonth()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити весь місяць">🗑 Весь місяць</button>
+          </div>
         </div>
-        <div style="margin-bottom:14px" id="adm-legend"></div>
+        <div style="margin-bottom:10px" id="adm-legend"></div>
+        <div id="adm-sched-filter" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
         <div class="sched-wrap"><table class="sched-table" id="adm-sched-table"></table></div>
       </div>
       <div class="adm-section" id="adm-wishes">
@@ -743,6 +750,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button class="btn-save" onclick="saveWishesAsSchedule()">💾 Зберегти як графік</button>
+          <button class="btn-add" onclick="openAutoSchedModal()" style="background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.4);color:#a78bfa">🤖 Авто-генерація графіку</button>
           <span style="font-size:12px;color:var(--muted)" id="wishes-save-hint">Зміни в рядку «ГРАФІК» збережуться в основний розклад</span>
         </div>
       </div>
@@ -781,11 +789,18 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <div class="page-sub" style="margin-bottom:0">Щотижневі дані команди</div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px">
-              <span style="font-size:12px;color:var(--muted);white-space:nowrap">📅 З</span>
-              <input type="date" id="week-date-from" class="week-input" style="border:none;background:none;padding:0;width:130px" onchange="autoFillWeekTo()">
-              <span style="font-size:12px;color:var(--muted)">по</span>
-              <input type="date" id="week-date-to" class="week-input" style="border:none;background:none;padding:0;width:130px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
+                <span style="font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.5px">З</span>
+                <input type="date" id="week-date-from" onchange="autoFillWeekTo()"
+                  style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;min-width:140px;-webkit-appearance:none">
+              </div>
+              <span style="font-size:12px;color:var(--muted)">→</span>
+              <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
+                <span style="font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.5px">По</span>
+                <input type="date" id="week-date-to"
+                  style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;min-width:140px;-webkit-appearance:none">
+              </div>
             </div>
             <button class="btn-add" onclick="addPerfWeekFromDates()">➕ Додати тиждень</button>
             <button class="btn-save" onclick="exportPerfExcel()">📥 Вигрузити Excel</button>
@@ -1047,6 +1062,86 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div id="chief-mood-content"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- AUTO SCHEDULE MODAL -->
+<div class="modal-ov" id="autosched-modal">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <h3>🤖 АВТО-ГЕНЕРАЦІЯ ГРАФІКУ</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div class="field">
+        <label>📅 Макс. змін на місяць</label>
+        <input type="number" id="ag-max-shifts" value="20" min="1" max="31" class="esc-input" style="width:100%">
+      </div>
+      <div class="field">
+        <label>📅 Мін. змін на місяць</label>
+        <input type="number" id="ag-min-shifts" value="15" min="1" max="31" class="esc-input" style="width:100%">
+      </div>
+      <div class="field">
+        <label>👥 Мін. людей на зміні (будні)</label>
+        <input type="number" id="ag-min-weekday" value="3" min="1" class="esc-input" style="width:100%">
+      </div>
+      <div class="field">
+        <label>👥 Мін. людей на зміні (вихідні)</label>
+        <input type="number" id="ag-min-weekend" value="2" min="1" class="esc-input" style="width:100%">
+      </div>
+      <div class="field">
+        <label>🔁 Макс. змін підряд</label>
+        <input type="number" id="ag-max-row" value="4" min="1" max="7" class="esc-input" style="width:100%">
+      </div>
+      <div class="field">
+        <label>🌙 Макс. нічних підряд</label>
+        <input type="number" id="ag-max-night-row" value="2" min="1" max="5" class="esc-input" style="width:100%">
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">🌙 Агенти БЕЗ нічних змін</div>
+      <div id="ag-no-night-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">📋 Правила генерації</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+          <span style="font-size:12px;color:var(--muted2)">🌙 Перед нічною — обов'язково вихідний</span>
+          <input type="checkbox" id="ag-rule-night-off" checked style="accent-color:#a78bfa;width:16px;height:16px;cursor:pointer">
+        </label>
+
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+          <span style="font-size:12px;color:var(--muted2)">⏱ Пріоритет побажань за часом подачі</span>
+          <input type="checkbox" id="ag-rule-priority" checked style="accent-color:#a78bfa;width:16px;height:16px;cursor:pointer">
+        </label>
+
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+          <span style="font-size:12px;color:var(--muted2)">🗓 Враховувати побажання «вихідний»</span>
+          <input type="checkbox" id="ag-rule-off-wish" checked style="accent-color:#a78bfa;width:16px;height:16px;cursor:pointer">
+        </label>
+
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+          <span style="font-size:12px;color:var(--muted2)">💬 Враховувати текстові коментарі (ранкові/вечірні)</span>
+          <input type="checkbox" id="ag-rule-text-pref" checked style="accent-color:#a78bfa;width:16px;height:16px;cursor:pointer">
+        </label>
+
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+          <span style="font-size:12px;color:var(--muted2)">⚖️ Рівномірний розподіл змін між агентами</span>
+          <input type="checkbox" id="ag-rule-balance" checked style="accent-color:#a78bfa;width:16px;height:16px;cursor:pointer">
+        </label>
+
+      </div>
+    </div>
+
+    <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:10px;padding:12px;margin-bottom:18px;font-size:12px;color:var(--muted2)">
+      ⚠️ Генерація перезапише поточний графік вибраного місяця. Після генерації можна редагувати вручну.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('autosched-modal')">Скасувати</button>
+      <button class="btn-save" onclick="runAutoSched()" style="background:rgba(167,139,250,.2);border-color:rgba(167,139,250,.5);color:#a78bfa">🤖 Згенерувати</button>
+    </div>
   </div>
 </div>
 
@@ -1581,6 +1676,8 @@ function showApp(){
 }
 
 // ══ LEGEND ══
+let _schedFilter = null; // null = всі, інакше shiftId
+
 function renderLegend(containerId){
   const teamId = me && (me.teamId || (me.data && (me.data.teamId||1))) || 1;
   const shifts = getTeamShifts(teamId);
@@ -1588,6 +1685,55 @@ function renderLegend(containerId){
     shifts.map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}${s.time?' ('+s.time+')':''}</div>`).join('')+
     `<div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>Відпустка</div>`+
     `</div>`;
+
+  // Рендеримо фільтр-кнопки якщо є контейнер
+  const filterEl = document.getElementById('adm-sched-filter');
+  if(!filterEl) return;
+  filterEl.innerHTML =
+    `<span style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-right:4px">ФІЛЬТР:</span>`+
+    `<button onclick="setSchedFilter(null)" class="sched-filter-btn${_schedFilter===null?' active':''}"
+      style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_schedFilter===null?'var(--accent)':'var(--border)'};background:${_schedFilter===null?'rgba(245,200,66,.15)':'var(--surface)'};color:${_schedFilter===null?'var(--accent)':'var(--muted2)'};cursor:pointer;transition:.15s">
+      Всі
+    </button>`+
+    shifts.map(s=>
+      `<button onclick="setSchedFilter('${s.id}')" class="sched-filter-btn${_schedFilter===s.id?' active':''}"
+        style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_schedFilter===s.id?s.color:'var(--border)'};background:${_schedFilter===s.id?s.color+'22':'var(--surface)'};color:${_schedFilter===s.id?s.color:'var(--muted2)'};cursor:pointer;transition:.15s">
+        ${s.label}
+      </button>`
+    ).join('')+
+    `<button onclick="setSchedFilter('off')" class="sched-filter-btn${_schedFilter==='off'?' active':''}"
+      style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_schedFilter==='off'?'#64748b':'var(--border)'};background:${_schedFilter==='off'?'rgba(100,116,139,.2)':'var(--surface)'};color:${_schedFilter==='off'?'#94a3b8':'var(--muted2)'};cursor:pointer;transition:.15s">
+      Вихідний
+    </button>`+
+    `<button onclick="setSchedFilter('vacation')" class="sched-filter-btn${_schedFilter==='vacation'?' active':''}"
+      style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_schedFilter==='vacation'?'#38bdf8':'var(--border)'};background:${_schedFilter==='vacation'?'rgba(56,189,248,.15)':'var(--surface)'};color:${_schedFilter==='vacation'?'#38bdf8':'var(--muted2)'};cursor:pointer;transition:.15s">
+      Відпустка
+    </button>`;
+}
+
+function setSchedFilter(shiftId){
+  _schedFilter = shiftId;
+  applySchedFilter();
+  renderLegend('adm-legend'); // перемальовуємо кнопки фільтру
+}
+
+function applySchedFilter(){
+  const table = document.getElementById('adm-sched-table');
+  if(!table) return;
+  // Всі клітинки змін (td з data-shift)
+  table.querySelectorAll('td[data-shift]').forEach(td => {
+    const shiftId = td.getAttribute('data-shift');
+    if(_schedFilter === null){
+      td.style.opacity = '';
+      td.style.filter = '';
+    } else if(shiftId === _schedFilter){
+      td.style.opacity = '1';
+      td.style.filter = '';
+    } else {
+      td.style.opacity = '0.18';
+      td.style.filter = 'grayscale(1)';
+    }
+  });
 }
 
 // ══ EMPLOYEE ══
@@ -2232,7 +2378,7 @@ async function saveWish(clear){
   } else {
     // keep existing month comment if any
     const prev=db.wishes[empId][_wishKey][_wishDay]||{};
-    db.wishes[empId][_wishKey][_wishDay]={shift, comment:prev.comment||''};
+    db.wishes[empId][_wishKey][_wishDay]={shift, comment:prev.comment||'', submittedAt: prev.submittedAt||Date.now()};
   }
   await saveDB();
   closeModal('wish-modal');
@@ -2361,14 +2507,14 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
               <div class="shift-cell-time">${sh.time||sh.label||'?'}</div>
               ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
              </div>`;
-        cells+=`<td style="padding:2px;background:${bg};text-align:center">${cellHtml}${wishBadge}</td>`;
+        cells+=`<td style="padding:2px;background:${bg};text-align:center" data-shift="${shiftId}">${cellHtml}${wishBadge}</td>`;
       } else {
         if(shiftId==='vacation'){
-          cells+=`<td style="background:${bg};text-align:center"><span class="shift-pill sh-vac">🏖</span></td>`;
+          cells+=`<td style="background:${bg};text-align:center" data-shift="vacation"><span class="shift-pill sh-vac">🏖</span></td>`;
         } else if(hasShift){
-          cells+=`<td style="background:${bg};text-align:center"><div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:auto"><div class="shift-cell-time">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}</div></td>`;
+          cells+=`<td style="background:${bg};text-align:center" data-shift="${shiftId}"><div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:auto"><div class="shift-cell-time">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}</div></td>`;
         } else {
-          cells+=`<td style="background:${bg};text-align:center"><span style="color:var(--muted);font-size:11px">—</span></td>`;
+          cells+=`<td style="background:${bg};text-align:center" data-shift="off"><span style="color:var(--muted);font-size:11px">—</span></td>`;
         }
       }
     });
@@ -3262,6 +3408,302 @@ async function saveWishesAsSchedule(){
   if(hint){ hint.textContent='✅ Збережено!'; hint.style.color='var(--green)'; setTimeout(()=>{ hint.textContent='Зміни зберігаються автоматично при кліку на клітинку'; hint.style.color=''; },3000); }
 }
 
+
+
+// ══════════════════════════════════════════
+// 🤖 АВТО-ГЕНЕРАЦІЯ ГРАФІКУ
+// ══════════════════════════════════════════
+
+// Зберігаємо налаштування авто-генерації в db
+function openAutoSchedModal(){
+  const tid = me && me.teamId ? String(me.teamId) : '0';
+  if(!db.schedRules) db.schedRules = {};
+  const rules = db.schedRules[tid] || {};
+  document.getElementById('ag-max-shifts').value  = rules.maxShifts  || 20;
+  document.getElementById('ag-min-shifts').value  = rules.minShifts  || 15;
+  document.getElementById('ag-min-weekday').value = rules.minWeekday || 3;
+  document.getElementById('ag-min-weekend').value = rules.minWeekend || 2;
+  document.getElementById('ag-max-row').value     = rules.maxRow     || 4;
+  document.getElementById('ag-max-night-row').value = rules.maxNightRow || 2;
+
+  // Чекбокси правил
+  document.getElementById('ag-rule-night-off').checked  = rules.ruleNightOff  !== false;
+  document.getElementById('ag-rule-priority').checked   = rules.rulePriority  !== false;
+  document.getElementById('ag-rule-off-wish').checked   = rules.ruleOffWish   !== false;
+  document.getElementById('ag-rule-text-pref').checked  = rules.ruleTextPref  !== false;
+  document.getElementById('ag-rule-balance').checked    = rules.ruleBalance   !== false;
+
+  // Чекбокси "без нічних"
+  const noNightSet = new Set(rules.noNight || []);
+  const container = document.getElementById('ag-no-night-list');
+  container.innerHTML = myStaff().map(emp => `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px">
+      <input type="checkbox" value="${emp.id}" ${noNightSet.has(emp.id)?'checked':''} style="accent-color:#a78bfa">
+      ${emp.name.split(' ')[0]}
+    </label>`).join('');
+
+  document.getElementById('autosched-modal').classList.add('open');
+}
+
+async function runAutoSched(){
+  const maxShifts   = +document.getElementById('ag-max-shifts').value   || 20;
+  const minShifts   = +document.getElementById('ag-min-shifts').value   || 15;
+  const minWeekday  = +document.getElementById('ag-min-weekday').value  || 3;
+  const minWeekend  = +document.getElementById('ag-min-weekend').value  || 2;
+  const maxRow      = +document.getElementById('ag-max-row').value      || 4;
+  const maxNightRow = +document.getElementById('ag-max-night-row').value|| 2;
+  const noNight      = [...document.querySelectorAll('#ag-no-night-list input:checked')].map(el=>+el.value);
+  const ruleNightOff = document.getElementById('ag-rule-night-off').checked;
+  const rulePriority = document.getElementById('ag-rule-priority').checked;
+  const ruleOffWish  = document.getElementById('ag-rule-off-wish').checked;
+  const ruleTextPref = document.getElementById('ag-rule-text-pref').checked;
+  const ruleBalance  = document.getElementById('ag-rule-balance').checked;
+
+  // Зберігаємо правила per тім лід
+  const tid = me && me.teamId ? String(me.teamId) : '0';
+  if(!db.schedRules) db.schedRules = {};
+  db.schedRules[tid] = {maxShifts, minShifts, minWeekday, minWeekend, maxRow, maxNightRow, noNight, ruleNightOff, rulePriority, ruleOffWish, ruleTextPref, ruleBalance};
+
+  // Генеруємо на місяць що відображається у вкладці побажань
+  const Y = wishesAdmY !== undefined ? wishesAdmY : new Date().getFullYear();
+  const M = wishesAdmM !== undefined ? wishesAdmM : new Date().getMonth();
+  const key = mkey(Y, M);
+  const daysInMonth = new Date(Y, M+1, 0).getDate();
+
+  const staff = myStaff();
+  const teamShifts = getTeamShifts(me.teamId || 1).filter(s => s.id !== 'off' && s.id !== 'vacation');
+  const nightShifts = teamShifts.filter(s => isNightShift(s.id));
+  const dayShifts   = teamShifts.filter(s => !isNightShift(s.id));
+
+  // Збираємо побажання відсортовані за часом подачі (пріоритет — хто раніше)
+  const wishes = {}; // wishes[empId][day] = {shift, submittedAt}
+  staff.forEach(emp => {
+    const ew = ((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
+    wishes[emp.id] = {};
+    Object.entries(ew).forEach(([day, w]) => {
+      if(w && w.shift) wishes[emp.id][+day] = w;
+    });
+  });
+
+  // Зчитуємо текстові коментарі агентів (напр. "ранкові", "вечірні")
+  const monthNotes = {}; // monthNotes[empId] = 'text'
+  staff.forEach(emp => {
+    const note = ((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key+'_note']||'';
+    monthNotes[emp.id] = note.toLowerCase();
+  });
+
+  function preferredShiftType(empId){
+    if(!ruleTextPref) return null;
+    const note = monthNotes[empId] || '';
+    if(note.includes('ранк') || note.includes('утр') || note.includes('morning')) return 'early';
+    if(note.includes('вечір') || note.includes('evening') || note.includes('пізн')) return 'late';
+    if(note.includes('нічн') || note.includes('night')) return 'night';
+    return null;
+  }
+
+  function pickShift(empId, dayOfWeek, prevShifts){
+    const noNightEmp = noNight.includes(empId);
+    const pref = preferredShiftType(empId);
+    let pool = [...dayShifts];
+    if(!noNightEmp) pool = [...pool, ...nightShifts];
+
+    // Фільтруємо якщо остання зміна нічна — не можна ще нічну якщо вже maxNightRow підряд
+    const lastN = prevShifts.slice(-maxNightRow);
+    if(lastN.length === maxNightRow && lastN.every(s => isNightShift(s))){
+      pool = pool.filter(s => !isNightShift(s.id));
+    }
+    if(!pool.length) pool = [...dayShifts];
+
+    // Сортуємо по перевагах
+    if(pref === 'early')  pool.sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
+    if(pref === 'late')   pool.sort((a,b) => (b.time||'00').localeCompare(a.time||'00'));
+    if(pref === 'night')  pool.sort((a,b) => (isNightShift(b.id)?1:-1));
+
+    return pool[0];
+  }
+
+  // Ініціалізуємо графік
+  if(!db.schedule) db.schedule = {};
+  if(!db.schedule[key]) db.schedule[key] = {};
+
+  // Стан кожного агента
+  const state = {};
+  staff.forEach(emp => {
+    state[emp.id] = {
+      shiftsCount: 0,       // всього змін
+      consecutiveWork: 0,   // підряд робочих
+      consecutiveNight: 0,  // підряд нічних
+      lastWasWork: false,
+      prevShiftIds: [],     // останні 5 id змін
+    };
+    db.schedule[key][emp.id] = {};
+  });
+
+  // Для кожного дня — розподіл
+  for(let day = 1; day <= daysInMonth; day++){
+    const date = new Date(Y, M, day);
+    const dow = date.getDay(); // 0=нд, 6=сб
+    const isWeekend = dow === 0 || dow === 6;
+    const minOnShift = isWeekend ? minWeekend : minWeekday;
+
+    // Сортуємо агентів для цього дня:
+    // 1. хто подав побажання раніше (за submittedAt)
+    // 2. хто має менше змін (рівномірний розподіл)
+    const agentsForDay = [...staff].sort((a, b) => {
+      const wa = wishes[a.id]?.[day];
+      const wb = wishes[b.id]?.[day];
+      // Пріоритет за часом (якщо увімкнено)
+      if(rulePriority){
+        const ta = wa?.submittedAt || Infinity;
+        const tb = wb?.submittedAt || Infinity;
+        if(ta !== tb) return ta - tb;
+      }
+      // Рівномірний розподіл (якщо увімкнено)
+      if(ruleBalance) return (state[a.id].shiftsCount) - (state[b.id].shiftsCount);
+      return 0;
+    });
+
+    // Рахуємо скільки вже "на зміні" і скільки "вихідний"
+    let workCount = 0;
+    const decisions = {}; // empId → 'work' | 'off'
+
+    // Спочатку проходимо всіх хто хоче вихідний
+    agentsForDay.forEach(emp => {
+      const st = state[emp.id];
+      const wish = wishes[emp.id]?.[day];
+      const maxReached = st.shiftsCount >= maxShifts;
+      const tooManyRow = st.consecutiveWork >= maxRow;
+
+      if(maxReached || tooManyRow){
+        decisions[emp.id] = 'off';
+      } else if(wish?.shift === 'off' && ruleOffWish){
+        // Хоче вихідний — даємо якщо є достатньо на зміні
+        decisions[emp.id] = 'wish-off'; // поки відклали
+      } else if(wish?.shift && wish.shift !== 'off'){
+        decisions[emp.id] = 'wish-work';
+        workCount++;
+      } else {
+        decisions[emp.id] = 'undecided';
+      }
+    });
+
+    // Розв'язуємо "wish-off": дати вихідний якщо залишиться мін. людей
+    agentsForDay.forEach(emp => {
+      if(decisions[emp.id] !== 'wish-off') return;
+      const remaining = staff.filter(e =>
+        decisions[e.id] === 'work' || decisions[e.id] === 'wish-work' || decisions[e.id] === 'undecided'
+      ).length;
+      if(remaining >= minOnShift){
+        decisions[emp.id] = 'off';
+      } else {
+        decisions[emp.id] = 'work'; // конфлікт — треба виходити
+        workCount++;
+      }
+    });
+
+    // "undecided" — визначаємо чи виходять
+    agentsForDay.forEach(emp => {
+      if(decisions[emp.id] !== 'undecided') return;
+      const st = state[emp.id];
+      if(st.shiftsCount < minShifts){
+        decisions[emp.id] = 'work';
+        workCount++;
+      } else {
+        // Перевіряємо мінімум на зміні
+        const onShiftSoFar = Object.values(decisions).filter(d=>d==='work'||d==='wish-work').length;
+        if(onShiftSoFar < minOnShift){
+          decisions[emp.id] = 'work';
+          workCount++;
+        } else {
+          decisions[emp.id] = 'off';
+        }
+      }
+    });
+
+    // Тепер призначаємо конкретні зміни
+    agentsForDay.forEach(emp => {
+      const st = state[emp.id];
+      const d = decisions[emp.id];
+      const noNightEmp = noNight.includes(emp.id);
+
+      if(d === 'off'){
+        db.schedule[key][emp.id][day] = 'off';
+        st.consecutiveWork = 0;
+        st.consecutiveNight = 0;
+        st.lastWasWork = false;
+      } else {
+        // Визначаємо тип зміни
+        const wish = wishes[emp.id]?.[day];
+        let shiftId;
+
+        if(wish?.shift && wish.shift !== 'off'){
+          // Побажання конкретної зміни
+          const wishedShift = getShift(wish.shift);
+          // Якщо нічна і агент не може — замінюємо
+          if(isNightShift(wish.shift) && noNightEmp){
+            const picked = pickShift(emp.id, dow, st.prevShiftIds);
+            shiftId = picked ? picked.id : (dayShifts[0]?.id || 'off');
+          } else if(isNightShift(wish.shift)){
+            // Перед нічною — попередній день має бути вихідний
+            const prevDecision = day > 1 ? db.schedule[key][emp.id][day-1] : 'off';
+            if(prevDecision && prevDecision !== 'off' && prevDecision !== 'vacation'){
+              // Не можемо дати нічну без вихідного перед — переносимо на денну
+              const picked = pickShift(emp.id, dow, st.prevShiftIds);
+              shiftId = picked ? picked.id : (dayShifts[0]?.id || 'off');
+            } else {
+              shiftId = wish.shift;
+            }
+          } else {
+            shiftId = wish.shift;
+          }
+        } else {
+          // Немає конкретного побажання — підбираємо
+          // Якщо завтра нічна (є побажання) — сьогодні краще вихідний
+          const tmrWish = wishes[emp.id]?.[day+1];
+          if(tmrWish?.shift && isNightShift(tmrWish.shift) && !noNightEmp){
+            db.schedule[key][emp.id][day] = 'off';
+            st.consecutiveWork = 0;
+            st.lastWasWork = false;
+            return;
+          }
+          const picked = pickShift(emp.id, dow, st.prevShiftIds);
+          shiftId = picked ? picked.id : (dayShifts[0]?.id);
+        }
+
+        // Перевіряємо правило: перед нічною — вихідний (якщо увімкнено)
+        if(ruleNightOff && shiftId && isNightShift(shiftId)){
+          const prevDay = db.schedule[key][emp.id][day-1];
+          if(prevDay && prevDay !== 'off' && prevDay !== 'vacation' && day > 1){
+            // Виправляємо: попередній день міняємо на вихідний
+            db.schedule[key][emp.id][day-1] = 'off';
+            if(st.shiftsCount > 0) st.shiftsCount--;
+          }
+        }
+
+        db.schedule[key][emp.id][day] = shiftId || 'off';
+        if(shiftId && shiftId !== 'off'){
+          st.shiftsCount++;
+          st.consecutiveWork++;
+          st.lastWasWork = true;
+          st.prevShiftIds.push(shiftId);
+          if(st.prevShiftIds.length > 7) st.prevShiftIds.shift();
+          if(isNightShift(shiftId)) st.consecutiveNight++;
+          else st.consecutiveNight = 0;
+        }
+      }
+    });
+  }
+
+  await saveDB();
+  closeModal('autosched-modal');
+
+  // Показуємо результат у вкладці побажань
+  if(typeof renderAdmWishes === 'function') renderAdmWishes();
+  if(typeof renderAdmSched === 'function') renderAdmSched();
+
+  const total = staff.reduce((s,e)=>s+(state[e.id]?.shiftsCount||0),0);
+  alert(`✅ Графік згенеровано!\n📊 Всього змін: ${total}\n✏️ Тепер можеш коригувати вручну у вкладці «Графік»`);
+}
 
 // ══ ANALYTICS ══
 let analyticsY, analyticsM;
@@ -4321,7 +4763,7 @@ function renderAdmStaff(){
 }
 
 // ── SCHEDULE ADMIN ──
-function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}if(admSchedM>11){admSchedM=0;admSchedY++;}renderAdmSched();}
+function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}if(admSchedM>11){admSchedM=0;admSchedY++;}_schedFilter=null;renderAdmSched();}
 function renderAdmSched(){
   document.getElementById('adm-sched-title').textContent=MONTHS_UK[admSchedM]+' '+admSchedY;
   renderLegend('adm-legend');
@@ -4329,8 +4771,39 @@ function renderAdmSched(){
   if(!db.schedule[key]) db.schedule[key]={};
   myStaff().forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
   renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
+  applySchedFilter();
 }
 
+
+
+// ══ ОЧИЩЕННЯ ГРАФІКУ ══
+async function clearSchedMonth(){
+  if(!confirm(`Очистити весь графік за ${MONTHS_UK[admSchedM]} ${admSchedY}?\nЦю дію не можна скасувати.`)) return;
+  const key = mkey(admSchedY, admSchedM);
+  if(!db.schedule) db.schedule = {};
+  db.schedule[key] = {};
+  myStaff().forEach(emp => { db.schedule[key][emp.id] = {}; });
+  await saveDB();
+  renderAdmSched();
+}
+
+async function clearSchedAgent(){
+  const staff = myStaff();
+  if(!staff.length){ alert('Немає агентів'); return; }
+  const options = staff.map((e,i) => `${i+1}. ${e.name}`).join('\n');
+  const input = prompt(`Оберіть агента (введіть номер):\n${options}`);
+  if(!input) return;
+  const idx = parseInt(input) - 1;
+  if(isNaN(idx) || idx < 0 || idx >= staff.length){ alert('Невірний номер'); return; }
+  const emp = staff[idx];
+  if(!confirm(`Очистити графік агента ${emp.name} за ${MONTHS_UK[admSchedM]} ${admSchedY}?`)) return;
+  const key = mkey(admSchedY, admSchedM);
+  if(!db.schedule) db.schedule = {};
+  if(!db.schedule[key]) db.schedule[key] = {};
+  db.schedule[key][emp.id] = {};
+  await saveDB();
+  renderAdmSched();
+}
 
 // ── DAY META (office / emoji) ──
 async function toggleOffice(day){
