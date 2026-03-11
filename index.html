@@ -993,6 +993,63 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 
 
+
+<!-- CHIEF VIEW -->
+<div id="chief-view" style="display:none">
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="chiefTab('schedule',this)">📅 Графіки</div>
+    <div class="nav-tab" onclick="chiefTab('salary',this)">💰 Зарплата</div>
+    <div class="nav-tab" onclick="chiefTab('reviews',this)">⭐ Відгуки</div>
+    <div class="nav-tab" onclick="chiefTab('mood',this)">😊 Настрій</div>
+  </div>
+  <div class="content">
+
+    <!-- SCHEDULE TAB -->
+    <div id="ctab-schedule" class="etab">
+      <div class="page-h">ГРАФІКИ ВСІХ ВІДДІЛІВ</div>
+      <div class="page-sub">Поточний місяць</div>
+      <div id="chief-sched-nav" style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="btn-sm" onclick="chiefSchedNav(-1)">←</button>
+        <span id="chief-sched-title" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px"></span>
+        <button class="btn-sm" onclick="chiefSchedNav(1)">→</button>
+      </div>
+      <div id="chief-sched-content"></div>
+    </div>
+
+    <!-- SALARY TAB -->
+    <div id="ctab-salary" class="etab" style="display:none">
+      <div class="page-h">ЗАРПЛАТА ВСІХ ВІДДІЛІВ</div>
+      <div class="page-sub">Закриття місяця</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="btn-sm" onclick="chiefSalaryNav(-1)">←</button>
+        <span id="chief-salary-title" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px"></span>
+        <button class="btn-sm" onclick="chiefSalaryNav(1)">→</button>
+      </div>
+      <div id="chief-salary-content"></div>
+    </div>
+
+    <!-- REVIEWS TAB -->
+    <div id="ctab-reviews" class="etab" style="display:none">
+      <div class="page-h">ВІДГУКИ (ССО)</div>
+      <div class="page-sub">По всіх відділах</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="btn-sm" onclick="chiefReviewsNav(-1)">←</button>
+        <span id="chief-reviews-title" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px"></span>
+        <button class="btn-sm" onclick="chiefReviewsNav(1)">→</button>
+      </div>
+      <div id="chief-reviews-content"></div>
+    </div>
+
+    <!-- MOOD TAB -->
+    <div id="ctab-mood" class="etab" style="display:none">
+      <div class="page-h">НАСТРІЙ КОМАНД</div>
+      <div class="page-sub">Поточний тиждень</div>
+      <div id="chief-mood-content"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- WISH MODAL -->
 <div class="modal-ov" id="wish-modal">
   <div class="modal" style="max-width:400px">
@@ -1227,6 +1284,11 @@ const MONTHS_UK = ['Січень','Лютий','Березень','Квітен�
 const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
 // ══ TEAMS CONFIG ══
 const TL_PASS = '20rhenbqnsvksl26';
+const CHIEF_PASS = '20rhenbqnsvksl26';
+const CHIEFS = [
+  { id: 'chief_1', name: 'Марія Фартушок' },
+  { id: 'chief_2', name: 'Максим Горинь'  },
+];
 const TEAMS = [
   { id: 1, name: 'Chat',                        lead: 'Настя Забусик',       pass: TL_PASS },
   { id: 2, name: 'Air Customer Care',           lead: 'Kobylianskyi Yurii',  pass: TL_PASS },
@@ -1402,7 +1464,8 @@ function myTeamStaff(){
 function buildLoginSel(){
   const teamSel = document.getElementById('login-team');
   teamSel.innerHTML = '<option value="">— Оберіть відділ —</option>' +
-    TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('') +
+    '<option value="chief" style="color:var(--accent)">👑 Керівництво (Chief)</option>';
   document.getElementById('login-account-field').style.display='none';
   document.getElementById('login-pass-field').style.display='none';
   document.getElementById('login-btn').style.display='none';
@@ -1410,11 +1473,20 @@ function buildLoginSel(){
 }
 
 function onTeamSelect(){
-  const teamId = parseInt(document.getElementById('login-team').value);
+  const rawVal = document.getElementById('login-team').value;
   const accField = document.getElementById('login-account-field');
   const passField = document.getElementById('login-pass-field');
   const btn = document.getElementById('login-btn');
-  if(!teamId){ accField.style.display='none'; passField.style.display='none'; btn.style.display='none'; return; }
+  if(!rawVal){ accField.style.display='none'; passField.style.display='none'; btn.style.display='none'; return; }
+  if(rawVal === 'chief'){
+    const sel = document.getElementById('login-sel');
+    sel.innerHTML = CHIEFS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    accField.style.display='block'; passField.style.display='block'; btn.style.display='block';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-err').style.display='none';
+    return;
+  }
+  const teamId = parseInt(rawVal);
   const team = TEAMS.find(t=>t.id===teamId);
   const staff = (db && db.staff) ? db.staff : [];
   const teamStaff = staff.filter(s=>(s.teamId||1)===teamId);
@@ -1440,7 +1512,11 @@ function doLogin(){
   const sel=document.getElementById('login-sel').value;
   const pass=document.getElementById('login-pass').value;
   const err=document.getElementById('login-err');
-  if(sel.startsWith('tl_')){
+  if(sel.startsWith('chief_')){
+    const chief = CHIEFS.find(c=>c.id===sel);
+    if(!chief||pass!==CHIEF_PASS){err.style.display='block';return;}
+    me={type:'chief', data:chief};
+  } else if(sel.startsWith('tl_')){
     const teamId = parseInt(sel.replace('tl_',''));
     const team = TEAMS.find(t=>t.id===teamId);
     if(!team||pass!==team.pass){err.style.display='block';return;}
@@ -1468,6 +1544,7 @@ function logout(){
   me=null;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
+  document.getElementById('chief-view').style.display='none';
   document.getElementById('login-team').value='';
   buildLoginSel();
 }
@@ -1481,6 +1558,13 @@ function showApp(){
     document.getElementById('auditor-view').style.display='none';
     document.getElementById('admin-view').style.display='block';
     renderAdmin();
+  } else if(me.type==='chief'){
+    document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0]+' · Chief';
+    document.getElementById('emp-view').style.display='none';
+    document.getElementById('admin-view').style.display='none';
+    document.getElementById('auditor-view').style.display='none';
+    document.getElementById('chief-view').style.display='block';
+    renderChiefView();
   } else if(me.type==='auditor'){
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0]+' · Аудитор';
     document.getElementById('emp-view').style.display='none';
@@ -3616,6 +3700,265 @@ function renderHomeReviewsBadge(){
   </div>`;
 }
 
+
+
+// ══════════════════════════════════════════
+// CHIEF VIEW
+// ══════════════════════════════════════════
+let chiefSchedY, chiefSchedM, chiefSalaryY, chiefSalaryM, chiefReviewsY, chiefReviewsM;
+
+function chiefTab(tab, el){
+  document.querySelectorAll('#chief-view .etab').forEach(e=>e.style.display='none');
+  document.querySelectorAll('#chief-view .nav-tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('ctab-'+tab).style.display='block';
+  if(el) el.classList.add('active');
+  if(tab==='schedule') renderChiefSched();
+  if(tab==='salary')   renderChiefSalary();
+  if(tab==='reviews')  renderChiefReviews();
+  if(tab==='mood')     renderChiefMood();
+}
+
+function renderChiefView(){
+  const now = new Date();
+  chiefSchedY = chiefSalaryY = chiefReviewsY = now.getFullYear();
+  chiefSchedM = chiefSalaryM = chiefReviewsM = now.getMonth();
+  renderChiefSched();
+}
+
+// ── SCHEDULE ──
+function chiefSchedNav(d){
+  chiefSchedM += d;
+  if(chiefSchedM < 0){ chiefSchedM=11; chiefSchedY--; }
+  if(chiefSchedM > 11){ chiefSchedM=0; chiefSchedY++; }
+  renderChiefSched();
+}
+
+function renderChiefSched(){
+  document.getElementById('chief-sched-title').textContent = MONTHS_UK[chiefSchedM]+' '+chiefSchedY;
+  const key = mkey(chiefSchedY, chiefSchedM);
+  const sched = (db.schedule && db.schedule[key]) || {};
+  const daysInMonth = new Date(chiefSchedY, chiefSchedM+1, 0).getDate();
+  const dayNums = Array.from({length:daysInMonth},(_,i)=>i+1);
+  const container = document.getElementById('chief-sched-content');
+
+  let html = '';
+  TEAMS.forEach(team => {
+    const staff = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!staff.length) return;
+    html += `<div style="margin-bottom:28px">
+      <div class="sec-title" style="margin-bottom:10px">${team.name}</div>
+      <div style="overflow-x:auto">
+      <table class="tbl" style="font-size:11px;min-width:600px">
+        <thead><tr>
+          <th style="text-align:left;min-width:120px">Агент</th>
+          ${dayNums.map(d=>{
+            const dow = new Date(chiefSchedY,chiefSchedM,d).getDay();
+            const isWe = dow===0||dow===6;
+            return `<th style="text-align:center;min-width:28px;${isWe?'background:rgba(245,200,66,.1)':''}">${d}</th>`;
+          }).join('')}
+        </tr></thead>
+        <tbody>`;
+    staff.forEach(emp => {
+      const empSched = sched[emp.id] || sched[String(emp.id)] || {};
+      html += `<tr><td style="white-space:nowrap;font-size:12px">${emp.name.split(' ')[0]} ${(emp.name.split(' ')[1]||'')[0]||''}.</td>`;
+      dayNums.forEach(d => {
+        const shiftId = empSched[d];
+        const sh = shiftId ? getShift(shiftId) : null;
+        const bg = sh && sh.color ? sh.color+'33' : '';
+        const txt = sh ? (sh.short||sh.time||sh.label[0]||'?') : '';
+        const dow = new Date(chiefSchedY,chiefSchedM,d).getDay();
+        const isWe = dow===0||dow===6;
+        html += `<td style="text-align:center;padding:2px;${isWe?'background:rgba(245,200,66,.05)':''}${bg?';background:'+bg:''}">
+          <span style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'}">${txt||'—'}</span>
+        </td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+
+  container.innerHTML = html || '<div class="empty-state">Даних немає</div>';
+}
+
+// ── SALARY ──
+function chiefSalaryNav(d){
+  chiefSalaryM += d;
+  if(chiefSalaryM < 0){ chiefSalaryM=11; chiefSalaryY--; }
+  if(chiefSalaryM > 11){ chiefSalaryM=0; chiefSalaryY++; }
+  renderChiefSalary();
+}
+
+function renderChiefSalary(){
+  document.getElementById('chief-salary-title').textContent = MONTHS_UK[chiefSalaryM]+' '+chiefSalaryY;
+  const key = mkey(chiefSalaryY, chiefSalaryM);
+  const container = document.getElementById('chief-salary-content');
+  let html = '';
+  let grandTotal = 0;
+
+  TEAMS.forEach(team => {
+    const staff = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!staff.length) return;
+    let teamTotal = 0;
+
+    const rows = staff.map(emp => {
+      const p = (emp.payments||[]).find(x=>x.monthKey===key);
+      if(!p) return null;
+      const base = p.base || ((p.rate||402)+(p.kpi||402)+(p.rating||0));
+      const total = p.total || Math.round(base*(p.days||0) + Math.round(base*1.5)*(p.nights||0) + (p.bonus||0));
+      teamTotal += total;
+      return {emp, p, total};
+    }).filter(Boolean);
+
+    if(!rows.length) return;
+    grandTotal += teamTotal;
+
+    html += `<div style="margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:13px">${team.name}</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent)">${teamTotal.toLocaleString('uk')} ₴</span>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="tbl" style="font-size:12px">
+        <thead><tr>
+          <th style="text-align:left">Агент</th>
+          <th>Ден.</th><th>Ніч.</th>
+          <th>Ставка</th><th>KPI</th><th>Рейтинг</th><th>Бонус</th>
+          <th style="color:var(--accent)">РАЗОМ</th>
+        </tr></thead>
+        <tbody>`;
+    rows.forEach(({emp, p, total}) => {
+      const rtBadge = p.ratingType==='high' ? '⭐' : '';
+      html += `<tr>
+        <td style="white-space:nowrap">${emp.name}</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace">${p.days||0}</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--purple)">${p.nights||0}</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace">${p.rate||402} ₴</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--blue)">${p.kpi||402} ₴</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--purple)">${rtBadge}${p.rating||0} ₴</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace">${p.bonus||0} ₴</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${total.toLocaleString('uk')} ₴</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  });
+
+  if(grandTotal){
+    html += `<div style="background:rgba(245,200,66,.08);border:1px solid var(--accent);border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <span style="font-weight:700;letter-spacing:1px;font-size:13px">ЗАГАЛЬНИЙ ФОНД</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent)">${grandTotal.toLocaleString('uk')} ₴</span>
+    </div>`;
+  }
+
+  container.innerHTML = html || `<div class="empty-state" style="padding:60px">Виплати за ${MONTHS_UK[chiefSalaryM]} ще не закриті</div>`;
+}
+
+// ── REVIEWS ──
+function chiefReviewsNav(d){
+  chiefReviewsM += d;
+  if(chiefReviewsM < 0){ chiefReviewsM=11; chiefReviewsY--; }
+  if(chiefReviewsM > 11){ chiefReviewsM=0; chiefReviewsY++; }
+  renderChiefReviews();
+}
+
+function renderChiefReviews(){
+  document.getElementById('chief-reviews-title').textContent = MONTHS_UK[chiefReviewsM]+' '+chiefReviewsY;
+  const key = mkey(chiefReviewsY, chiefReviewsM);
+  const rv = (db.reviews && db.reviews[key]) || {data:{}};
+  const sites = getGlobalSites();
+  const container = document.getElementById('chief-reviews-content');
+
+  if(!sites.length){
+    container.innerHTML = '<div class="empty-state" style="padding:60px">Сайти ще не додано</div>';
+    return;
+  }
+
+  let html = '';
+  let grandTotal = 0;
+
+  TEAMS.forEach(team => {
+    const staff = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!staff.length) return;
+    let teamTotal = 0;
+    const agentRows = staff.map(emp => {
+      let empTotal = 0;
+      sites.forEach((_,si) => { empTotal += (rv.data[si]&&rv.data[si][emp.id])||0; });
+      return {emp, empTotal};
+    }).filter(r=>r.empTotal>0);
+    if(!agentRows.length) return;
+    agentRows.forEach(r => teamTotal += r.empTotal);
+    grandTotal += teamTotal;
+
+    html += `<div style="margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase">${team.name}</span>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${teamTotal} відгуків</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--teal)">${(teamTotal*200).toLocaleString('uk')} ₴</span>
+        </div>
+      </div>`;
+    agentRows.forEach(({emp, empTotal}) => {
+      html += `<div style="display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid rgba(44,44,69,.3)">
+        <span style="font-size:13px">${emp.name}</span>
+        <div style="display:flex;gap:16px">
+          <span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--accent)">${empTotal}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--teal)">${(empTotal*200).toLocaleString('uk')} ₴</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  if(grandTotal){
+    html += `<div style="background:rgba(45,212,191,.08);border:1px solid var(--teal);border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700;letter-spacing:1px;font-size:13px">ВСЬОГО</span>
+      <div style="display:flex;gap:20px">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent)">${grandTotal} відгуків</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--teal)">${(grandTotal*200).toLocaleString('uk')} ₴</span>
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = html || `<div class="empty-state" style="padding:60px">Відгуків за ${MONTHS_UK[chiefReviewsM]} немає</div>`;
+}
+
+// ── MOOD ──
+function renderChiefMood(){
+  const today = todayKey();
+  const container = document.getElementById('chief-mood-content');
+  const MOOD_EMOJI = ['','😞','😕','😐','😊','😄'];
+  let html = '';
+
+  TEAMS.forEach(team => {
+    const staff = db.staff.filter(s=>(s.teamId||1)===team.id);
+    if(!staff.length) return;
+    let sum=0, count=0;
+    const agentMoods = staff.map(emp => {
+      const val = (db.moods&&db.moods[emp.id]&&db.moods[emp.id][today]);
+      if(val){ sum+=val; count++; }
+      return {emp, val};
+    });
+
+    const avg = count ? (sum/count).toFixed(1) : null;
+    const avgEmoji = avg ? MOOD_EMOJI[Math.round(avg)]||'😐' : '—';
+
+    html += `<div style="margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase">${team.name}</span>
+        <span style="font-size:20px" title="Середній настрій: ${avg||'—'}">${avgEmoji} ${avg?`<span style="font-size:13px;color:var(--muted)">${avg}/5</span>`:''}</span>
+      </div>`;
+    agentMoods.forEach(({emp, val}) => {
+      const emoji = val ? MOOD_EMOJI[val]||'?' : '—';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 18px;border-bottom:1px solid rgba(44,44,69,.2)">
+        <span style="font-size:13px;color:var(--muted2)">${emp.name}</span>
+        <span style="font-size:18px">${emoji}</span>
+      </div>`;
+    });
+    html += `<div style="padding:8px 18px;font-size:11px;color:var(--muted)">Відповіли: ${count} з ${staff.length}</div>`;
+    html += '</div>';
+  });
+
+  container.innerHTML = html || '<div class="empty-state" style="padding:60px">Даних немає</div>';
+}
 
 // ══ THEME ══
 function toggleTheme(){
