@@ -3502,7 +3502,6 @@ async function runAutoSched(){
   const maxShifts    = +document.getElementById('ag-max-shifts').value  || 20;
   const minShifts    = +document.getElementById('ag-min-shifts').value  || 15;
   const maxRow       = +document.getElementById('ag-max-row').value     || 4;
-  const noNight      = [...document.querySelectorAll('#ag-no-night-list input:checked')].map(el=>+el.value);
   const ruleNightOff = document.getElementById('ag-rule-night-off').checked;
   const rulePriority = document.getElementById('ag-rule-priority').checked;
   const ruleOffWish  = document.getElementById('ag-rule-off-wish').checked;
@@ -3511,11 +3510,16 @@ async function runAutoSched(){
   const slotsWeekday = getSlotsFromUI('ag-slots-weekday');
   const slotsWeekend = getSlotsFromUI('ag-slots-weekend');
 
+  // noNight як Set рядків — фікс типів
+  const noNightRaw = [...document.querySelectorAll('#ag-no-night-list input:checked')].map(el=>String(el.value));
+  const noNightSet = new Set(noNightRaw);
+  function canNight(emp){ return !noNightSet.has(String(emp.id)); }
+
   const tid = me && me.teamId ? String(me.teamId) : '0';
   if(!db.schedRules) db.schedRules={};
-  db.schedRules[tid]={maxShifts,minShifts,maxRow,noNight,
+  db.schedRules[tid]={maxShifts,minShifts,maxRow,noNight:noNightRaw,
     ruleNightOff,rulePriority,ruleOffWish,ruleTextPref,ruleBalance,
-    slots_weekday:slotsWeekday, slots_weekend:slotsWeekend};
+    slots_weekday:slotsWeekday,slots_weekend:slotsWeekend};
 
   const Y = wishesAdmY!==undefined ? wishesAdmY : new Date().getFullYear();
   const M = wishesAdmM!==undefined ? wishesAdmM : new Date().getMonth();
@@ -3523,8 +3527,16 @@ async function runAutoSched(){
   const daysInMonth = new Date(Y,M+1,0).getDate();
   const staff = myStaff();
   const allShifts = getTeamShifts(me.teamId||1);
+  const MIN_LETTERS = 4;
 
-  // Збираємо побажання
+  function isLetterShift(shiftId){
+    const sh=getShift(shiftId);
+    if(!sh) return false;
+    return (sh.label||'').toLowerCase().includes('лист')||
+           (sh.label||'').toLowerCase().includes('mail');
+  }
+
+  // Побажання
   const wishes={};
   staff.forEach(emp=>{
     const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
@@ -3532,12 +3544,11 @@ async function runAutoSched(){
     Object.entries(ew).forEach(([day,w])=>{ if(w&&w.shift) wishes[emp.id][+day]=w; });
   });
 
-  // Текстові переваги з коментарів
+  // Текстові переваги
   const monthNotes={};
   staff.forEach(emp=>{
     monthNotes[emp.id]=(((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key+'_note']||'').toLowerCase();
   });
-
   function getPref(empId){
     if(!ruleTextPref) return null;
     const n=monthNotes[empId]||'';
@@ -3552,32 +3563,57 @@ async function runAutoSched(){
   db.schedule[key]={};
   const state={};
   staff.forEach(emp=>{
-    state[emp.id]={shifts:0, row:0};
+    // shiftCount: скільки разів кожна зміна вже була цього місяця {shiftId: count}
+    state[emp.id]={shifts:0, row:0, letters:0, shiftCount:{}};
     db.schedule[key][emp.id]={};
   });
 
+  // Функція: наскільки "свіжа" ця зміна для агента
+  // Повертає кількість разів що агент вже отримав цю зміну — менше = краще
+  function shiftFreshness(emp, shiftId){
+    return state[emp.id].shiftCount[shiftId]||0;
+  }
+
+  // Сортування кандидатів з урахуванням чергування
+  function rankCandidates(list, day, slotShiftId){
+    return [...list].sort((a,b)=>{
+      // Чергування: хто рідше отримував цю зміну — вперед
+      const fa=shiftFreshness(a,slotShiftId);
+      const fb=shiftFreshness(b,slotShiftId);
+      if(fa!==fb) return fa-fb;
+      // Пріоритет за часом подачі
+      if(rulePriority){
+        const ta=wishes[a.id]?.[day]?.submittedAt||Infinity;
+        const tb=wishes[b.id]?.[day]?.submittedAt||Infinity;
+        if(ta!==tb) return ta-tb;
+      }
+      // Рівномірний розподіл
+      return ruleBalance ? state[a.id].shifts-state[b.id].shifts : 0;
+    });
+  }
+
   // ══════════════════════════════════════════
-  // ГОЛОВНИЙ ЦИКЛ — день за днем
+  // ГОЛОВНИЙ ЦИКЛ
   // ══════════════════════════════════════════
   for(let day=1; day<=daysInMonth; day++){
-    const dow = new Date(Y,M,day).getDay();
-    const isWe = dow===0||dow===6;
-    const slots = isWe ? [...slotsWeekend] : [...slotsWeekday];
+    const dow=new Date(Y,M,day).getDay();
+    const isWe=dow===0||dow===6;
+    const slots=isWe?[...slotsWeekend]:[...slotsWeekday];
 
-    // Нічні слоти — першими у черзі (як при ручному складанні)
-    const nightQueue=[], dayQueue=[];
+    // Нічні слоти — першими
+    const nightQ=[], dayQ=[];
     slots.forEach(s=>{
       for(let i=0;i<s.count;i++){
-        if(isNightShift(s.shiftId)) nightQueue.push(s.shiftId);
-        else dayQueue.push(s.shiftId);
+        if(isNightShift(s.shiftId)) nightQ.push(s.shiftId);
+        else dayQ.push(s.shiftId);
       }
     });
-    const queue=[...nightQueue,...dayQueue];
+    const queue=[...nightQ,...dayQ];
 
     const assigned={};
     staff.forEach(emp=>{ assigned[emp.id]=null; });
 
-    // Хто не може вийти через ліміти
+    // Хто не може через ліміти
     const mustOff=new Set();
     staff.forEach(emp=>{
       if(state[emp.id].shifts>=maxShifts||state[emp.id].row>=maxRow)
@@ -3590,67 +3626,75 @@ async function runAutoSched(){
       staff.forEach(emp=>{
         if(mustOff.has(emp.id)) return;
         const tmr=wishes[emp.id]?.[day+1];
-        if(tmr?.shift&&isNightShift(tmr.shift)&&!noNight.includes(emp.id))
+        if(tmr?.shift&&isNightShift(tmr.shift)&&canNight(emp))
           offForNight.add(emp.id);
-      });
-    }
-
-    // Функція сортування кандидатів для слоту
-    function rankForSlot(empList){
-      return [...empList].sort((a,b)=>{
-        // Хто хоче вихідний — в самий кінець
-        const aOff=ruleOffWish&&wishes[a.id]?.[day]?.shift==='off';
-        const bOff=ruleOffWish&&wishes[b.id]?.[day]?.shift==='off';
-        if(aOff!==bOff) return aOff?1:-1;
-        // Пріоритет за часом подачі побажання
-        if(rulePriority){
-          const ta=wishes[a.id]?.[day]?.submittedAt||Infinity;
-          const tb=wishes[b.id]?.[day]?.submittedAt||Infinity;
-          if(ta!==tb) return ta-tb;
-        }
-        // Рівномірний розподіл
-        return ruleBalance ? state[a.id].shifts-state[b.id].shifts : 0;
       });
     }
 
     // ── КРОК 1: Закриваємо обов'язкові слоти ──
     queue.forEach(slotShiftId=>{
       const isNight=isNightShift(slotShiftId);
+      const isLetter=isLetterShift(slotShiftId);
       const sh=getShift(slotShiftId);
       const shTime=sh?.time||'12:00';
 
-      // Вільні кандидати для цього слоту
       const pool=staff.filter(emp=>
         !mustOff.has(emp.id)&&
         !offForNight.has(emp.id)&&
         assigned[emp.id]===null&&
-        !(isNight&&noNight.includes(emp.id))
+        !(isNight&&!canNight(emp))
       );
       if(!pool.length) return;
 
-      // Розбиваємо на групи за пріоритетом
-      const wantsThis = pool.filter(e=>wishes[e.id]?.[day]?.shift===slotShiftId);
-      const wantsOff  = pool.filter(e=>ruleOffWish&&wishes[e.id]?.[day]?.shift==='off'&&!wantsThis.includes(e));
-      const withPref  = pool.filter(e=>{
-        if(wantsThis.includes(e)||wantsOff.includes(e)) return false;
-        const p=getPref(e.id);
-        if(!p) return false;
-        if(isNight)         return p==='night';
-        if(shTime<='10:00') return p==='early';
-        if(shTime>='15:00') return p==='late';
-        return false;
-      });
-      const neutral=pool.filter(e=>
-        !wantsThis.includes(e)&&!wantsOff.includes(e)&&!withPref.includes(e)
+      // Групи пріоритету:
+      // 1. Хто хоче саме цю зміну (побажання)
+      const wantsThis=pool.filter(e=>wishes[e.id]?.[day]?.shift===slotShiftId);
+
+      // 2. Якщо слот "листи" — кому не вистачає мінімуму
+      const needsLetters=isLetter
+        ? pool.filter(e=>state[e.id].letters<MIN_LETTERS&&!wantsThis.includes(e)&&
+            !(ruleOffWish&&wishes[e.id]?.[day]?.shift==='off'))
+        : [];
+
+      // 3. Хто хоче вихідний — в самий кінець
+      const wantsOff=pool.filter(e=>
+        ruleOffWish&&wishes[e.id]?.[day]?.shift==='off'&&
+        !wantsThis.includes(e)&&!needsLetters.includes(e)
       );
 
-      // Всередині кожної групи — сортуємо
+      // 4. Решта (нейтральні + текстові переваги)
+      const others=pool.filter(e=>
+        !wantsThis.includes(e)&&!needsLetters.includes(e)&&!wantsOff.includes(e)
+      );
+
+      // Всередині груп 3 і 4 — сортуємо з урахуванням чергування і текстових переваг
+      function sortGroup(list){
+        return rankCandidates(list, day, slotShiftId).sort((a,b)=>{
+          // Спочатку чергування
+          const fa=shiftFreshness(a,slotShiftId);
+          const fb=shiftFreshness(b,slotShiftId);
+          if(fa!==fb) return fa-fb;
+          // Текстова перевага відповідає цьому слоту
+          const pa=getPref(a.id), pb=getPref(b.id);
+          const matchA=pa&&((isNight&&pa==='night')||(shTime<='10:00'&&pa==='early')||(shTime>='15:00'&&pa==='late'));
+          const matchB=pb&&((isNight&&pb==='night')||(shTime<='10:00'&&pb==='early')||(shTime>='15:00'&&pb==='late'));
+          if(matchA!==matchB) return matchA?-1:1;
+          if(rulePriority){
+            const ta=wishes[a.id]?.[day]?.submittedAt||Infinity;
+            const tb=wishes[b.id]?.[day]?.submittedAt||Infinity;
+            if(ta!==tb) return ta-tb;
+          }
+          return ruleBalance?state[a.id].shifts-state[b.id].shifts:0;
+        });
+      }
+
       const ranked=[
-        ...rankForSlot(wantsThis),
-        ...rankForSlot(withPref),
-        ...rankForSlot(neutral),
-        ...rankForSlot(wantsOff),  // вихідний — останній
+        ...wantsThis,           // побажання — завжди першими
+        ...sortGroup(needsLetters),
+        ...sortGroup(others),
+        ...sortGroup(wantsOff), // вихідний — завжди останніми
       ];
+
       const chosen=ranked[0];
       if(!chosen) return;
 
@@ -3667,24 +3711,18 @@ async function runAutoSched(){
     });
 
     // ── КРОК 2: Хто хотів вихідний і не потрапив у слот → вихідний ──
-    // Це ТОП ПРІОРИТЕТ після закриття обов'язкових слотів
     staff.forEach(emp=>{
       if(assigned[emp.id]!==null||mustOff.has(emp.id)||offForNight.has(emp.id)) return;
-      if(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off'){
-        assigned[emp.id]='off';
-      }
+      if(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off') assigned[emp.id]='off';
     });
 
-    // ── КРОК 3: Додаткові зміни у вихідні (якщо є запас до макс) ──
+    // ── КРОК 3: Додаткові зміни у вихідні (запас до макс) ──
     if(isWe){
-      const extra=staff.filter(emp=>
-        assigned[emp.id]===null&&
-        !mustOff.has(emp.id)&&
-        !offForNight.has(emp.id)&&
-        state[emp.id].shifts<maxShifts
-      ).sort((a,b)=>state[a.id].shifts-state[b.id].shifts);
-
-      extra.forEach(emp=>{
+      staff.filter(emp=>
+        assigned[emp.id]===null&&!mustOff.has(emp.id)&&
+        !offForNight.has(emp.id)&&state[emp.id].shifts<maxShifts
+      ).sort((a,b)=>state[a.id].shifts-state[b.id].shifts)
+      .forEach(emp=>{
         if(state[emp.id].shifts>=maxShifts) return;
         const wish=wishes[emp.id]?.[day];
         let pick=null;
@@ -3692,33 +3730,55 @@ async function runAutoSched(){
           pick=wish.shift;
         } else {
           const pool=allShifts.filter(s=>!isNightShift(s.id));
+          // Пріоритет: листи якщо мало + чергування
+          const needsL=state[emp.id].letters<MIN_LETTERS;
+          const letterPool=pool.filter(s=>isLetterShift(s.id));
+          const base=needsL&&letterPool.length?letterPool:pool;
+          // Сортуємо по свіжості (рідше давана зміна — краще)
+          const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
           const p=getPref(emp.id);
-          if(p==='early') pool.sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
-          if(p==='late')  pool.sort((a,b)=>(b.time||'00').localeCompare(a.time||'00'));
-          pick=pool[0]?.id||null;
+          if(p==='early') sorted.sort((a,b)=>{
+            const fd=shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id);
+            return fd!==0?fd:(a.time||'99').localeCompare(b.time||'99');
+          });
+          if(p==='late') sorted.sort((a,b)=>{
+            const fd=shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id);
+            return fd!==0?fd:(b.time||'00').localeCompare(a.time||'00');
+          });
+          pick=sorted[0]?.id||null;
         }
         if(pick) assigned[emp.id]=pick;
       });
     }
 
-    // ── КРОК 4: Решта → якщо мінімум не набрано дати зміну, інакше вихідний ──
+    // ── КРОК 4: Решта → мінімум або вихідний ──
     staff.forEach(emp=>{
       if(assigned[emp.id]!==null) return;
-      if(mustOff.has(emp.id)||offForNight.has(emp.id)){
-        assigned[emp.id]='off'; return;
-      }
+      if(mustOff.has(emp.id)||offForNight.has(emp.id)){ assigned[emp.id]='off'; return; }
       if(state[emp.id].shifts<minShifts){
         const wish=wishes[emp.id]?.[day];
-        if(wish?.shift&&wish.shift!=='off'&&!(isNightShift(wish.shift)&&noNight.includes(emp.id))){
-          assigned[emp.id]=wish.shift;
+        let pick=null;
+        if(wish?.shift&&wish.shift!=='off'&&!(isNightShift(wish.shift)&&!canNight(emp))){
+          pick=wish.shift;
         } else {
-          const pool=noNight.includes(emp.id)?allShifts.filter(s=>!isNightShift(s.id)):allShifts;
+          const pool=canNight(emp)?allShifts:allShifts.filter(s=>!isNightShift(s.id));
+          const needsL=state[emp.id].letters<MIN_LETTERS;
+          const letterPool=pool.filter(s=>isLetterShift(s.id));
+          const base=needsL&&letterPool.length?letterPool:pool;
+          // Чергування — вибираємо зміну яку агент отримував найрідше
+          const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
           const p=getPref(emp.id);
-          let pick=pool[0];
-          if(p==='early') pick=pool.reduce((a,b)=>(a.time||'99')<=(b.time||'99')?a:b,pool[0]);
-          if(p==='late')  pick=pool.reduce((a,b)=>(a.time||'00')>=(b.time||'00')?a:b,pool[0]);
-          assigned[emp.id]=pick?.id||'off';
+          if(p==='early') sorted.sort((a,b)=>{
+            const fd=shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id);
+            return fd!==0?fd:(a.time||'99').localeCompare(b.time||'99');
+          });
+          if(p==='late') sorted.sort((a,b)=>{
+            const fd=shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id);
+            return fd!==0?fd:(b.time||'00').localeCompare(a.time||'00');
+          });
+          pick=sorted[0]?.id||null;
         }
+        assigned[emp.id]=pick||'off';
       } else {
         assigned[emp.id]='off';
       }
@@ -3731,6 +3791,8 @@ async function runAutoSched(){
       if(s&&s!=='off'&&s!=='vacation'){
         state[emp.id].shifts++;
         state[emp.id].row++;
+        state[emp.id].shiftCount[s]=(state[emp.id].shiftCount[s]||0)+1;
+        if(isLetterShift(s)) state[emp.id].letters++;
       } else {
         state[emp.id].row=0;
       }
@@ -3743,7 +3805,8 @@ async function runAutoSched(){
   if(typeof renderAdmSched==='function') renderAdmSched();
 
   const total=staff.reduce((s,e)=>s+(state[e.id]?.shifts||0),0);
-  alert(`✅ Графік згенеровано!\n📊 Всього змін: ${total}\n✏️ Можеш коригувати вручну у вкладці «Графік»`);
+  const totalLetters=staff.reduce((s,e)=>s+(state[e.id]?.letters||0),0);
+  alert(`✅ Графік згенеровано!\n📊 Всього змін: ${total}\n✉️ Листів: ${totalLetters} (мін. ${MIN_LETTERS}×${staff.length}=${MIN_LETTERS*staff.length})\n✏️ Можеш коригувати вручну у вкладці «Графік»`);
 }
 
 
