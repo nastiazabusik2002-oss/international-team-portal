@@ -3783,68 +3783,48 @@ async function runAutoSched(){
       if(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off') assigned[emp.id]='off';
     });
 
-    // ── КРОК 3: Додаткові зміни у вихідні ──
-    // ТІЛЬКИ якщо агент ще не вийшов і кількість тих хто вже працює < mandatoryCount+1
-    if(isWe){
-      const alreadyOn=staff.filter(e=>assigned[e.id]&&assigned[e.id]!=='off').length;
-      // У вихідні максимум mandatoryCount людей (рівно по слотах, +0 зайвих)
-      // Якщо є агент що хоче вийти і ще не набрав мінімум — дозволяємо але з обмеженням
-      const extraAllowed = Math.max(0, mandatoryCount - alreadyOn);
-
-      if(extraAllowed > 0){
-        staff.filter(emp=>
-          assigned[emp.id]===null&&!mustOff.has(emp.id)&&
-          !offForNight.has(emp.id)&&state[emp.id].shifts<minShifts
-        ).sort((a,b)=>state[a.id].shifts-state[b.id].shifts)
-        .slice(0, extraAllowed)
-        .forEach(emp=>{
-          const wish=wishes[emp.id]?.[day];
-          let pick=null;
-          if(wish?.shift&&wish.shift!=='off'&&!isNightShift(wish.shift)&&isAllowed(emp,wish.shift)){
-            pick=wish.shift;
-          } else {
-            const pool=getAllowedPool(emp,allShifts.filter(s=>!isNightShift(s.id)));
-            if(!pool.length) return;
-            const needsL=state[emp.id].letters<MIN_LETTERS;
-            const base=needsL&&pool.filter(s=>isLetterShift(s.id)).length
-              ? pool.filter(s=>isLetterShift(s.id)) : pool;
-            const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
-            pick=sorted[0]?.id||null;
-          }
-          if(pick) assigned[emp.id]=pick;
-        });
-      }
-    }
-
-    // ── КРОК 4: Будні — додаткові зміни для набору мінімуму ──
-    // Але тільки якщо агент "відстає" відносно рівномірного темпу
-    if(!isWe){
+    // ── КРОК 3: Набір мінімуму — тільки якщо агент відстає ──
+    // Будні і вихідні: Крок 1 вже закрив слоти. Більше нікого не додаємо
+    // ЄДИНИЙ виняток: агент відстає від мінімуму і без цього дня не встигне
+    {
+      const daysLeft = daysInMonth - day + 1;
       staff.forEach(emp=>{
         if(assigned[emp.id]!==null||mustOff.has(emp.id)||offForNight.has(emp.id)) return;
-        const daysLeft=daysInMonth-day+1;
-        const done=state[emp.id].shifts;
-        const needed=minShifts-done;
-        // Виходимо тільки якщо без цього дня не вистачить
-        if(needed<=0||needed<daysLeft*0.5) { assigned[emp.id]='off'; return; }
 
-        const wish=wishes[emp.id]?.[day];
-        let pick=null;
-        if(wish?.shift&&wish.shift!=='off'&&!(isNightShift(wish.shift)&&!canNight(emp))&&isAllowed(emp,wish.shift)){
-          pick=wish.shift;
+        const done = state[emp.id].shifts;
+        const needed = minShifts - done;
+
+        // Якщо мінімум вже набрано — вихідний
+        if(needed <= 0){ assigned[emp.id]='off'; return; }
+
+        // Виходимо тільки якщо темп недостатній:
+        // потрібно виходити більш ніж в 70% днів що залишились
+        if(needed < daysLeft * 0.7){ assigned[emp.id]='off'; return; }
+
+        // Агент відстає — додаємо зміну
+        // Якщо є побажання вихідного — все одно виходимо (мінімум важливіший)
+        const wish = wishes[emp.id]?.[day];
+        let pick = null;
+        if(wish?.shift && wish.shift!=='off' &&
+           !(isNightShift(wish.shift)&&!canNight(emp)) &&
+           isAllowed(emp, wish.shift)){
+          pick = wish.shift;
         } else {
-          const pool=getAllowedPool(emp,canNight(emp)?allShifts:allShifts.filter(s=>!isNightShift(s.id)));
+          const pool = getAllowedPool(emp,
+            canNight(emp) ? allShifts : allShifts.filter(s=>!isNightShift(s.id))
+          );
           if(!pool.length){ assigned[emp.id]='off'; return; }
-          const needsL=state[emp.id].letters<MIN_LETTERS;
-          const letterPool=pool.filter(s=>isLetterShift(s.id));
-          const base=needsL&&letterPool.length?letterPool:pool;
-          const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
-          pick=sorted[0]?.id||null;
+          const needsL = state[emp.id].letters < MIN_LETTERS;
+          const letterPool = pool.filter(s=>isLetterShift(s.id));
+          const base = needsL && letterPool.length ? letterPool : pool;
+          const sorted = [...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
+          pick = sorted[0]?.id || null;
         }
-        assigned[emp.id]=pick||'off';
+        assigned[emp.id] = pick || 'off';
       });
     }
 
-    // ── КРОК 5: Всі що залишились → вихідний ──
+    // ── КРОК 4: Всі що залишились → вихідний ──
     staff.forEach(emp=>{
       if(assigned[emp.id]===null) assigned[emp.id]='off';
     });
