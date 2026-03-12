@@ -4460,8 +4460,11 @@ function renderChiefSched(){
         const txt = sh ? (sh.short||sh.time||sh.label[0]||'?') : '';
         const dow = new Date(chiefSchedY,chiefSchedM,d).getDay();
         const isWe = dow===0||dow===6;
+        const shLabel = sh && shiftId && shiftId!=='off' ? (sh.label||'') : '';
+        const shTime  = sh && shiftId && shiftId!=='off' ? (sh.time||'') : '';
+        const shColor = sh && shiftId && shiftId!=='off' ? (sh.color||'') : '';
         html += `<td style="text-align:center;padding:2px;${isWe?'background:rgba(245,200,66,.05)':''}${bg?';background:'+bg:''}">
-          <span style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'}">${txt||'—'}</span>
+          <span onclick="shTip(event,'${shLabel}','${shTime}','${shColor}')" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}</span>
         </td>`;
       });
       html += '</tr>';
