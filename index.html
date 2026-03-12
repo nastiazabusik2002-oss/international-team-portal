@@ -1147,6 +1147,34 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       </div>
     </div>
 
+    <!-- Пікові дні -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">📈 Пікові дні тижня <span style="font-size:10px;font-weight:normal;text-transform:none;color:var(--muted)">— +1 людина понад слоти</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label id="ag-peak-mon" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="1" style="accent-color:#f59e0b;width:13px;height:13px"> Пн
+        </label>
+        <label id="ag-peak-tue" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="2" style="accent-color:#f59e0b;width:13px;height:13px"> Вт
+        </label>
+        <label id="ag-peak-wed" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="3" style="accent-color:#f59e0b;width:13px;height:13px"> Ср
+        </label>
+        <label id="ag-peak-thu" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="4" style="accent-color:#f59e0b;width:13px;height:13px"> Чт
+        </label>
+        <label id="ag-peak-fri" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="5" style="accent-color:#f59e0b;width:13px;height:13px"> Пт
+        </label>
+        <label id="ag-peak-sat" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="6" style="accent-color:#f59e0b;width:13px;height:13px"> Сб
+        </label>
+        <label id="ag-peak-sun" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="0" style="accent-color:#f59e0b;width:13px;height:13px"> Нд
+        </label>
+      </div>
+    </div>
+
     <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--muted2)">
       ⚠️ Генерація перезапише поточний графік вибраного місяця. Після генерації можна редагувати вручну.
     </div>
@@ -3563,6 +3591,18 @@ function openAutoSchedModal(){
   renderSlotsFromRules(rules, 'weekday');
   renderSlotsFromRules(rules, 'weekend');
   renderAgentLimitsFromRules(rules);
+  // Пікові дні
+  const peakDays = new Set((rules.peakDays||[]).map(String));
+  document.querySelectorAll('#autosched-modal [id^="ag-peak-"] input').forEach(inp=>{
+    inp.checked = peakDays.has(String(inp.value));
+    const label = inp.closest('label');
+    label.style.borderColor = inp.checked ? 'rgba(245,158,11,.6)' : '';
+    label.style.background  = inp.checked ? 'rgba(245,158,11,.1)' : '';
+    inp.onchange = ()=>{
+      label.style.borderColor = inp.checked ? 'rgba(245,158,11,.6)' : '';
+      label.style.background  = inp.checked ? 'rgba(245,158,11,.1)' : '';
+    };
+  });
 
   const noNightSet = new Set(rules.noNight || []);
   const container = document.getElementById('ag-no-night-list');
@@ -3587,14 +3627,14 @@ async function runAutoSched(){
   const slotsWeekday = getSlotsFromUI('ag-slots-weekday');
   const slotsWeekend = getSlotsFromUI('ag-slots-weekend');
 
-  // Збираємо тих хто З нічними (чекбокс увімкнений)
+  // Нічні агенти
   const withNightRaw = [...document.querySelectorAll('#ag-no-night-list input:checked')].map(el=>String(el.value));
   const withNightSet = new Set(withNightRaw);
-  // noNight зберігаємо як раніше (хто НЕ може нічні) для сумісності зі збереженням
   const noNightRaw = myStaff().map(e=>String(e.id)).filter(id=>!withNightSet.has(id));
   const noNightSet = new Set(noNightRaw);
   function canNight(emp){ return withNightSet.has(String(emp.id)); }
 
+  // Обмеження змін для агентів
   const agentLimits = getAgentShiftLimits();
   function isAllowed(emp, shiftId){
     const lim = agentLimits[String(emp.id)];
@@ -3607,13 +3647,21 @@ async function runAutoSched(){
     return pool.filter(s=>lim.has(String(s.id||s)));
   }
 
+  // Пікові дні тижня (dow: 0=НД, 1=ПН...)
+  const peakDays = new Set(
+    [...document.querySelectorAll('#autosched-modal [id^="ag-peak-"] input:checked')]
+      .map(el=>+el.value)
+  );
+
+  // Зберігаємо правила
   const agentLimitsSaved={};
   Object.entries(agentLimits).forEach(([id,set])=>{ agentLimitsSaved[id]=[...set]; });
-  const tid = me&&me.teamId ? String(me.teamId):'0';
+  const tid = me&&me.teamId?String(me.teamId):'0';
   if(!db.schedRules) db.schedRules={};
   db.schedRules[tid]={maxShifts,minShifts,maxRow,noNight:noNightRaw,
     ruleNightOff,rulePriority,ruleOffWish,ruleTextPref,ruleBalance,
-    slots_weekday:slotsWeekday,slots_weekend:slotsWeekend,agentLimits:agentLimitsSaved};
+    slots_weekday:slotsWeekday,slots_weekend:slotsWeekend,
+    agentLimits:agentLimitsSaved, peakDays:[...peakDays]};
 
   const Y = wishesAdmY!==undefined?wishesAdmY:new Date().getFullYear();
   const M = wishesAdmM!==undefined?wishesAdmM:new Date().getMonth();
@@ -3625,7 +3673,8 @@ async function runAutoSched(){
 
   function isLetterShift(sid){
     const sh=getShift(sid); if(!sh) return false;
-    return (sh.label||'').toLowerCase().includes('лист')||(sh.label||'').toLowerCase().includes('mail');
+    return (sh.label||'').toLowerCase().includes('лист')||
+           (sh.label||'').toLowerCase().includes('mail');
   }
 
   // Побажання
@@ -3649,7 +3698,7 @@ async function runAutoSched(){
     return null;
   }
 
-  // Ініціалізація стану
+  // Ініціалізація
   if(!db.schedule) db.schedule={};
   db.schedule[key]={};
   const state={};
@@ -3657,15 +3706,6 @@ async function runAutoSched(){
     state[emp.id]={shifts:0, row:0, letters:0, shiftCount:{}};
     db.schedule[key][emp.id]={};
   });
-
-  // Рахуємо скільки робочих днів залишилось (для рівномірного розподілу)
-  // Скільки змін агент має отримувати в середньому на день щоб вписатись в [min,max]
-  function targetShiftsPerDay(empId, day){
-    const daysLeft = daysInMonth - day + 1;
-    const done = state[empId].shifts;
-    // Середня потреба: (min - done) / daysLeft
-    return (minShifts - done) / daysLeft;
-  }
 
   function shiftFreshness(emp, sid){ return state[emp.id].shiftCount[sid]||0; }
 
@@ -3695,6 +3735,7 @@ async function runAutoSched(){
   for(let day=1; day<=daysInMonth; day++){
     const dow=new Date(Y,M,day).getDay();
     const isWe=dow===0||dow===6;
+    const isPeak=peakDays.has(dow);
     const slots=isWe?[...slotsWeekend]:[...slotsWeekday];
 
     // Нічні — першими
@@ -3706,12 +3747,28 @@ async function runAutoSched(){
       }
     });
     const queue=[...nightQ,...dayQ];
-    const mandatoryCount = queue.length; // скільки обов'язкових слотів
+    const mandatoryCount = queue.length;
+
+    // Лічильники листів на цей день — щоб не перевищити слоти
+    const dayLetterCount = {}; // shiftId -> скільки вже виставлено листів цього типу сьогодні
+    const dayLetterLimit = {}; // shiftId -> скільки дозволено по слотах
+    slots.forEach(s=>{
+      if(isLetterShift(s.shiftId)){
+        dayLetterLimit[s.shiftId] = s.count;
+        dayLetterCount[s.shiftId] = 0;
+      }
+    });
+    function canAssignLetter(sid){
+      if(!isLetterShift(sid)) return true;
+      const limit = dayLetterLimit[sid];
+      if(limit===undefined) return false; // цей тип листів не в слотах сьогодні
+      return (dayLetterCount[sid]||0) < limit;
+    }
 
     const assigned={};
     staff.forEach(emp=>{ assigned[emp.id]=null; });
 
-    // Хто не може — ліміти
+    // Ліміти
     const mustOff=new Set();
     staff.forEach(emp=>{
       if(state[emp.id].shifts>=maxShifts||state[emp.id].row>=maxRow)
@@ -3775,6 +3832,7 @@ async function runAutoSched(){
         }
       }
       assigned[chosen.id]=slotSid;
+      if(isL) dayLetterCount[slotSid]=(dayLetterCount[slotSid]||0)+1;
     });
 
     // ── КРОК 2: Побажання вихідного → вихідний ──
@@ -3783,48 +3841,73 @@ async function runAutoSched(){
       if(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off') assigned[emp.id]='off';
     });
 
-    // ── КРОК 3: Набір мінімуму — тільки якщо агент відстає ──
-    // Будні і вихідні: Крок 1 вже закрив слоти. Більше нікого не додаємо
-    // ЄДИНИЙ виняток: агент відстає від мінімуму і без цього дня не встигне
+    // ── КРОК 3: Піковий день → +1 людина ──
+    if(isPeak){
+      const peakCandidate = staff.filter(emp=>
+        assigned[emp.id]===null&&!mustOff.has(emp.id)&&
+        !offForNight.has(emp.id)&&state[emp.id].shifts<maxShifts&&
+        !(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off')
+      ).sort((a,b)=>state[a.id].shifts-state[b.id].shifts)[0];
+
+      if(peakCandidate){
+        const wish=wishes[peakCandidate.id]?.[day];
+        let pick=null;
+        if(wish?.shift&&wish.shift!=='off'&&
+           !(isNightShift(wish.shift)&&!canNight(peakCandidate))&&
+           isAllowed(peakCandidate,wish.shift)){
+          pick=wish.shift;
+        } else {
+          // Піковому агенту — не-нічна, не-листова (листи вже заповнені по слотах)
+          const pool=getAllowedPool(peakCandidate,
+            allShifts.filter(s=>!isNightShift(s.id)&&!isLetterShift(s.id))
+          );
+          if(pool.length){
+            const sorted=[...pool].sort((a,b)=>shiftFreshness(peakCandidate,a.id)-shiftFreshness(peakCandidate,b.id));
+            pick=sorted[0]?.id||null;
+          }
+        }
+        if(pick) assigned[peakCandidate.id]=pick;
+      }
+    }
+
+    // ── КРОК 4: Набір мінімуму — тільки якщо агент відстає ──
     {
-      const daysLeft = daysInMonth - day + 1;
+      const daysLeft=daysInMonth-day+1;
       staff.forEach(emp=>{
         if(assigned[emp.id]!==null||mustOff.has(emp.id)||offForNight.has(emp.id)) return;
+        const done=state[emp.id].shifts;
+        const needed=minShifts-done;
+        if(needed<=0||needed<daysLeft*0.7){ assigned[emp.id]='off'; return; }
 
-        const done = state[emp.id].shifts;
-        const needed = minShifts - done;
-
-        // Якщо мінімум вже набрано — вихідний
-        if(needed <= 0){ assigned[emp.id]='off'; return; }
-
-        // Виходимо тільки якщо темп недостатній:
-        // потрібно виходити більш ніж в 70% днів що залишились
-        if(needed < daysLeft * 0.7){ assigned[emp.id]='off'; return; }
-
-        // Агент відстає — додаємо зміну
-        // Якщо є побажання вихідного — все одно виходимо (мінімум важливіший)
-        const wish = wishes[emp.id]?.[day];
-        let pick = null;
-        if(wish?.shift && wish.shift!=='off' &&
-           !(isNightShift(wish.shift)&&!canNight(emp)) &&
-           isAllowed(emp, wish.shift)){
-          pick = wish.shift;
+        const wish=wishes[emp.id]?.[day];
+        let pick=null;
+        if(wish?.shift&&wish.shift!=='off'&&
+           !(isNightShift(wish.shift)&&!canNight(emp))&&
+           isAllowed(emp,wish.shift)){
+          pick=wish.shift;
         } else {
-          const pool = getAllowedPool(emp,
-            canNight(emp) ? allShifts : allShifts.filter(s=>!isNightShift(s.id))
+          const pool=getAllowedPool(emp,
+            canNight(emp)?allShifts:allShifts.filter(s=>!isNightShift(s.id))
           );
           if(!pool.length){ assigned[emp.id]='off'; return; }
-          const needsL = state[emp.id].letters < MIN_LETTERS;
-          const letterPool = pool.filter(s=>isLetterShift(s.id));
-          const base = needsL && letterPool.length ? letterPool : pool;
-          const sorted = [...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
-          pick = sorted[0]?.id || null;
+          // НЕ даємо листи якщо денний ліміт вже вичерпано
+          const needsL=state[emp.id].letters<MIN_LETTERS;
+          const letterPool=pool.filter(s=>isLetterShift(s.id)&&canAssignLetter(s.id));
+          const nonLetterPool=pool.filter(s=>!isLetterShift(s.id));
+          const base=needsL&&letterPool.length?letterPool:nonLetterPool.length?nonLetterPool:pool;
+          const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
+          pick=sorted[0]?.id||null;
         }
-        assigned[emp.id] = pick || 'off';
+        if(pick){
+          assigned[emp.id]=pick;
+          if(isLetterShift(pick)) dayLetterCount[pick]=(dayLetterCount[pick]||0)+1;
+        } else {
+          assigned[emp.id]='off';
+        }
       });
     }
 
-    // ── КРОК 4: Всі що залишились → вихідний ──
+    // ── КРОК 5: Решта → вихідний ──
     staff.forEach(emp=>{
       if(assigned[emp.id]===null) assigned[emp.id]='off';
     });
