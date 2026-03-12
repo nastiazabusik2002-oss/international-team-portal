@@ -101,14 +101,18 @@ body.theme-light .announce-card{ background:var(--surface); }
 #shift-tooltip{
   position:fixed;z-index:99999;pointer-events:none;
   background:var(--surface);border:1px solid var(--border2);
-  border-radius:10px;padding:8px 13px;
-  box-shadow:0 6px 24px rgba(0,0,0,.45);
-  display:none;flex-direction:column;gap:3px;
-  min-width:120px;
+  border-radius:10px;padding:9px 14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);
+  flex-direction:column;gap:4px;
+  min-width:110px;
+  display:none;
+  opacity:0;
+  transition:opacity .1s;
 }
-#shift-tooltip .stt-name{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text)}
-#shift-tooltip .stt-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted2)}
-#shift-tooltip .stt-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;vertical-align:middle}
+#shift-tooltip.visible{
+  display:flex;
+  opacity:1;
+}
 
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
@@ -5910,8 +5914,11 @@ function renderAuditorCompanySchedules(){
         const sh=getShift(shiftId);
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
         const tooltip = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
+        const shLabel = sh&&shiftId!=='off' ? (sh.label||'') : '';
+        const shTime  = sh&&shiftId!=='off' ? (sh.time||'') : '';
+        const shColor = sh&&shiftId!=='off' ? (sh.color||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span data-shid="${shiftId}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${tooltip?'default':''}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span onmouseenter="shTip(event,'${shLabel}','${shTime}','${shColor}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -6182,7 +6189,10 @@ function renderAdmCompanySchedules(){
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
         const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
         const tooltip2 = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
-        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span data-shid="${shiftId}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
+        const shLabel2 = sh&&shiftId!=='off' ? (sh.label||'') : '';
+        const shTime2  = sh&&shiftId!=='off' ? (sh.time||'') : '';
+        const shColor2 = sh&&shiftId!=='off' ? (sh.color||'') : '';
+        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span onmouseenter="shTip(event,'${shLabel2}','${shTime2}','${shColor2}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
@@ -6283,8 +6293,11 @@ function renderCompanySchedules(){
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
         const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
         const tooltip3 = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
+        const shLabel3 = sh&&shiftId!=='off' ? (sh.label||'') : '';
+        const shTime3  = sh&&shiftId!=='off' ? (sh.time||'') : '';
+        const shColor3 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span data-shid="${shiftId}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span onmouseenter="shTip(event,'${shLabel3}','${shTime3}','${shColor3}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -6303,48 +6316,26 @@ function renderCompanySchedules(){
 }
 
 // ══ CUSTOM SHIFT TOOLTIP ══
-(function(){
+function shTip(e, label, time, color){
+  let el = document.getElementById('shift-tooltip');
+  if(!el || !label) return;
+  el.innerHTML =
+    `<div style="display:flex;align-items:center;gap:7px">
+      <span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
+      <span style="font-size:13px;font-weight:600;color:${color};font-family:DM Sans,sans-serif">${label}</span>
+    </div>
+    ${time ? `<span style="font-size:11px;color:#8080a0;padding-left:16px;font-family:DM Mono,monospace">${time}</span>` : ''}`;
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  el.style.gap = '4px';
+  const x = e.clientX + 16, y = e.clientY - 8;
+  el.style.left = (x + 150 > window.innerWidth ? e.clientX - 150 : x) + 'px';
+  el.style.top  = y + 'px';
+}
+function shTipHide(){
   const el = document.getElementById('shift-tooltip');
-  if(!el) return;
-
-  function show(e, shiftId){
-    if(!shiftId || shiftId==='off'){ hide(); return; }
-    const sh = getShift(shiftId);
-    if(!sh || sh.id==='off'){ hide(); return; }
-    const name = sh.label || '';
-    const time = sh.time || '';
-    const color = sh.color || 'var(--muted)';
-    el.innerHTML =
-      `<div style="display:flex;align-items:center;gap:6px">
-        <span class="stt-dot" style="background:${color}"></span>
-        <span class="stt-name" style="color:${color}">${name}</span>
-      </div>
-      ${time ? `<span class="stt-time">${time}</span>` : ''}`;
-    el.style.display = 'flex';
-    position(e);
-  }
-
-  function position(e){
-    const x = e.clientX + 14;
-    const y = e.clientY - 10;
-    el.style.left = (x + el.offsetWidth > window.innerWidth ? e.clientX - el.offsetWidth - 10 : x) + 'px';
-    el.style.top  = (y + el.offsetHeight > window.innerHeight ? e.clientY - el.offsetHeight - 4 : y) + 'px';
-  }
-
-  function hide(){ el.style.display = 'none'; }
-
-  document.addEventListener('mouseover', function(e){
-    const span = e.target.closest('[data-shid]');
-    if(span) show(e, span.dataset.shid);
-    else hide();
-  });
-  document.addEventListener('mousemove', function(e){
-    if(el.style.display !== 'none') position(e);
-  });
-  document.addEventListener('mouseout', function(e){
-    if(!e.relatedTarget || !e.relatedTarget.closest('[data-shid]')) hide();
-  });
-})();
+  if(el) el.style.display = 'none';
+}
 
 </script>
 
