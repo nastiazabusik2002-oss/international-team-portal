@@ -5896,8 +5896,9 @@ function renderAuditorCompanySchedules(){
         const shiftId=empSched[d]||'off';
         const sh=getShift(shiftId);
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
+        const tooltip = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span title="${tooltip}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${tooltip?'default':''}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -6167,7 +6168,8 @@ function renderAdmCompanySchedules(){
         const sh=getShift(shiftId);
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
         const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
-        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
+        const tooltip2 = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
+        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span title="${tooltip2}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
@@ -6267,8 +6269,9 @@ function renderCompanySchedules(){
         const sh=getShift(shiftId);
         const bg=isToday?'rgba(245,200,66,.05)':wknd?'rgba(245,200,66,.08)':'';
         const shClass=shiftId&&shiftId!=='off'?`sh-${shiftId}`:'sh-off';
+        const tooltip3 = shiftId!=='off' ? (sh ? [sh.label, sh.time].filter(Boolean).join(' · ') : shiftId) : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span title="${tooltip3}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
