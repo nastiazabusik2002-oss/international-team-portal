@@ -5574,6 +5574,13 @@ document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',f
 
   // Показуємо анімацію тільки для агентів (не адмін)
   function checkAndStart(){
+    // Вимкнути анімацію для Максима Гориня
+    if(me && ((me.name && me.name.includes('Горинь')) || (me.data && me.data.name && me.data.name.includes('Горинь')) || me.id==='chief_2')){
+      if(animId){ cancelAnimationFrame(animId); animId=null; }
+      canvas.style.opacity = '0';
+      currentSeason = null;
+      return;
+    }
     const season = getSeason();
     // Перевіряємо чи відображається головна сторінка агента
     const homeTab = document.getElementById('etab-home');
@@ -5918,7 +5925,7 @@ function renderAuditorCompanySchedules(){
         const shTime  = sh&&shiftId!=='off' ? (sh.time||'') : '';
         const shColor = sh&&shiftId!=='off' ? (sh.color||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span onmouseenter="shTip(event,'${shLabel}','${shTime}','${shColor}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span onclick="shTip(event,'${shLabel}','${shTime}','${shColor}')" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -6192,7 +6199,7 @@ function renderAdmCompanySchedules(){
         const shLabel2 = sh&&shiftId!=='off' ? (sh.label||'') : '';
         const shTime2  = sh&&shiftId!=='off' ? (sh.time||'') : '';
         const shColor2 = sh&&shiftId!=='off' ? (sh.color||'') : '';
-        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span onmouseenter="shTip(event,'${shLabel2}','${shTime2}','${shColor2}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
+        cells+=`<td style="background:${bg};padding:2px;text-align:center"><span onclick="shTip(event,'${shLabel2}','${shTime2}','${shColor2}')" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
@@ -6297,7 +6304,7 @@ function renderCompanySchedules(){
         const shTime3  = sh&&shiftId!=='off' ? (sh.time||'') : '';
         const shColor3 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center">
-          <span onmouseenter="shTip(event,'${shLabel3}','${shTime3}','${shColor3}')" onmouseleave="shTipHide()" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:default">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span onclick="shTip(event,'${shLabel3}','${shTime3}','${shColor3}')" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
       const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
@@ -6315,27 +6322,36 @@ function renderCompanySchedules(){
   container.innerHTML = html || '<div class="empty-state">Немає даних</div>';
 }
 
-// ══ CUSTOM SHIFT TOOLTIP ══
+// ══ SHIFT CLICK TOOLTIP ══
 function shTip(e, label, time, color){
+  e.stopPropagation();
   let el = document.getElementById('shift-tooltip');
   if(!el || !label) return;
+  // If same tooltip already shown for this element — hide it
+  if(el.style.display==='flex' && el._src===e.currentTarget){
+    el.style.display='none'; el._src=null; return;
+  }
+  el._src = e.currentTarget;
   el.innerHTML =
-    `<div style="display:flex;align-items:center;gap:7px">
-      <span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
-      <span style="font-size:13px;font-weight:600;color:${color};font-family:DM Sans,sans-serif">${label}</span>
-    </div>
-    ${time ? `<span style="font-size:11px;color:#8080a0;padding-left:16px;font-family:DM Mono,monospace">${time}</span>` : ''}`;
+    `<span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
+    <span style="font-size:13px;font-weight:600;color:${color};font-family:DM Sans,sans-serif">${label}</span>
+    ${time ? `<span style="font-size:11px;color:#8080a0;font-family:DM Mono,monospace">${time}</span>` : ''}`;
   el.style.display = 'flex';
-  el.style.flexDirection = 'column';
-  el.style.gap = '4px';
-  const x = e.clientX + 16, y = e.clientY - 8;
-  el.style.left = (x + 150 > window.innerWidth ? e.clientX - 150 : x) + 'px';
-  el.style.top  = y + 'px';
+  el.style.flexDirection = 'row';
+  el.style.alignItems = 'center';
+  el.style.gap = '7px';
+  const rect = e.currentTarget.getBoundingClientRect();
+  const tipW = 160, tipH = 38;
+  let left = rect.left + rect.width/2 - tipW/2;
+  let top  = rect.top - tipH - 6;
+  if(top < 6) top = rect.bottom + 6;
+  if(left < 6) left = 6;
+  if(left + tipW > window.innerWidth - 6) left = window.innerWidth - tipW - 6;
+  el.style.left = left + 'px';
+  el.style.top  = top + 'px';
 }
-function shTipHide(){
-  const el = document.getElementById('shift-tooltip');
-  if(el) el.style.display = 'none';
-}
+function shTipHide(){ const el=document.getElementById('shift-tooltip'); if(el){el.style.display='none';el._src=null;} }
+document.addEventListener('click', function(e){ if(!e.target.closest('[onmouseenter],[onclick*="shTip"]')) shTipHide(); });
 
 </script>
 
