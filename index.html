@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>International Team</title>
+<title>TTN Team</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -406,7 +406,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <!-- ═══ LOGIN ═══ -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">INTERNATIONAL TEAM</div>
+    <div class="login-logo">TTN TEAM</div>
     <div class="login-tagline">Робоча платформа</div>
     <div class="field">
       <label>Відділ</label>
@@ -430,7 +430,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <!-- ═══ APP ═══ -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-logo">INTERNATIONAL TEAM</div>
+    <div class="topbar-logo">TTN TEAM</div>
     <div class="topbar-r">
       <div class="topbar-who">Привіт, <b id="topbar-name"></b></div>
       <span id="sb-status" title="Supabase" style="font-size:11px;padding:4px 9px;border-radius:6px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2);transition:.3s">⬤ sync</span>
@@ -2601,18 +2601,16 @@ function recalc(){
   const rating=+document.getElementById('calc-rating').value||0;
   const days=+document.getElementById('calc-days').value||0;
   const nights=+document.getElementById('calc-nights')?.value||0;
-  const dayT=rate+kpi+rating;
-  const nightT=Math.round(dayT*1.5);
-  const total=dayT*days + nightT*nights + (rating||0);
-  // Note: rating is monthly lump sum, not per-day, so subtract per-day portion and add once
-  const totalCorrect = (rate+kpi)*days + (rate+kpi)*1.5*nights + (rating||0);
-  document.getElementById('calc-day-result').textContent=dayT.toLocaleString('uk')+' ₴';
-  document.getElementById('calc-break').textContent=`${rate} + ${kpi} + ${rating}`;
-  document.getElementById('calc-night-result').textContent=Math.round((rate+kpi)*1.5).toLocaleString('uk')+' ₴';
-  document.getElementById('calc-night-break').textContent=`${dayT-rating} × 1.5`;
-  document.getElementById('calc-total').textContent=Math.round(totalCorrect).toLocaleString('uk')+' ₴';
-  const breakEl=document.getElementById('calc-total-break');
-  if(breakEl) breakEl.innerHTML=`${days} ден. × ${dayT-rating} + ${nights} ніч. × ${Math.round((rate+kpi)*1.5)} + рейтинг ${rating}`;
+  const dayT = rate + kpi + rating;           // повна денна ставка
+  const nightT = Math.round(dayT * 1.5);      // нічна = денна × 1.5
+  const total = dayT * days + nightT * nights; // просто множимо
+  document.getElementById('calc-day-result').textContent = dayT.toLocaleString('uk') + ' ₴';
+  document.getElementById('calc-break').textContent = `${rate} + ${kpi} + ${rating}`;
+  document.getElementById('calc-night-result').textContent = nightT.toLocaleString('uk') + ' ₴';
+  document.getElementById('calc-night-break').textContent = `${dayT} × 1.5`;
+  document.getElementById('calc-total').textContent = Math.round(total).toLocaleString('uk') + ' ₴';
+  const breakEl = document.getElementById('calc-total-break');
+  if(breakEl) breakEl.innerHTML = `${days} ден. × ${dayT} + ${nights} ніч. × ${nightT}`;
 }
 
 function renderPayments(){
