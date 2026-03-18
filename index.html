@@ -823,7 +823,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           </div>
         </div>
         <div id="adm-perf-weeks"></div>
-        <div id="perf-schema-editor"></div>
         <div class="sec-title">РЕЙТИНГ (поточний тиждень)</div>
         <div class="tbl-wrap">
           <table class="tbl perf-table">
@@ -886,9 +885,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="adm-section" id="adm-announce">
         <div class="kard" style="margin-bottom:16px;padding:24px">
           <div class="sec-title" style="margin-top:0">НОВЕ ОГОЛОШЕННЯ</div>
-          <div class="field" style="margin-bottom:12px"><label>Текст оголошення</label><textarea id="ann-text" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:12px 14px;font-family:DM Sans,sans-serif;font-size:14px;outline:none;resize:vertical;line-height:1.5" placeholder="Введіть текст..."></textarea></div>
-          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div class="field" style="margin-bottom:12px"><label>Текст оголошення</label><textarea id="ann-text" rows="4" style="width:100%;background:rgba(255,255,255,.06);border:var(--glass-border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:DM Sans,sans-serif;font-size:14px;outline:none;resize:vertical;line-height:1.5" placeholder="Введіть текст..."></textarea></div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted2);cursor:pointer"><input type="checkbox" id="ann-pin" style="accent-color:var(--accent)"> 📌 Закріпити</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer" title="Оголошення побачать всі команди">
+              <input type="checkbox" id="ann-public" style="accent-color:#f472b6">
+              <span style="color:var(--pink)">📢 Публічно</span>
+              <span style="font-size:11px;color:var(--muted)">(всі команди)</span>
+            </label>
             <button class="btn-save" onclick="postAnnouncement()">Опублікувати</button>
           </div>
         </div>
@@ -2665,15 +2669,21 @@ async function postAnnouncement(){
   const text=document.getElementById('ann-text').value.trim();
   if(!text){alert('Введіть текст оголошення');return;}
   const pinned=document.getElementById('ann-pin').checked;
+  const isPublic=document.getElementById('ann-public').checked;
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const team = TEAMS.find(t=>t.id===teamId);
   if(!db.announcements) db.announcements=[];
   db.announcements.unshift({
     id:'an_'+Date.now(),
     text, pinned,
-    author:'Адміністратор',
+    teamId: isPublic ? null : teamId,  // null = публічне для всіх
+    isPublic,
+    author: (team ? team.lead : 'Адміністратор'),
     ts: new Date().toLocaleString('uk',{day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'})
   });
   document.getElementById('ann-text').value='';
   document.getElementById('ann-pin').checked=false;
+  document.getElementById('ann-public').checked=false;
   await saveDB();
   renderAnnounceAdmin();
 }
@@ -2686,13 +2696,14 @@ async function deleteAnnouncement(id){
 
 function renderAnnounceAdmin(){
   const list=document.getElementById('adm-announce-list');
-  const anns=db.announcements||[];
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const anns=(db.announcements||[]).filter(a=>!a.teamId || a.teamId===teamId);
   if(!anns.length){list.innerHTML='<div class="empty-state">Оголошень ще немає</div>';return;}
-  // pinned first
   const sorted=[...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
   list.innerHTML=sorted.map(a=>`
     <div class="announce-card ${a.pinned?'pinned':''}">
       ${a.pinned?'<div class="announce-pin">📌</div>':''}
+      ${a.isPublic?'<div style="position:absolute;top:14px;right:44px;font-size:11px;color:var(--pink);background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.25);border-radius:5px;padding:1px 7px">📢 всі</div>':''}
       <div class="announce-author">👤 ${a.author}</div>
       <div class="announce-text">${a.text}</div>
       <div class="announce-ts">🕐 ${a.ts}</div>
@@ -2702,21 +2713,22 @@ function renderAnnounceAdmin(){
 
 function renderAnnounceEmp(){
   const list=document.getElementById('emp-announce-list');
-  const anns=db.announcements||[];
+  const teamId = me && me.data && (me.data.teamId||1);
+  const anns=(db.announcements||[]).filter(a=>!a.teamId || a.teamId===teamId);
   if(!anns.length){list.innerHTML='<div class="empty-state">Поки що немає оголошень</div>';return;}
   const sorted=[...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
   list.innerHTML=sorted.map(a=>`
     <div class="announce-card ${a.pinned?'pinned':''}">
       ${a.pinned?'<div class="announce-pin">📌</div>':''}
-      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-author">👤 ${a.author}${a.isPublic?' <span style="font-size:10px;color:var(--pink)">📢</span>':''}</div>
       <div class="announce-text">${a.text}</div>
       <div class="announce-ts">🕐 ${a.ts}</div>
     </div>`).join('');
 }
 
-// Show announce count badge on home tab if pinned
 function renderAnnounceHomeBanner(){
-  const pinned=(db.announcements||[]).filter(a=>a.pinned);
+  const teamId = me && me.data && (me.data.teamId||1);
+  const pinned=(db.announcements||[]).filter(a=>a.pinned && (!a.teamId || a.teamId===teamId));
   const el=document.getElementById('emp-home-announce');
   if(!el) return;
   const tgBanner=`<a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.25);border-radius:9px;padding:7px 14px;margin-bottom:10px;text-decoration:none;font-size:12px;color:#29b6f6;transition:.15s" onmouseover="this.style.background='rgba(0,136,204,.18)'" onmouseout="this.style.background='rgba(0,136,204,.1)'">✈️ <b>Telegram канал</b> — новини від керівника →</a>`;
@@ -2724,7 +2736,7 @@ function renderAnnounceHomeBanner(){
   el.innerHTML=tgBanner+pinned.map(a=>`
     <div class="announce-card pinned" style="margin-bottom:12px">
       <div class="announce-pin">📌</div>
-      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-author">👤 ${a.author}${a.isPublic?' <span style="font-size:10px;color:var(--pink)">📢</span>':''}</div>
       <div class="announce-text">${a.text}</div>
       <div class="announce-ts">🕐 ${a.ts}</div>
     </div>`).join('');
@@ -2791,405 +2803,6 @@ function renderHomePerfCards(){
 }
 
 
-// ══ PERF SCHEMA — кастомні колонки для кожної команди ══
-// db.perfSchema[teamId] = [ {id, label, color, autoField, isTotal} ]
-// autoField: 'shifts' | 'shiftChats' | null
-// isTotal: якщо true — автосума всіх не-auto числових колонок
-
-const DEFAULT_PERF_SCHEMA = [
-  {id:'letters',    label:'Листи',           color:'#8080a0', autoField:null,        isTotal:false},
-  {id:'chats',      label:'Чати',            color:'#8080a0', autoField:null,        isTotal:false},
-  {id:'shiftChats', label:'Змін чатів',      color:'#7eb8f7', autoField:'shiftChats',isTotal:false},
-  {id:'shifts',     label:'Змін загалом',    color:'#5a5a7a', autoField:'shifts',    isTotal:false},
-  {id:'avgChat',    label:'Ср.чатів/зміну',  color:'#7eb8f7', autoField:'avgChat',   isTotal:false},
-  {id:'avgTotal',   label:'Ср.закрито заг.', color:'#2dd4bf', autoField:'avgTotal',  isTotal:false},
-  {id:'total',      label:'Total',           color:'#b57bee', autoField:'total',     isTotal:true },
-];
-
-function getPerfSchema(teamId){
-  const tid = teamId || (me && me.teamId) || 1;
-  if(!db.perfSchema) db.perfSchema = {};
-  if(!db.perfSchema[tid]){
-    db.perfSchema[tid] = DEFAULT_PERF_SCHEMA.map(c=>({...c}));
-  }
-  return db.perfSchema[tid];
-}
-
-function savePerfSchema(teamId, schema){
-  if(!db.perfSchema) db.perfSchema={};
-  db.perfSchema[teamId||1] = schema;
-  saveDB();
-}
-
-// ── Рендер редактора схеми ──
-function renderPerfSchemaEditor(){
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  const el = document.getElementById('perf-schema-editor');
-  if(!el) return;
-
-  el.innerHTML = `
-    <div style="background:var(--surface);backdrop-filter:var(--glass-blur);border:var(--glass-border);border-radius:14px;padding:18px 20px;margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent2)">🛠 КОЛОНКИ ТАБЛИЦІ</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Налаштуй які показники збирати для команди</div>
-        </div>
-        <button class="btn-add" onclick="openAddPerfColModal()">➕ Додати колонку</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px" id="perf-schema-list">
-        ${schema.map((col,i)=>`
-          <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:var(--glass-border);border-radius:10px;padding:10px 14px">
-            <div style="width:12px;height:12px;border-radius:50%;background:${col.color};flex-shrink:0"></div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:600;color:${col.color}">${col.label}</div>
-              <div style="font-size:11px;color:var(--muted)">${col.autoField?'🤖 авто: '+col.autoField : col.isTotal?'∑ сума':'✏️ вручну'}</div>
-            </div>
-            <div style="display:flex;gap:6px">
-              ${i>0?`<button class="btn-sm" onclick="movePerfCol(${i},-1)" style="padding:3px 8px">↑</button>`:''}
-              ${i<schema.length-1?`<button class="btn-sm" onclick="movePerfCol(${i},1)" style="padding:3px 8px">↓</button>`:''}
-              <button class="btn-sm" onclick="editPerfCol(${i})" style="padding:3px 8px">✏️</button>
-              <button class="btn-sm red" onclick="deletePerfCol(${i})" style="padding:3px 8px">🗑</button>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
-let _editingColIdx = null;
-
-function openAddPerfColModal(editIdx){
-  _editingColIdx = editIdx ?? null;
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  const col = editIdx!=null ? schema[editIdx] : {label:'', color:'#b57bee', autoField:null, isTotal:false};
-
-  const autoOptions = [
-    {val:'', label:'✏️ Ручне введення'},
-    {val:'shifts', label:'🤖 К-сть змін з графіку'},
-    {val:'shiftChats', label:'🤖 К-сть змін чатів з графіку'},
-    {val:'avgChat', label:'🤖 Ср.чатів/зміну (авто)'},
-    {val:'avgTotal', label:'🤖 Ср.загалом/зміну (авто)'},
-    {val:'total', label:'∑ Сума всіх ручних колонок'},
-  ];
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-ov open';
-  modal.id = 'perf-col-modal';
-  modal.innerHTML = `<div class="modal" style="max-width:400px">
-    <h3>${editIdx!=null?'РЕДАГУВАТИ':'НОВА'} КОЛОНКА</h3>
-    <div class="field"><label>Назва</label><input id="pcol-label" class="esc-input" value="${col.label}" placeholder="напр. Переоформлень"></div>
-    <div class="field"><label>Тип</label>
-      <select id="pcol-auto" class="esc-input">
-        ${autoOptions.map(o=>`<option value="${o.val}" ${(col.autoField||'')===(o.val)||(!col.autoField&&!col.isTotal&&o.val==='')||(col.isTotal&&o.val==='total')?'selected':''}>${o.label}</option>`).join('')}
-      </select>
-    </div>
-    <div class="field"><label>Колір</label>
-      <input type="color" id="pcol-color" value="${col.color}" style="width:100%;height:42px;background:none;border:var(--glass-border);border-radius:10px;cursor:pointer;padding:4px">
-    </div>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button class="btn-save" onclick="savePerfColModal()">💾 Зберегти</button>
-      <button class="btn-sm" onclick="document.getElementById('perf-col-modal').remove()">Скасувати</button>
-    </div>
-  </div>`;
-  document.body.appendChild(modal);
-}
-
-function savePerfColModal(){
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  const label = document.getElementById('pcol-label').value.trim();
-  const autoVal = document.getElementById('pcol-auto').value;
-  const color = document.getElementById('pcol-color').value;
-  if(!label){ alert('Вкажіть назву'); return; }
-
-  const isTotal = autoVal==='total';
-  const autoField = (!autoVal||isTotal) ? null : autoVal;
-  const id = _editingColIdx!=null ? schema[_editingColIdx].id : 'col_'+Date.now();
-
-  const col = {id, label, color, autoField, isTotal};
-  if(_editingColIdx!=null) schema[_editingColIdx] = col;
-  else schema.push(col);
-
-  savePerfSchema(teamId, schema);
-  document.getElementById('perf-col-modal').remove();
-  renderPerfSchemaEditor();
-  renderAdmPerf();
-}
-
-function editPerfCol(idx){ openAddPerfColModal(idx); }
-
-function deletePerfCol(idx){
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  if(!confirm(`Видалити колонку "${schema[idx].label}"?`)) return;
-  schema.splice(idx,1);
-  savePerfSchema(teamId, schema);
-  renderPerfSchemaEditor();
-  renderAdmPerf();
-}
-
-function movePerfCol(idx, dir){
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  const ni = idx+dir;
-  if(ni<0||ni>=schema.length) return;
-  [schema[idx],schema[ni]]=[schema[ni],schema[idx]];
-  savePerfSchema(teamId, schema);
-  renderPerfSchemaEditor();
-  renderAdmPerf();
-}
-
-// ── Авторозрахунок авто-колонок ──
-function calcAutoColsForRow(schema, empId, dateFrom, dateTo, manualVals){
-  // manualVals = {colId: number, ...}
-  const autoShifts = dateFrom ? calcAutoShifts(dateFrom, dateTo) : {};
-  const s = autoShifts[empId] || {shiftChats:0, shifts:0};
-  const result = {...manualVals};
-
-  // Спочатку заповнюємо авто-колонки з графіку
-  schema.forEach(col=>{
-    if(col.autoField==='shifts') result[col.id] = s.shifts;
-    else if(col.autoField==='shiftChats') result[col.id] = s.shiftChats;
-  });
-
-  // Потім рахуємо avgChat, avgTotal
-  const shiftChatsCol = schema.find(c=>c.autoField==='shiftChats');
-  const shiftsCol = schema.find(c=>c.autoField==='shifts');
-  const sc = shiftChatsCol ? (result[shiftChatsCol.id]||0) : 0;
-  const st = shiftsCol ? (result[shiftsCol.id]||0) : 0;
-
-  // Manual sum columns (для avgChat потрібна sumChats)
-  const manualCols = schema.filter(c=>!c.autoField && !c.isTotal);
-
-  schema.forEach(col=>{
-    if(col.autoField==='avgChat'){
-      const chatsCol = schema.find(c=>c.label.toLowerCase().includes('чат') && !c.autoField && !c.isTotal);
-      const chats = chatsCol ? (result[chatsCol.id]||0) : 0;
-      result[col.id] = sc>0 ? Math.round((chats/sc)*10)/10 : 0;
-    }
-    else if(col.autoField==='avgTotal'){
-      const totalManual = manualCols.reduce((s,c)=>s+(result[c.id]||0),0);
-      result[col.id] = st>0 ? Math.round((totalManual/st)*10)/10 : 0;
-    }
-  });
-
-  // Total = сума всіх ручних колонок
-  schema.forEach(col=>{
-    if(col.isTotal){
-      result[col.id] = manualCols.reduce((s,c)=>s+(result[c.id]||0),0);
-    }
-  });
-
-  return result;
-}
-
-// ── Admin perf table ──
-// db.perf[empId] = [ {week:'label', letters, chats, shiftChats, shiftLetters}, ... ]
-
-function autoFillWeekTo(){
-  const fromEl = document.getElementById('week-date-from');
-  const toEl   = document.getElementById('week-date-to');
-  if(!fromEl.value) return;
-  const from = new Date(fromEl.value);
-  const to = new Date(from);
-  to.setDate(from.getDate()+6);
-  toEl.value = to.toISOString().slice(0,10);
-}
-
-function fmtDateShort(dateStr){
-  const [y,m,d] = dateStr.split('-');
-  return `${d}.${m}`;
-}
-
-function addPerfWeekFromDates(){
-  const fromVal = document.getElementById('week-date-from').value;
-  const toVal   = document.getElementById('week-date-to').value;
-  if(!fromVal || !toVal){ alert('Вибери початок і кінець тижня'); return; }
-  const label = fmtDateShort(fromVal)+'–'+fmtDateShort(toVal);
-  const monthKey = fromVal.slice(0,7);
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  if(!db.perf) db.perf = {};
-  const autoShifts = calcAutoShifts(fromVal, toVal);
-  myStaff().forEach(emp=>{
-    if(!db.perf[emp.id]) db.perf[emp.id]=[];
-    if(!db.perf[emp.id].find(d=>d.week===label)){
-      const s = autoShifts[emp.id]||{shiftChats:0, shifts:0};
-      const entry = {week:label, monthKey, dateFrom:fromVal, dateTo:toVal};
-      // Заповнюємо авто-поля
-      schema.forEach(col=>{
-        if(col.autoField==='shifts') entry[col.id] = s.shifts;
-        else if(col.autoField==='shiftChats') entry[col.id] = s.shiftChats;
-        else if(!col.autoField && !col.isTotal) entry[col.id] = 0;
-      });
-      db.perf[emp.id].push(entry);
-    }
-  });
-  document.getElementById('week-date-from').value='';
-  document.getElementById('week-date-to').value='';
-  renderAdmPerf();
-}
-
-function renderEmpPerf(){
-  const el = document.getElementById('emp-perf-content');
-  const chartData = getMyPerf(); // oldest → newest
-  const data = chartData.slice().reverse(); // newest first
-
-  if(!data.length){
-    el.innerHTML='<div class="empty-state" style="padding:60px">Даних поки немає — керівник ще не вніс звіти</div>';
-    return;
-  }
-
-  const latest = data[0];
-  // prev — тільки з того самого місяця
-  const allWeeksSorted = data.map(d=>d.week);
-  const prevLabel = getPrevWeekInMonth(allWeeksSorted, {_: data}, latest.week);
-  const prev = prevLabel ? (data.find(d=>d.week===prevLabel)||null) : null;
-
-  function trend(cur, prv, suffix=''){
-    if(!prv) return `<span class="dash-trend trend-flat">— перший тиждень</span>`;
-    const diff = cur - prv;
-    const pct  = prv ? ((diff/prv)*100).toFixed(1) : 0;
-    if(diff > 0) return `<span class="dash-trend trend-up">↑ +${Math.abs(pct)}%${suffix}</span>`;
-    if(diff < 0) return `<span class="dash-trend trend-down">↓ −${Math.abs(pct)}%${suffix}</span>`;
-    return `<span class="dash-trend trend-flat">→ без змін</span>`;
-  }
-
-  function miniChart(field, color){
-    const vals = chartData.map(d=>d[field]||0);
-    const max  = Math.max(...vals, 1);
-    const bars = vals.map((v,i)=>{
-      const h = Math.round((v/max)*52)+4;
-      const isLast = i===vals.length-1;
-      return `<div style="display:flex;flex-direction:column;align-items:center;flex:1">
-        <div class="dash-bar" style="height:${h}px;background:${isLast?color:color+'55'};width:100%"
-          title="${chartData[i].label||chartData[i].week}: ${v}"></div>
-        <div class="dash-bar-label">${(chartData[i].label||chartData[i].week||'').split('–')[0]||''}</div>
-      </div>`;
-    }).join('');
-    return `<div class="dash-chart">${bars}</div>`;
-  }
-
-  el.innerHTML = `
-    <div class="dash-grid">
-      <div class="dash-kard">
-        <div class="dash-label">Середнє чатів / зміну</div>
-        <div class="dash-val" style="color:var(--blue)">${(latest.avgChat||0).toFixed(1)}</div>
-        ${trend(latest.avgChat, prev?.avgChat, '')}
-        ${miniChart('avgChat','#5b9cf6')}
-      </div>
-      <div class="dash-kard">
-        <div class="dash-label">Ср. закрито загалом</div>
-        <div class="dash-val" style="color:var(--teal)">${(latest.avgTotal||0).toFixed(1)}</div>
-        ${trend(latest.avgTotal, prev?.avgTotal, '')}
-        ${miniChart('avgTotal','#2dd4bf')}
-      </div>
-      <div class="dash-kard">
-        <div class="dash-label">Total за тиждень</div>
-        <div class="dash-val" style="color:var(--accent)">${(latest.total||0).toLocaleString('uk')}</div>
-        ${trend(latest.total, prev?.total, '')}
-        ${miniChart('total','#f5c842')}
-      </div>
-    </div>
-
-    <div class="sec-title">МОЯ ІСТОРІЯ ПО ТИЖНЯХ</div>
-    <div class="tbl-wrap" style="margin-bottom:0">
-      <table class="tbl">
-        <thead><tr><th>Тиждень</th><th>Листи</th><th>Чати</th><th>Змін чатів</th><th>Змін заг.</th><th>Ср.чатів/зміну</th><th>Ср.закрито загалом</th><th>Total</th><th>Динаміка</th></tr></thead>
-        <tbody>
-          ${data.map((d,i)=>{
-            const allW = data.map(x=>x.week);
-            const prevLabel = getPrevWeekInMonth(allW, {me: data}, d.week);
-            const p = prevLabel ? (data.find(x=>x.week===prevLabel)||null) : null;
-            const diff = p ? d.total - p.total : null;
-            const pct  = (p&&p.total) ? ((diff/p.total)*100).toFixed(1) : null;
-            const trendHtml = diff===null ? '<span class="dash-trend trend-flat">—</span>'
-              : diff>0 ? `<span class="dash-trend trend-up">↑ +${Math.abs(pct)}%</span>`
-              : diff<0 ? `<span class="dash-trend trend-down">↓ −${Math.abs(pct)}%</span>`
-              : `<span class="dash-trend trend-flat">→</span>`;
-            return `<tr>
-              <td><span class="week-tag">${d.label||d.week}</span></td>
-              <td style="font-family:'DM Mono',monospace">${d.letters||0}</td>
-              <td style="font-family:'DM Mono',monospace">${d.chats||0}</td>
-              <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${d.shiftChats||0}</td>
-              <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${d.shifts||0}</td>
-              <td style="font-family:'DM Mono',monospace;color:var(--blue);font-weight:600">${(d.avgChat||0).toFixed(1)}</td>
-              <td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:600">${(d.avgTotal||0).toFixed(1)}</td>
-              <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${(d.total||0).toLocaleString('uk')}</td>
-              <td>${trendHtml}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="sec-title" style="margin-top:28px">РЕЙТИНГ КОМАНДИ (поточний тиждень)</div>
-    ${renderTeamPerfTable()}
-    `;
-}
-
-function renderTeamPerfTable(){
-  const weeks = getWeekList();
-  if(!weeks.length) return '<div class="empty-state">Даних ще немає</div>';
-  const curWeek  = weeks[weeks.length-1];
-  const prevWeek = getPrevWeekInMonth(weeks, db.perf||{}, curWeek);
-  const rows = myStaff().map(emp=>{
-    const empData=(db.perf&&db.perf[emp.id])||[];
-    const cur =empData.find(d=>d.week===curWeek)||null;
-    const prev=prevWeek?(empData.find(d=>d.week===prevWeek)||null):null;
-    return {emp,cur,prev};
-  }).filter(r=>r.cur).sort((a,b)=>(b.cur.total||0)-(a.cur.total||0));
-  if(!rows.length) return '<div class="empty-state">Введіть та збережіть дані тижня</div>';
-  const maxTotal=rows[0].cur.total||1;
-  const isMe=id=>me&&me.type==='employee'&&me.data.id===id;
-  return `<div class="tbl-wrap"><table class="tbl perf-table"><thead><tr>
-    <th>#</th><th>Агент</th><th>Ср.чатів/зм.</th><th>Ср.загалом</th><th>Total</th><th>Динаміка</th>
-  </tr></thead><tbody>`+
-  rows.map(({emp,cur,prev},i)=>{
-    const rank=i+1;
-    const rankCls=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
-    const diff=prev?(cur.total||0)-(prev.total||0):null;
-    const pct=(prev&&prev.total)?((diff/prev.total)*100).toFixed(1):null;
-    const tr=diff===null?'<span class="dash-trend trend-flat" style="font-size:11px">—</span>'
-      :diff>0?`<span class="dash-trend trend-up" style="font-size:11px">↑ +${Math.abs(pct)}%</span>`
-      :diff<0?`<span class="dash-trend trend-down" style="font-size:11px">↓ −${Math.abs(pct)}%</span>`
-      :`<span class="dash-trend trend-flat" style="font-size:11px">→</span>`;
-    const barW=Math.round((cur.total/maxTotal)*100);
-    const meStyle=isMe(emp.id)?'background:rgba(245,200,66,.04);':'';
-    return `<tr style="${meStyle}">
-      <td><span class="rank-num ${rankCls}">${rank}</span>${isMe(emp.id)?' 👈':''}</td>
-      <td><b>${emp.name.split(' ')[0]} ${(emp.name.split(' ')[1]||'')[0]||''}.</b></td>
-      <td style="font-family:'DM Mono',monospace;color:var(--blue)">${(cur.avgChat||0).toFixed(1)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--teal)">${(cur.avgTotal||0).toFixed(1)}</td>
-      <td><div class="mini-bar-wrap">
-        <div class="mini-bar" style="width:${barW}px;max-width:100px;background:${isMe(emp.id)?'var(--accent)':rank<=3?'var(--blue)':'var(--border2)'}"></div>
-        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${(cur.total||0).toLocaleString('uk')}</span>
-      </div></td>
-      <td>${tr}</td>
-    </tr>`;
-  }).join('')+
-  '</tbody></table></div>';
-}
-
-// ── Admin perf table ──
-// db.perf[empId] = [ {week:'label', letters, chats, shiftChats, shiftLetters}, ... ]
-
-function autoFillWeekTo(){
-  const fromEl = document.getElementById('week-date-from');
-  const toEl   = document.getElementById('week-date-to');
-  if(!fromEl.value) return;
-  const from = new Date(fromEl.value);
-  const to = new Date(from);
-  to.setDate(from.getDate()+6);
-  toEl.value = to.toISOString().slice(0,10);
-}
-
-function fmtDateShort(dateStr){
-  const [y,m,d] = dateStr.split('-');
-  return `${d}.${m}`;
-}
-
 function addPerfWeekFromDates(){
   const fromVal = document.getElementById('week-date-from').value;
   const toVal   = document.getElementById('week-date-to').value;
@@ -3249,18 +2862,14 @@ function refreshAutoShifts(){
     if(r && r.dateFrom){ dateFrom=r.dateFrom; dateTo=r.dateTo; break; }
   }
   if(!dateFrom){ alert('Немає дат для цього тижня'); return; }
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
   const autoShifts = calcAutoShifts(dateFrom, dateTo);
   myStaff().forEach(emp=>{
     const s = autoShifts[emp.id]||{shiftChats:0, shifts:0};
-    schema.forEach(col=>{
-      const el = document.getElementById(`pv-${emp.id}-${col.id}`);
-      if(!el) return;
-      if(col.autoField==='shifts') el.value = s.shifts;
-      else if(col.autoField==='shiftChats') el.value = s.shiftChats;
-    });
-    recalcPerfRowDyn(emp.id);
+    const scEl = document.getElementById(`psc-${emp.id}`);
+    const stEl = document.getElementById(`pst-${emp.id}`);
+    if(scEl) scEl.value = s.shiftChats;
+    if(stEl) stEl.value = s.shifts;
+    recalcPerfRow(emp.id);
   });
 }
 
@@ -3297,8 +2906,6 @@ function getWeekList(){
 function renderAdmPerf(){
   const weeks = getWeekList();
   const weeksEl = document.getElementById('adm-perf-weeks');
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
 
   if(!weeks.length){
     weeksEl.innerHTML='<div class="empty-state" style="padding:40px">Додайте перший тиждень вище ↑</div>';
@@ -3315,10 +2922,6 @@ function renderAdmPerf(){
     const dateRangeInfo = hasDateRange
       ? `<span style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">📅 ${weekMeta.dateFrom} — ${weekMeta.dateTo}</span>`
       : '';
-
-    // Заголовки колонок
-    const colHeaders = schema.map(col=>`<th style="color:${col.color}">${col.label}${col.autoField?` 🤖`:col.isTotal?' ∑':''}</th>`).join('');
-
     weeksEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div class="sec-title" style="margin-top:0;margin-bottom:0">ВВЕДЕННЯ ДАНИХ</div>
@@ -3332,7 +2935,14 @@ function renderAdmPerf(){
       <div class="tbl-wrap" style="margin-bottom:20px;overflow-x:auto">
         <table class="tbl" id="perf-input-table">
           <thead><tr>
-            <th>Агент</th>${colHeaders}
+            <th>Агент</th>
+            <th>Листи</th>
+            <th>Чати</th>
+            <th style="color:var(--blue)">Змін чатів 🤖</th>
+            <th style="color:var(--muted2)">Змін загалом 🤖</th>
+            <th style="color:var(--blue)">Ср.чатів/зміну</th>
+            <th style="color:var(--teal)">Ср.закрито загалом</th>
+            <th style="color:var(--accent2)">Total</th>
           </tr></thead>
           <tbody id="perf-input-body"></tbody>
         </table>
@@ -3343,7 +2953,6 @@ function renderAdmPerf(){
       </div>`;
     renderPerfInputTable(curWeek);
   }
-  renderPerfSchemaEditor();
   renderAdmPerfRanking();
 }
 
@@ -3352,71 +2961,41 @@ function renderPerfInputTable(week){
   const selWeek = (selEl && selEl.value) || week;
   const tbody = document.getElementById('perf-input-body');
   if(!tbody) return;
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
 
   tbody.innerHTML = myStaff().map(emp=>{
     const empData = (db.perf && db.perf[emp.id]) || [];
-    const row = empData.find(d=>d.week===selWeek) || {};
-
-    const cells = schema.map(col=>{
-      const val = row[col.id] ?? (row[col.id==='-'?'':col.id] ?? 0);
-      // Авто-колонки або total показуємо як текст (але можна редагувати)
-      const isAutoOrCalc = col.autoField==='avgChat'||col.autoField==='avgTotal'||col.isTotal;
-      const displayVal = isAutoOrCalc ? (val||0) : (val||0);
-      const bgStyle = col.autoField ? 'background:rgba(126,184,247,.05);border-color:rgba(126,184,247,.3);'
-                    : col.isTotal   ? 'background:rgba(181,123,238,.05);border-color:rgba(181,123,238,.3);'
-                    : '';
-      if(isAutoOrCalc){
-        return `<td><span id="pv-${emp.id}-${col.id}" style="font-family:'DM Mono',monospace;color:${col.color};font-weight:700">${displayVal}</span></td>`;
-      }
-      return `<td><input type="number" min="0" class="esc-input" id="pv-${emp.id}-${col.id}" value="${displayVal}" oninput="recalcPerfRowDyn(${emp.id})" style="width:75px;${bgStyle}"></td>`;
-    }).join('');
-
-    return `<tr id="pr-${emp.id}"><td style="font-weight:500;white-space:nowrap">${emp.name}</td>${cells}</tr>`;
+    const row = empData.find(d=>d.week===selWeek) || {letters:0,chats:0,shiftChats:0,shifts:0};
+    const l  = row.letters||0;
+    const ch = row.chats||0;
+    const sc = row.shiftChats||0;
+    const st = row.shifts||0;
+    const total    = l + ch;
+    const avgChat  = sc>0 ? (ch/sc).toFixed(1) : '—';
+    const avgTotal = st>0 ? (total/st).toFixed(1) : '—';
+    return `<tr id="pr-${emp.id}">
+      <td style="font-weight:500;white-space:nowrap">${emp.name}</td>
+      <td><input type="number" min="0" class="esc-input" id="pl-${emp.id}"  value="${l}"  oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="pc-${emp.id}"  value="${ch}" oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
+      <td><input type="number" min="0" class="esc-input" id="psc-${emp.id}" value="${sc}" oninput="recalcPerfRow(${emp.id})" style="width:75px;border-color:rgba(126,184,247,.4);background:rgba(126,184,247,.05)"></td>
+      <td><input type="number" min="0" class="esc-input" id="pst-${emp.id}" value="${st}" oninput="recalcPerfRow(${emp.id})" style="width:75px;border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.05)"></td>
+      <td id="pavg-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--blue);text-align:center;font-weight:600">${avgChat}</td>
+      <td id="pavgt-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--teal);text-align:center;font-weight:600">${avgTotal}</td>
+      <td id="ptot-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--accent2);text-align:center;font-weight:700">${total.toLocaleString('uk')}</td>
+    </tr>`;
   }).join('');
-
-  // Перерахуємо авто-колонки для всіх рядків
-  myStaff().forEach(emp => recalcPerfRowDyn(emp.id));
 }
 
-function recalcPerfRowDyn(empId){
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
-  const manualCols = schema.filter(c=>!c.autoField && !c.isTotal);
-
-  // Зчитуємо ручні значення
-  const vals = {};
-  manualCols.forEach(col=>{
-    const el = document.getElementById(`pv-${empId}-${col.id}`);
-    vals[col.id] = el ? (+el.value||0) : 0;
-  });
-
-  // Авто-колонки з графіку (shiftChats, shifts) — беремо з поточних значень полів
-  schema.filter(c=>c.autoField==='shifts'||c.autoField==='shiftChats').forEach(col=>{
-    const el = document.getElementById(`pv-${empId}-${col.id}`);
-    vals[col.id] = el ? (+el.value||0) : 0;
-  });
-
-  const sc = vals[schema.find(c=>c.autoField==='shiftChats')?.id] || 0;
-  const st = vals[schema.find(c=>c.autoField==='shifts')?.id] || 0;
-  const manualSum = manualCols.reduce((s,c)=>s+(vals[c.id]||0),0);
-
-  // Знайдемо col для avgChat — шукаємо ручну колонку з "чат" в назві
-  const chatsManualCol = manualCols.find(c=>c.label.toLowerCase().includes('чат'));
-  const chatsVal = chatsManualCol ? (vals[chatsManualCol.id]||0) : 0;
-
-  schema.forEach(col=>{
-    const el = document.getElementById(`pv-${empId}-${col.id}`);
-    if(!el) return;
-    if(col.autoField==='avgChat'){
-      el.textContent = sc>0 ? (chatsVal/sc).toFixed(1) : '0';
-    } else if(col.autoField==='avgTotal'){
-      el.textContent = st>0 ? (manualSum/st).toFixed(1) : '0';
-    } else if(col.isTotal){
-      el.textContent = manualSum.toLocaleString('uk');
-    }
-  });
+function recalcPerfRow(empId){
+  const l  = +document.getElementById(`pl-${empId}`)?.value||0;
+  const ch = +document.getElementById(`pc-${empId}`)?.value||0;
+  const sc = +document.getElementById(`psc-${empId}`)?.value||0;
+  const st = +document.getElementById(`pst-${empId}`)?.value||0;
+  const total    = l + ch;
+  const avgChat  = sc>0 ? (ch/sc).toFixed(1) : '—';
+  const avgTotal = st>0 ? (total/st).toFixed(1) : '—';
+  document.getElementById(`pavg-${empId}`).textContent  = avgChat;
+  document.getElementById(`pavgt-${empId}`).textContent = avgTotal;
+  document.getElementById(`ptot-${empId}`).textContent  = total.toLocaleString('uk');
 }
 
 async function savePerfWeek(){
@@ -3424,31 +3003,26 @@ async function savePerfWeek(){
   if(!selEl){ alert('Спочатку додайте тиждень'); return; }
   const selWeek = selEl.value;
   if(!db.perf) db.perf={};
-  const teamId = me && me.teamId ? me.teamId : 1;
-  const schema = getPerfSchema(teamId);
 
   myStaff().forEach(emp=>{
+    const l  = +document.getElementById(`pl-${emp.id}`)?.value||0;
+    const ch = +document.getElementById(`pc-${emp.id}`)?.value||0;
+    const sc = +document.getElementById(`psc-${emp.id}`)?.value||0;
+    const st = +document.getElementById(`pst-${emp.id}`)?.value||0;
+    const total    = l + ch;
+    const avgChat  = sc>0 ? Math.round((ch/sc)*10)/10 : 0;
+    const avgTotal = st>0 ? Math.round((total/st)*10)/10 : 0;
+
     if(!db.perf[emp.id]) db.perf[emp.id]=[];
     const idx = db.perf[emp.id].findIndex(d=>d.week===selWeek);
     const existing = idx>=0 ? db.perf[emp.id][idx] : {};
-    const entry = {...existing, week:selWeek};
-    schema.forEach(col=>{
-      const el = document.getElementById(`pv-${emp.id}-${col.id}`);
-      if(!el) return;
-      const v = (col.autoField==='avgChat'||col.autoField==='avgTotal'||col.isTotal)
-        ? parseFloat(el.textContent)||0
-        : +el.value||0;
-      entry[col.id] = v;
-    });
-    // legacy fields for backward compat
-    entry.letters    = entry['letters']    ?? 0;
-    entry.chats      = entry['chats']      ?? 0;
-    entry.shiftChats = entry['shiftChats'] ?? 0;
-    entry.shifts     = entry['shifts']     ?? 0;
-    entry.avgChat    = entry['avgChat']    ?? 0;
-    entry.avgTotal   = entry['avgTotal']   ?? 0;
-    const totalCol = schema.find(c=>c.isTotal);
-    entry.total = totalCol ? (entry[totalCol.id]||0) : 0;
+    const entry = {
+      ...existing,
+      week:selWeek,
+      letters:l, chats:ch,
+      shiftChats:sc, shifts:st,
+      avgChat, avgTotal, total
+    };
     if(idx>=0) db.perf[emp.id][idx]=entry;
     else db.perf[emp.id].push(entry);
   });
