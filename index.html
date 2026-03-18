@@ -194,7 +194,19 @@ body.theme-light .field select option{background:#f0ebff;color:#1e0a3c}
 .sched-table{border-collapse:collapse;min-width:800px;width:100%}
 .sched-table th{padding:9px 6px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);white-space:nowrap;text-align:center;font-weight:600}
 .sched-table td{padding:3px 3px;border:1px solid rgba(255,255,255,.05);vertical-align:middle;text-align:center}
-.sched-table .name-col{min-width:120px;padding:8px 12px;font-weight:500;font-size:12px;background:rgba(255,255,255,.04);position:sticky;left:0;z-index:1;text-align:left;white-space:nowrap;border-right:var(--glass-border)}
+.sched-table .name-col{min-width:120px;padding:8px 12px;font-weight:500;font-size:12px;background:rgba(14,11,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;left:0;z-index:1;text-align:left;white-space:nowrap;border-right:var(--glass-border)}
+body.theme-light .sched-table .name-col{background:rgba(240,235,255,.92)}
+/* Shadow that appears when scrolled */
+#adm-sched-compact-wrap{overflow-x:auto}
+#adm-sched-compact-wrap .sched-table th:not(.name-col){min-width:22px!important;width:22px!important;max-width:22px!important;padding:2px 0!important;font-size:8px!important}
+#adm-sched-compact-wrap .sched-table td:not(.name-col){min-width:22px!important;width:22px!important;max-width:22px!important;padding:1px 0!important}
+#adm-sched-compact-wrap .sched-table .name-col{min-width:100px!important;width:100px!important;max-width:110px!important}
+#adm-sched-compact-wrap .sched-table{table-layout:fixed!important}
+#team-sched-table th:not(.name-col){min-width:22px!important;width:22px!important;max-width:22px!important;padding:2px 0!important;font-size:8px!important}
+#team-sched-table td:not(.name-col){min-width:22px!important;width:22px!important;max-width:22px!important;padding:1px 0!important}
+#team-sched-table .name-col{min-width:100px!important;width:100px!important;max-width:110px!important}
+#team-sched-table{table-layout:fixed!important}
+.sched-wrap{overflow-x:auto;border-radius:16px;border:var(--glass-border);background:var(--surface);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);position:relative}
 .sched-select{background:transparent;border:none;border-radius:5px;color:var(--text);padding:4px 2px;font-size:10px;width:100%;cursor:pointer;outline:none;font-family:'DM Mono',monospace;text-align:center}
 
 /* shift cell */
@@ -417,6 +429,17 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="topbar-r">
       <div class="topbar-who">Привіт, <b id="topbar-name"></b></div>
       <span id="sb-status" title="Supabase" style="font-size:11px;padding:4px 9px;border-radius:6px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2);transition:.3s">⬤ sync</span>
+      <!-- Хто на зміні сьогодні -->
+      <div id="on-shift-btn-wrap" style="position:relative;display:none">
+        <button onclick="toggleOnShiftDropdown()" id="on-shift-btn"
+          style="background:rgba(181,123,238,.1);border:1px solid rgba(181,123,238,.3);border-radius:8px;color:var(--accent2);cursor:pointer;padding:5px 10px;font-size:13px;transition:.2s;display:flex;align-items:center;gap:6px;white-space:nowrap"
+          title="Хто сьогодні на зміні">
+          👥 <span id="on-shift-count">—</span>
+        </button>
+        <div id="on-shift-dropdown"
+          style="display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:260px;max-width:320px;max-height:420px;overflow-y:auto;background:rgba(14,11,26,.97);backdrop-filter:blur(20px);border:var(--glass-border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.5);z-index:9999;padding:12px">
+        </div>
+      </div>
       <button id="anim-toggle-btn" onclick="toggleAnimation()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 10px;font-size:15px;transition:.2s;line-height:1" title="Увімк/вимк анімацію">🌸</button>
       <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 10px;font-size:15px;transition:.2s;line-height:1" title="Змінити тему">🌙</button>
       <button class="btn-logout" onclick="logout()">Вийти</button>
@@ -439,6 +462,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="nav-tab" onclick="empTab('kudos',this)">🙏 Подяки</div>
       <div class="nav-tab" onclick="empTab('company',this)">🏢 Компанія</div>
       <div class="nav-tab" onclick="empTab('remarks',this)" id="emp-remarks-tab" style="display:none">📋 Зауваження</div>
+      <!-- Вкладки з правами — показуються динамічно -->
+      <div class="nav-tab" id="perm-tab-schedule" style="display:none" onclick="empPermTab('schedule',this)">📅 Графік команди</div>
+      <div class="nav-tab" id="perm-tab-perf" style="display:none" onclick="empPermTab('perf',this)">📊 Продуктивність</div>
+      <div class="nav-tab" id="perm-tab-announce" style="display:none" onclick="empPermTab('announce',this)">📢 Оголошення</div>
+      <div class="nav-tab" id="perm-tab-links" style="display:none" onclick="empPermTab('links',this)">🔗 Посилання</div>
     </div>
     <div class="content">
       <div id="etab-home" class="etab">
@@ -648,12 +676,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div id="etab-company" class="etab" style="display:none">
         <div class="page-h">КОМПАНІЯ</div>
         <div class="page-sub">Загальний графік всіх команд та настрій</div>
-
-        <!-- Moods section -->
         <div class="sec-title">НАСТРІЙ КОМПАНІЇ СЬОГОДНІ</div>
         <div id="company-moods-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:28px"></div>
-
-        <!-- Company schedule per team -->
         <div class="sec-title">ГРАФІКИ КОМАНД</div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <button class="cal-nav" onclick="companyCalNav(-1)">‹</button>
@@ -661,6 +685,52 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <button class="cal-nav" onclick="companyCalNav(1)">›</button>
         </div>
         <div id="company-sched-container"></div>
+      </div>
+
+      <!-- PERMISSION TABS -->
+      <div id="etab-perm-schedule" class="etab" style="display:none">
+        <div class="page-h">ГРАФІК КОМАНДИ</div>
+        <div class="page-sub">Редагування графіку</div>
+        <div id="perm-bday-bar" style="margin-bottom:12px;flex-wrap:wrap;display:flex"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="cal-nav" onclick="permSchedNav(-1)">‹</button>
+          <div class="cal-month-title" id="perm-sched-title"></div>
+          <button class="cal-nav" onclick="permSchedNav(1)">›</button>
+          <button class="btn-save" onclick="saveScheduleFromPerm()">Зберегти графік</button>
+        </div>
+        <div style="margin-bottom:10px" id="perm-legend"></div>
+        <div class="sched-wrap"><table class="sched-table" id="perm-sched-table"></table></div>
+      </div>
+
+      <div id="etab-perm-perf" class="etab" style="display:none">
+        <div class="page-h">ПРОДУКТИВНІСТЬ</div>
+        <div class="page-sub">Введення даних команди</div>
+        <div id="perm-perf-content"></div>
+      </div>
+
+      <div id="etab-perm-announce" class="etab" style="display:none">
+        <div class="page-h">ОГОЛОШЕННЯ</div>
+        <div class="page-sub">Публікація для команди</div>
+        <div class="kard" style="margin-bottom:16px;padding:24px">
+          <div class="sec-title" style="margin-top:0">НОВЕ ОГОЛОШЕННЯ</div>
+          <div class="field" style="margin-bottom:12px"><label>Текст</label><textarea id="perm-ann-text" rows="4" style="width:100%;background:rgba(255,255,255,.06);border:var(--glass-border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:DM Sans,sans-serif;font-size:14px;outline:none;resize:vertical;line-height:1.5" placeholder="Введіть текст..."></textarea></div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted2);cursor:pointer"><input type="checkbox" id="perm-ann-pin" style="accent-color:var(--accent)"> 📌 Закріпити</label>
+            <button class="btn-save" onclick="postAnnouncementFromPerm()">Опублікувати</button>
+          </div>
+        </div>
+        <div class="sec-title">ОПУБЛІКОВАНІ</div>
+        <div id="perm-announce-list"></div>
+      </div>
+
+      <div id="etab-perm-links" class="etab" style="display:none">
+        <div class="page-h">ПОСИЛАННЯ</div>
+        <div class="page-sub">Загальні посилання команди</div>
+        <div class="kard" style="padding:24px">
+          <div id="perm-links-editor"></div>
+          <button class="add-row-btn" onclick="addGlobalLink()">+ Додати посилання</button>
+          <div style="margin-top:16px"><button class="btn-save" onclick="saveLinks()">Зберегти</button></div>
+        </div>
       </div>
 
     </div>
@@ -702,14 +772,35 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <div class="cal-month-title" id="adm-sched-title"></div>
           <button class="cal-nav" onclick="admSchedNav(1)">›</button>
           <button class="btn-save" onclick="saveSchedule()">Зберегти графік</button>
-          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <div style="display:flex;background:var(--surface2);border:var(--glass-border);border-radius:8px;overflow:hidden">
+              <button id="view-mode-full" onclick="setSchedViewMode('full')" style="padding:5px 12px;font-size:12px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;background:transparent;color:var(--muted2);border-right:var(--glass-border)" title="Повний вигляд (редагування)">✏️ Повний</button>
+              <button id="view-mode-compact" onclick="setSchedViewMode('compact')" style="padding:5px 12px;font-size:12px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;background:var(--accent-dim);color:var(--accent2)" title="Компактний вигляд (весь місяць)">👁 Компакт</button>
+            </div>
             <button class="btn-sm" onclick="clearSchedAgent()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити графік одного агента">🗑 Агент</button>
             <button class="btn-sm" onclick="clearSchedMonth()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити весь місяць">🗑 Весь місяць</button>
           </div>
         </div>
         <div style="margin-bottom:10px" id="adm-legend"></div>
         <div id="adm-sched-filter" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
-        <div class="sched-wrap"><table class="sched-table" id="adm-sched-table"></table></div>
+        <!-- Свічер "тільки дні що залишились" -->
+        <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <div onclick="toggleFutureDays()" id="future-toggle-wrap" style="position:relative;width:38px;height:22px;flex-shrink:0">
+              <div id="future-toggle-track" style="width:38px;height:22px;border-radius:11px;background:var(--surface2);border:var(--glass-border);transition:.2s"></div>
+              <div id="future-toggle-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:.2s"></div>
+            </div>
+            <span style="font-size:12px;color:var(--muted2)">Тільки дні що залишились</span>
+          </label>
+        </div>
+        <!-- Повний режим -->
+        <div id="adm-sched-full-wrap" style="display:none">
+          <div class="sched-wrap"><table class="sched-table" id="adm-sched-table"></table></div>
+        </div>
+        <!-- Компактний режим -->
+        <div id="adm-sched-compact-wrap"></div>
+        <!-- Хто сьогодні на зміні -->
+        <div id="adm-today-on-shift" style="margin-top:16px"></div>
 
         <!-- ПОБАЖАННЯ — вбудовано в Графік -->
         <div style="margin-top:28px">
@@ -832,7 +923,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         </div>
 
         <!-- ВІДГУКИ — вбудовані в Продуктивність -->
-        <div style="margin-top:24px">
+        <div style="margin-top:24px" id="adm-reviews-block">
           <div onclick="toggleSchedAccordion('reviews-accordion')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;user-select:none">
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)">⭐ ВІДГУКИ</span>
@@ -1307,6 +1398,24 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="field"><label>Пароль</label><input type="text" id="m-pass"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="m-bday" placeholder="напр. 09-03"></div>
       <div class="field" style="grid-column:1/-1"><label>📊 Посилання на карту якості (Google Drive)</label><input type="text" id="m-kpilink" placeholder="https://docs.google.com/..."></div>
+      <div class="field" style="grid-column:1/-1">
+        <label>🔑 Додаткові права доступу</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;background:rgba(255,255,255,.05);border:var(--glass-border);border-radius:8px;padding:8px 12px;transition:.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+            <input type="checkbox" id="perm-schedule" style="accent-color:var(--accent);width:14px;height:14px"> 📅 Редагувати графік
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;background:rgba(255,255,255,.05);border:var(--glass-border);border-radius:8px;padding:8px 12px;transition:.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+            <input type="checkbox" id="perm-perf" style="accent-color:var(--accent);width:14px;height:14px"> 📊 Вносити продуктивність
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;background:rgba(255,255,255,.05);border:var(--glass-border);border-radius:8px;padding:8px 12px;transition:.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+            <input type="checkbox" id="perm-announce" style="accent-color:var(--accent);width:14px;height:14px"> 📢 Писати оголошення
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;background:rgba(255,255,255,.05);border:var(--glass-border);border-radius:8px;padding:8px 12px;transition:.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+            <input type="checkbox" id="perm-links" style="accent-color:var(--accent);width:14px;height:14px"> 🔗 Редагувати посилання
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Агент отримає вкладки з відповідним доступом після наступного входу</div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('emp-modal')">Скасувати</button>
@@ -1615,6 +1724,16 @@ function buildDefault(){
 }
 
 // ══ TEAM FILTER — повертає тільки співробітників поточного тім ліда ══
+// Форматування імені: "Прізвище І." або "Прізвище Ім'я" (повне)
+function formatName(fullName, short=true){
+  const p = (fullName||'').trim().split(' ');
+  const first = p[0]||'';
+  const last  = p[1]||'';
+  if(!last) return first;
+  if(short) return last + ' ' + first[0] + '.';
+  return last + ' ' + first;
+}
+
 function myStaff(){
   if(me && me.type==='admin' && me.teamId){
     return db.staff.filter(s=> (s.teamId||1) === me.teamId);
@@ -1724,6 +1843,7 @@ function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   initAnimBtn();
+  initOnShiftBtn();
   if(me.type==='admin'){
     document.getElementById('topbar-name').textContent= me.leadName ? me.leadName.split(' ')[0]+' · '+me.teamName : 'Адміністратор';
     document.getElementById('emp-view').style.display='none';
@@ -1745,15 +1865,26 @@ function showApp(){
     renderAuditorView();
   } else {
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0];
-    document.getElementById('emp-view').style.display='block';
-    document.getElementById('auditor-view').style.display='none';
-    document.getElementById('admin-view').style.display='none';
-    renderEmployee();
+    const perms = me.data.permissions || [];
+    if(perms.length > 0){
+      // Агент з правами — показуємо emp-view І додаткові вкладки
+      document.getElementById('emp-view').style.display='block';
+      document.getElementById('auditor-view').style.display='none';
+      document.getElementById('admin-view').style.display='none';
+      renderEmployee();
+      renderEmpPermTabs();
+    } else {
+      document.getElementById('emp-view').style.display='block';
+      document.getElementById('auditor-view').style.display='none';
+      document.getElementById('admin-view').style.display='none';
+      renderEmployee();
+    }
   }
 }
 
 // ══ LEGEND ══
 let _schedFilter = null; // null = всі, інакше shiftId
+let _agentFilter = null; // null = всі агенти, інакше empId
 
 function renderLegend(containerId){
   const teamId = me && (me.teamId || (me.data && (me.data.teamId||1))) || 1;
@@ -1785,19 +1916,31 @@ function renderLegend(containerId){
     `<button onclick="setSchedFilter('vacation')" class="sched-filter-btn${_schedFilter==='vacation'?' active':''}"
       style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_schedFilter==='vacation'?'#38bdf8':'var(--border)'};background:${_schedFilter==='vacation'?'rgba(56,189,248,.15)':'var(--surface)'};color:${_schedFilter==='vacation'?'#38bdf8':'var(--muted2)'};cursor:pointer;transition:.15s">
       Відпустка
-    </button>`;
+    </button>`+
+    `<span style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-left:8px;margin-right:4px">АГЕНТ:</span>`+
+    `<select onchange="setAgentFilter(this.value)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid ${_agentFilter?'var(--accent)':'var(--border)'};background:${_agentFilter?'var(--accent-dim)':'var(--surface)'};color:${_agentFilter?'var(--accent2)':'var(--muted2)'};cursor:pointer;outline:none;font-family:'DM Sans',sans-serif">
+      <option value="">Всі агенти</option>
+      ${myStaff().map(e=>`<option value="${e.id}" ${_agentFilter==e.id?'selected':''}>${e.name.split(' ')[0]} ${(e.name.split(' ')[1]||'')[0]||''}.</option>`).join('')}
+    </select>`;
 }
 
 function setSchedFilter(shiftId){
   _schedFilter = shiftId;
   applySchedFilter();
-  renderLegend('adm-legend'); // перемальовуємо кнопки фільтру
+  renderLegend('adm-legend');
+}
+
+function setAgentFilter(val){
+  _agentFilter = val ? +val : null;
+  applySchedFilter();
+  renderLegend('adm-legend');
 }
 
 function applySchedFilter(){
   const table = document.getElementById('adm-sched-table');
   if(!table) return;
-  // Всі клітинки змін (td з data-shift)
+
+  // Фільтр по зміні — клітинки
   table.querySelectorAll('td[data-shift]').forEach(td => {
     const shiftId = td.getAttribute('data-shift');
     if(_schedFilter === null){
@@ -1809,6 +1952,24 @@ function applySchedFilter(){
     } else {
       td.style.opacity = '0.18';
       td.style.filter = 'grayscale(1)';
+    }
+  });
+
+  // Фільтр по агенту — рядки
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const empId = tr.getAttribute('data-emp-id');
+    if(!_agentFilter){
+      tr.style.opacity = '';
+      tr.style.filter = '';
+    } else if(+empId === _agentFilter){
+      tr.style.opacity = '1';
+      tr.style.filter = '';
+      tr.style.outline = '2px solid var(--accent)';
+      tr.style.outlineOffset = '-1px';
+    } else {
+      tr.style.opacity = '0.15';
+      tr.style.filter = 'grayscale(1)';
+      tr.style.outline = '';
     }
   });
 }
@@ -2026,7 +2187,7 @@ function resetMood(){
 function renderQuickLinks(){
   const el = document.getElementById('emp-quick-links');
   if(!el) return;
-  const featured = (db.globalLinks||[]).filter(l=>l.featured);
+  const featured = getTeamLinks(me&&me.data&&(me.data.teamId||1)).filter(l=>l.featured);
   if(!featured.length){ el.innerHTML=''; return; }
   el.innerHTML=`<div>
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">⚡ ШВИДКИЙ ДОСТУП</div>
@@ -2241,9 +2402,27 @@ function generateAvatar(name, isBoy){
 
 function renderEmployee(){
   const e=me.data;
+  const teamId = e.teamId||1;
+  const isTicketing = [4, 5, 7].includes(teamId);
+
   // Show remarks tab only for agents in audited teams
   const remarksTab = document.getElementById('emp-remarks-tab');
-  if(remarksTab) remarksTab.style.display = AUDITED_TEAM_IDS.includes(e.teamId||1) ? 'block' : 'none';
+  if(remarksTab) remarksTab.style.display = AUDITED_TEAM_IDS.includes(teamId) ? 'block' : 'none';
+
+  // Hide reviews tab for teams that don't need it (4,5,6,7)
+  const reviewsTab = document.querySelector('.nav-tab[onclick*="\'reviews\'"]');
+  if(reviewsTab) reviewsTab.style.display = [4,5,6,7].includes(teamId) ? 'none' : '';
+
+  // Ticketing Support (5): hide salary, perf tabs and home stats/calculator
+  const salaryTab = document.querySelector('.nav-tab[onclick*="salary"]');
+  const perfTab   = document.querySelector('.nav-tab[onclick*="\'perf\'"]');
+  if(salaryTab) salaryTab.style.display = isTicketing ? 'none' : '';
+  if(perfTab)   perfTab.style.display   = isTicketing ? 'none' : '';
+
+  // Home page blocks
+  const cardsSection = document.querySelector('.sec-title');  // МОЇ ПОКАЗНИКИ — handled below
+  const empCards = document.getElementById('emp-cards');
+  const empCardsTitle = empCards ? empCards.previousElementSibling : null;
   const h=new Date().getHours();
   const gr=h<12?'ДОБРОГО РАНКУ':h<18?'ДОБРИЙ ДЕНЬ':'ДОБРИЙ ВЕЧІР';
   document.getElementById('emp-greeting').textContent=gr+', '+e.name.split(' ')[0].toUpperCase();
@@ -2261,20 +2440,34 @@ function renderEmployee(){
   const isBoy=boyNames.some(n=>firstName.toLowerCase()===n.toLowerCase());
   document.getElementById('emp-avatar').innerHTML=generateAvatar(firstName,isBoy);
   renderTodayTomorrow();
-  const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
-  document.getElementById('emp-cards').innerHTML=`
-    <div class="kard"><div class="kard-label">Ставка за день</div><div class="kard-val y">${(e.rate||402)} ₴</div></div>
-    <div class="kard"><div class="kard-label">KPI за день</div><div class="kard-val b">${(e.kpi||402)} ₴</div></div>
-    <div class="kard"><div class="kard-label">Рейтинг місяця</div><div class="kard-val p">${(e.rating||0)} ₴</div></div>
-    <div class="kard"><div class="kard-label">Оплата за день</div><div class="kard-val g">${dayPay} ₴</div><div class="kard-sub">${e.rate}+${e.kpi}+${e.rating}</div></div>`;
-  document.getElementById('calc-rate').value=e.rate||402;
-  document.getElementById('calc-kpi').value=e.kpi||402;
-  document.getElementById('calc-rating').value=e.rating||0;
-  recalc();
-  renderPayments();
+
+  // Показники і калькулятор — ховаємо для Ticketing Support
+  const cardsWrap = document.getElementById('emp-cards');
+  const calcWrap  = document.getElementById('etab-salary');
+  const perfCardsWrap = document.getElementById('emp-home-perf');
+  // Знайдемо заголовок "МОЇ ПОКАЗНИКИ" — він перед emp-cards
+  if(cardsWrap && cardsWrap.previousElementSibling){
+    cardsWrap.previousElementSibling.style.display = isTicketing ? 'none' : '';
+  }
+  if(cardsWrap) cardsWrap.style.display = isTicketing ? 'none' : '';
+  if(perfCardsWrap) perfCardsWrap.style.display = isTicketing ? 'none' : '';
+
+  if(!isTicketing){
+    const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
+    document.getElementById('emp-cards').innerHTML=`
+      <div class="kard"><div class="kard-label">Ставка за день</div><div class="kard-val y">${(e.rate||402)} ₴</div></div>
+      <div class="kard"><div class="kard-label">KPI за день</div><div class="kard-val b">${(e.kpi||402)} ₴</div></div>
+      <div class="kard"><div class="kard-label">Рейтинг місяця</div><div class="kard-val p">${(e.rating||0)} ₴</div></div>
+      <div class="kard"><div class="kard-label">Оплата за день</div><div class="kard-val g">${dayPay} ₴</div><div class="kard-sub">${e.rate}+${e.kpi}+${e.rating}</div></div>`;
+    document.getElementById('calc-rate').value=e.rate||402;
+    document.getElementById('calc-kpi').value=e.kpi||402;
+    document.getElementById('calc-rating').value=e.rating||0;
+    recalc();
+    renderPayments();
+  }
   renderAnnounceHomeBanner();
   renderBdayBanner();
-  renderHomePerfCards();
+  if(!isTicketing) renderHomePerfCards();
   renderKpiLinkBlock();
   renderHomeReviewsBadge();
   renderShiftTimer();
@@ -2515,7 +2708,94 @@ function renderCalDays(containerId,year,month,cellFn){
 function renderTeamCal(){
   document.getElementById('team-cal-title').textContent=MONTHS_UK[teamCalM]+' '+teamCalY;
   renderLegend('team-legend');
-  renderSchedTable('team-sched-table',teamCalY,teamCalM,false, me&&me.type==='employee' ? myTeamStaff() : null);
+
+  const teamId = me && me.data && (me.data.teamId||1);
+  const key = mkey(teamCalY, teamCalM);
+  const sched = db.schedule[key] || {};
+  const last = new Date(teamCalY, teamCalM+1, 0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  const now = new Date();
+  const isNow = now.getMonth()===teamCalM && now.getFullYear()===teamCalY;
+  function isWeekend(d){ const dow=new Date(teamCalY,teamCalM,d).getDay(); return dow===0||dow===6; }
+  const staff = myTeamStaff();
+
+  let thead = `<thead><tr><th class="name-col" style="min-width:100px">АГЕНТ</th>`;
+  days.forEach(d=>{
+    const dt=new Date(teamCalY,teamCalM,d);
+    const dow=DAYS_UK[(dt.getDay()+6)%7];
+    const isToday=isNow&&now.getDate()===d;
+    const wknd=isWeekend(d);
+    const office=isOfficeDay(teamId,dt);
+    let bg=isToday?'rgba(181,123,238,.3)':wknd?'rgba(167,139,250,.07)':'';
+    const todayStyle=isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
+    thead+=`<th style="width:22px;min-width:22px;max-width:22px;padding:2px 0;text-align:center;background:${bg};font-size:8px;${todayStyle}">
+      ${office?`<div style="font-size:7px;line-height:1;margin-bottom:1px">🏢</div>`:'<div style="font-size:7px;line-height:1;opacity:0"> </div>'}
+      <div style="opacity:${isToday?1:.6};font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'};font-size:7px">${dow}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
+    </th>`;
+  });
+  thead+=`<th style="min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
+  thead+='</tr></thead>';
+
+  let tbody='<tbody>';
+  staff.forEach(emp=>{
+    const empSched=sched[emp.id]||{};
+    const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
+    let shiftCount=0;
+    let cells='';
+    days.forEach(d=>{
+      const isToday=isNow&&now.getDate()===d;
+      const wknd=isWeekend(d);
+      const shiftId=empSched[d]||'off';
+      const sh=getShift(shiftId);
+      const hasShift=shiftId&&shiftId!=='off';
+      if(hasShift&&shiftId!=='vacation') shiftCount++;
+      const bg=isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.04)':'';
+      const todayBorder=isToday?'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);':'';
+      const shLabel=sh&&hasShift?(sh.label||''):'';
+      const shTime=sh&&hasShift?(sh.time||''):'';
+      const shColor=sh&&hasShift?(sh.color||''):'';
+      const shDesc=sh&&hasShift?(sh.desc||''):'';
+      const dispTime=hasShift?(sh?(sh.time?sh.time.split(':')[0]:(sh.label||'?')[0]):'?'):'·';
+      const dispColor=hasShift&&sh?sh.color:'var(--muted)';
+      cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}" data-shift="${shiftId}">
+        <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
+          style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
+      </td>`;
+    });
+    tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
+      <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
+      ${cells}
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
+    </tr>`;
+  });
+  tbody+='</tbody>';
+
+  // Footer — кількість людей на зміні
+  let tfoot='<tfoot><tr><td style="font-size:10px;color:var(--muted2);text-align:right;padding-right:6px;white-space:nowrap">На зміні</td>';
+  days.forEach(d=>{
+    const wknd=isWeekend(d);
+    const isToday=isNow&&now.getDate()===d;
+    let count=0;
+    staff.forEach(emp=>{ const sid=((sched[emp.id]||{})[d])||'off'; if(sid&&sid!=='off'&&sid!=='vacation') count++; });
+    const clr=count===0?'var(--muted)':count<=3?'var(--orange)':count<=7?'var(--blue)':'var(--green)';
+    const bg=isToday?'rgba(181,123,238,.06)':wknd?'rgba(167,139,250,.03)':'';
+    tfoot+=`<td style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;color:${clr};background:${bg}">${count||'·'}</td>`;
+  });
+  tfoot+='<td></td></tr></tfoot>';
+
+  // Wrap in CSS-constrained div like compact admin schedule
+  const wrap = document.getElementById('team-sched-table').parentElement;
+  wrap.innerHTML = `<table class="sched-table" id="team-sched-table" style="table-layout:fixed">${thead}${tbody}${tfoot}</table>`;
+
+  // Apply CSS override same as compact admin
+  wrap.style.overflowX = 'auto';
+  const table = document.getElementById('team-sched-table');
+  if(table){
+    table.querySelectorAll('th:not(.name-col),td:not(.name-col)').forEach(cell=>{
+      if(cell.style.minWidth !== '30px') { cell.style.width='22px'; cell.style.minWidth='22px'; cell.style.maxWidth='22px'; }
+    });
+  }
 }
 
 function renderSchedTable(tableId,year,month,editable, staffOverride){
@@ -2595,8 +2875,8 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
         }
       }
     });
-    tbody+=`<tr ${isMe?'class="you-row"':''}>`;
-    tbody+=`<td class="name-col">${emp.name.split(' ')[0]}${emp.name.split(' ')[1]?' '+emp.name.split(' ')[1][0]+'.':''}</td>`;
+    tbody+=`<tr ${isMe?'class="you-row"':''} data-emp-id="${emp.id}">`;
+    tbody+=`<td class="name-col">${formatName(emp.name)}</td>`;
     tbody+=cells;
     tbody+=`<td style="text-align:center;background:var(--surface3);position:sticky;right:0;font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:${shiftCount>0?'var(--accent)':'var(--muted)'}">${shiftCount}</td>`;
     tbody+='</tr>';
@@ -3287,7 +3567,7 @@ function renderAdmWishes(){
   myStaff().forEach(emp=>{
     const empWishes=(wishes[emp.id]||wishes[String(emp.id)]||{})[key]||{};
     const empSched=existSched[emp.id]||{};
-    const shortName=emp.name.split(' ')[0]+' '+(emp.name.split(' ')[1]||'')[0]+'.';
+    const shortName=formatName(emp.name);
 
     tbody+=`<tr>`;
     tbody+=`<td style="font-size:11px;font-weight:600;padding:4px 8px;position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">${shortName}</td>`;
@@ -4331,7 +4611,7 @@ function renderChiefSched(){
         <tbody>`;
     staff.forEach(emp => {
       const empSched = sched[emp.id] || sched[String(emp.id)] || {};
-      html += `<tr><td style="white-space:nowrap;font-size:12px">${emp.name.split(' ')[0]} ${(emp.name.split(' ')[1]||'')[0]||''}.</td>`;
+      html += `<tr><td style="white-space:nowrap;font-size:12px">${formatName(emp.name)}</td>`;
       dayNums.forEach(d => {
         const shiftId = empSched[d];
         const sh = shiftId ? getShift(shiftId) : null;
@@ -4841,8 +5121,18 @@ async function cancelOffer(id){
 }
 
 // ══ LINKS ══
+function getTeamLinks(tid){
+  const id = tid || (me && (me.teamId || (me.data && (me.data.teamId||1)))) || 1;
+  if(!db.teamLinks) db.teamLinks={};
+  // Backward compat: якщо є старі globalLinks і немає teamLinks для команди 1
+  if(!db.teamLinks[id] && id===1 && db.globalLinks && db.globalLinks.length)
+    db.teamLinks[1] = db.globalLinks;
+  return db.teamLinks[id] || [];
+}
+
 function renderLinks(){
-  const links=db.globalLinks||[];
+  const tid = me && me.data && (me.data.teamId||1);
+  const links = getTeamLinks(tid);
   document.getElementById('emp-links-grid').innerHTML=links.length
     ?links.map(l=>`<a class="link-card" href="${l.url}" target="_blank"><span style="font-size:20px">${l.icon||'🔗'}</span><div><div style="font-size:14px;font-weight:500">${l.name}</div>${l.desc?`<div style="font-size:11px;color:var(--muted)">${l.desc}</div>`:''}</div></a>`).join('')
     :'<div class="empty-state">Посилань ще немає</div>';
@@ -4896,6 +5186,12 @@ function renderAdmin(){
   // Show "Закрити місяць" only for Chat team (id=1)
   const monthlyTab = document.querySelector('.adm-tab[onclick*="monthly"]');
   if(monthlyTab) monthlyTab.style.display = (me && me.teamId === 1) ? '' : 'none';
+  // Hide reviews accordion for teams 4,5,6,7
+  const reviewsBlock = document.getElementById('adm-reviews-block');
+  if(reviewsBlock) reviewsBlock.style.display = [4,5,6,7].includes(me&&me.teamId) ? 'none' : '';
+  // Hide "Продуктивність" for teams 4,5,7
+  const perfTab = document.querySelector('.adm-tab[onclick*="perf"]');
+  if(perfTab) perfTab.style.display = [4, 5, 7].includes(me && me.teamId) ? 'none' : '';
   renderAdmStaff();
 }
 
@@ -4917,15 +5213,249 @@ function renderAdmStaff(){
 }
 
 // ── SCHEDULE ADMIN ──
-function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}if(admSchedM>11){admSchedM=0;admSchedY++;}_schedFilter=null;renderAdmSched();}
+let _futureDaysOnly = false;
+
+function toggleFutureDays(){
+  _futureDaysOnly = !_futureDaysOnly;
+  const track = document.getElementById('future-toggle-track');
+  const thumb = document.getElementById('future-toggle-thumb');
+  if(_futureDaysOnly){
+    track.style.background = 'var(--accent)';
+    thumb.style.background = '#fff';
+    thumb.style.left = '19px';
+  } else {
+    track.style.background = 'var(--surface2)';
+    thumb.style.background = 'var(--muted)';
+    thumb.style.left = '3px';
+  }
+  applyFutureDaysFilter();
+}
+
+function applyFutureDaysFilter(){
+  const now = new Date();
+  const today = now.getDate();
+  const isCurrentMonth = now.getMonth()===admSchedM && now.getFullYear()===admSchedY;
+
+  // Визначаємо таблицю — компактна або повна
+  const tables = [
+    document.getElementById('adm-sched-table'),
+    document.querySelector('#adm-sched-compact-wrap table')
+  ].filter(Boolean);
+
+  tables.forEach(table=>{
+    if(!_futureDaysOnly || !isCurrentMonth){
+      // Показати всі колонки
+      table.querySelectorAll('th, td').forEach(cell=>{
+        cell.style.display='';
+        cell.style.opacity='';
+      });
+      return;
+    }
+    // Знайдемо індекси колонок що відповідають минулим дням
+    const headers = table.querySelectorAll('thead th');
+    const pastCols = new Set();
+    headers.forEach((th, idx)=>{
+      if(idx===0 || idx===headers.length-1) return; // name col і sum col
+      // Знаходимо число дня з th
+      const dayNum = parseInt(th.textContent.trim().match(/\d+/)?.[0]);
+      if(dayNum && dayNum < today) pastCols.add(idx);
+    });
+
+    // Застосовуємо до всіх рядків
+    table.querySelectorAll('tr').forEach(tr=>{
+      tr.querySelectorAll('th, td').forEach((cell, idx)=>{
+        if(pastCols.has(idx)){
+          cell.style.opacity = '0.2';
+        } else {
+          cell.style.opacity = '';
+        }
+      });
+    });
+  });
+}
+
+function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}if(admSchedM>11){admSchedM=0;admSchedY++;}_schedFilter=null;_agentFilter=null;_futureDaysOnly=false;
+  // Скинути свічер
+  const track=document.getElementById('future-toggle-track');
+  const thumb=document.getElementById('future-toggle-thumb');
+  if(track){track.style.background='var(--surface2)';thumb.style.background='var(--muted)';thumb.style.left='3px';}
+  renderAdmSched();
+}
+let _schedViewMode = 'compact'; // default compact
+
+function setSchedViewMode(mode){
+  _schedViewMode = mode;
+  const fullWrap = document.getElementById('adm-sched-full-wrap');
+  const compactWrap = document.getElementById('adm-sched-compact-wrap');
+  const btnFull = document.getElementById('view-mode-full');
+  const btnCompact = document.getElementById('view-mode-compact');
+  if(mode === 'compact'){
+    fullWrap.style.display = 'none';
+    compactWrap.style.display = 'block';
+    if(btnFull){ btnFull.style.background='transparent'; btnFull.style.color='var(--muted2)'; }
+    if(btnCompact){ btnCompact.style.background='var(--accent-dim)'; btnCompact.style.color='var(--accent2)'; }
+    renderAdmSchedCompact();
+  } else {
+    fullWrap.style.display = 'block';
+    compactWrap.style.display = 'none';
+    if(btnFull){ btnFull.style.background='var(--accent-dim)'; btnFull.style.color='var(--accent2)'; }
+    if(btnCompact){ btnCompact.style.background='transparent'; btnCompact.style.color='var(--muted2)'; }
+    renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
+    applySchedFilter();
+  }
+}
+
+// ── Порядок агентів ──
+function getStaffOrder(teamId){
+  const tid = teamId || (me&&me.teamId) || 1;
+  if(!db.staffOrder) db.staffOrder = {};
+  const staff = db.staff.filter(s=>(s.teamId||1)===tid);
+  if(!db.staffOrder[tid]) return staff;
+  // Відновлюємо порядок + додаємо нових
+  const ordered = db.staffOrder[tid]
+    .map(id => staff.find(s=>s.id===id))
+    .filter(Boolean);
+  const rest = staff.filter(s=>!db.staffOrder[tid].includes(s.id));
+  return [...ordered, ...rest];
+}
+
+async function saveStaffOrder(teamId, ids){
+  if(!db.staffOrder) db.staffOrder = {};
+  db.staffOrder[teamId] = ids;
+  await saveDB();
+}
+
+function renderAdmSchedCompact(){
+  var container = document.getElementById('adm-sched-compact-wrap');
+  if(!container) return;
+  var teamId = me && me.teamId ? me.teamId : 1;
+  var key = mkey(admSchedY, admSchedM);
+  var sched = db.schedule[key] || {};
+  var last = new Date(admSchedY, admSchedM+1, 0).getDate();
+  var days = []; for(var d=1;d<=last;d++) days.push(d);
+  var now = new Date();
+  var isNow = now.getMonth()===admSchedM && now.getFullYear()===admSchedY;
+  var isTicketing5 = teamId === 5;
+  var dayColors = (db.dayColors&&db.dayColors[teamId]&&db.dayColors[teamId][key]) || {};
+  function isWeekend(d){ var dow=new Date(admSchedY,admSchedM,d).getDay(); return dow===0||dow===6; }
+
+  var staff = getStaffOrder(teamId);
+
+  // Заголовок
+  var theadHTML = '<thead><tr><th class="name-col" style="min-width:100px">АГЕНТ</th>';
+  for(var di=0; di<days.length; di++){
+    var d = days[di];
+    var dt = new Date(admSchedY, admSchedM, d);
+    var dow = DAYS_UK[(dt.getDay()+6)%7];
+    var isToday = isNow && now.getDate()===d;
+    var wknd = isWeekend(d);
+    var office = isOfficeDay(teamId, dt);
+    var dayCol = dayColors[d] || null;
+    var bg = isToday ? 'rgba(181,123,238,.3)' : dayCol ? dayCol+'28' : wknd ? 'rgba(167,139,250,.07)' : '';
+    var todayOutline = isToday ? 'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;' : '';
+    var dowColor = isToday ? 'var(--accent2)' : dayCol ? dayCol : 'inherit';
+    var topDiv = office ? '<div style="font-size:7px;line-height:1;margin-bottom:1px">&#127962;</div>'
+      : isTicketing5 && dayCol ? '<div style="width:6px;height:6px;border-radius:50%;background:'+dayCol+';margin:0 auto 1px"></div>'
+      : '<div style="height:7px"></div>';
+    var clickAttr = isTicketing5 ? (' onclick="openDayColorPicker('+d+',\''+key+'\')" style="cursor:pointer;') : ' style="';
+    theadHTML += '<th'+clickAttr+'width:22px;min-width:22px;max-width:22px;padding:2px 0;text-align:center;background:'+bg+';font-size:8px;'+todayOutline+'">'
+      + topDiv
+      + '<div style="opacity:'+(isToday?1:.6)+';font-weight:'+(isToday?700:400)+';color:'+dowColor+';font-size:7px">'+dow+'</div>'
+      + '<div style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:'+(isToday?700:400)+';color:'+dowColor+'">'+d+'</div>'
+      + '</th>';
+  }
+  theadHTML += '<th style="min-width:32px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">&sum;</th>';
+  theadHTML += '</tr></thead>';
+
+  // Рядки
+  var tbodyHTML = '<tbody id="compact-sched-tbody">';
+  for(var si=0; si<staff.length; si++){
+    var emp = staff[si];
+    var empSched = sched[emp.id] || {};
+    var shiftCount = 0;
+    var cellsHTML = '';
+    for(var di2=0; di2<days.length; di2++){
+      var d2 = days[di2];
+      var isToday2 = isNow && now.getDate()===d2;
+      var wknd2 = isWeekend(d2);
+      var shiftId = empSched[d2] || 'off';
+      var sh = getShift(shiftId);
+      var hasShift = shiftId && shiftId !== 'off';
+      if(hasShift && shiftId!=='vacation') shiftCount++;
+      var dayCol2 = dayColors[d2] || null;
+      var bg2 = isToday2 ? 'rgba(181,123,238,.08)' : dayCol2 ? dayCol2+'14' : wknd2 ? 'rgba(167,139,250,.04)' : '';
+      var border2 = isToday2 ? 'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);'
+        : dayCol2 ? 'border-left:1px solid '+dayCol2+'30;border-right:1px solid '+dayCol2+'30;' : '';
+      var shLabel = sh&&hasShift ? (sh.label||'') : '';
+      var shTime  = sh&&hasShift ? (sh.time||'') : '';
+      var shColor = sh&&hasShift ? (sh.color||'') : '';
+      var shDesc  = sh&&hasShift ? (sh.desc||'') : '';
+      var dispTime = hasShift && sh ? (sh.time ? sh.time.split(':')[0] : (sh.label||'?')[0]) : '&#183;';
+      var dispColor = hasShift && sh ? sh.color : 'var(--muted)';
+      cellsHTML += '<td style="background:'+bg2+';padding:1px 0;text-align:center;'+border2+'" data-shift="'+shiftId+'">'
+        + '<span class="sh-tip-cell"'
+        + ' data-l="'+shLabel.replace(/"/g,'&quot;')+'"'
+        + ' data-t="'+shTime+'" data-c="'+shColor+'"'
+        + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
+        + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
+        + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
+        + dispTime+'</span></td>';
+    }
+    var isFiltered = _agentFilter && _agentFilter !== emp.id;
+    var filtStyle = isFiltered ? 'opacity:.12;filter:grayscale(1)' : '';
+    var sumColor = shiftCount > 0 ? 'var(--accent2)' : 'var(--muted)';
+    tbodyHTML += '<tr data-emp-id="'+emp.id+'" draggable="true" style="'+filtStyle+'"'
+      + ' ondragstart="compactDragStart(event,'+emp.id+')"'
+      + ' ondragover="compactDragOver(event)"'
+      + ' ondrop="compactDrop(event,'+emp.id+')"'
+      + ' ondragend="compactDragEnd(event)">'
+      + '<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;cursor:grab">'
+      + '<span style="color:var(--muted);font-size:9px;margin-right:3px">&#8995;</span>'+formatName(emp.name)
+      + '</td>'
+      + cellsHTML
+      + '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;font-weight:600;color:'+sumColor+';position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">'+shiftCount+'</td>'
+      + '</tr>';
+  }
+  tbodyHTML += '</tbody>';
+
+  container.innerHTML = '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">&#8995; Перетягни рядок щоб змінити порядок агентів</div>'
+    + '<div class="sched-wrap"><table class="sched-table">'+theadHTML+tbodyHTML+'</table></div>';
+
+  // Drag-and-drop
+  var _dragId = null;
+  window.compactDragStart = function(e, empId){ _dragId = empId; e.currentTarget.style.opacity = '.4'; e.dataTransfer.effectAllowed = 'move'; };
+  window.compactDragOver = function(e){ e.preventDefault(); document.querySelectorAll('#compact-sched-tbody tr').forEach(function(r){ r.style.outline=''; }); e.currentTarget.style.outline = '2px solid var(--accent)'; };
+  window.compactDrop = async function(e, targetId){
+    e.preventDefault();
+    document.querySelectorAll('#compact-sched-tbody tr').forEach(function(r){ r.style.outline=''; });
+    if(_dragId === targetId) return;
+    var tid = me && me.teamId ? me.teamId : 1;
+    var ordered = getStaffOrder(tid).map(function(s){ return s.id; });
+    var fi = ordered.indexOf(_dragId), ti = ordered.indexOf(targetId);
+    if(fi < 0 || ti < 0) return;
+    ordered.splice(fi, 1);
+    ordered.splice(ti, 0, _dragId);
+    await saveStaffOrder(tid, ordered);
+    renderAdmSchedCompact();
+  };
+  window.compactDragEnd = function(e){ e.currentTarget.style.opacity = ''; document.querySelectorAll('#compact-sched-tbody tr').forEach(function(r){ r.style.outline=''; }); };
+  applySchedFilter();
+}
+
 function renderAdmSched(){
   document.getElementById('adm-sched-title').textContent=MONTHS_UK[admSchedM]+' '+admSchedY;
   renderLegend('adm-legend');
   const key=mkey(admSchedY,admSchedM);
   if(!db.schedule[key]) db.schedule[key]={};
   myStaff().forEach(emp=>{ if(!db.schedule[key][emp.id]) db.schedule[key][emp.id]={}; });
-  renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
-  applySchedFilter();
+  if(_schedViewMode === 'compact'){
+    renderAdmSchedCompact();
+  } else {
+    renderSchedTable('adm-sched-table',admSchedY,admSchedM,true);
+    applySchedFilter();
+  }
+  applyFutureDaysFilter();
+  renderTodayOnShift();
 }
 
 
@@ -5132,6 +5662,12 @@ function openEmpModal(id){
   document.getElementById('m-pass').value=e.pass;
   document.getElementById('m-bday').value=e.birthday||'';
   document.getElementById('m-kpilink').value=e.kpiLink||'';
+  // Permissions
+  const perms = e.permissions || [];
+  document.getElementById('perm-schedule').checked = perms.includes('schedule');
+  document.getElementById('perm-perf').checked     = perms.includes('perf');
+  document.getElementById('perm-announce').checked = perms.includes('announce');
+  document.getElementById('perm-links').checked    = perms.includes('links');
   document.getElementById('emp-modal').classList.add('open');
 }
 
@@ -5146,6 +5682,13 @@ async function saveEmp(){
   e.pass=document.getElementById('m-pass').value;
   e.birthday=document.getElementById('m-bday').value.trim();
   e.kpiLink=document.getElementById('m-kpilink').value.trim();
+  // Save permissions
+  const perms = [];
+  if(document.getElementById('perm-schedule').checked) perms.push('schedule');
+  if(document.getElementById('perm-perf').checked)     perms.push('perf');
+  if(document.getElementById('perm-announce').checked) perms.push('announce');
+  if(document.getElementById('perm-links').checked)    perms.push('links');
+  e.permissions = perms;
   await saveDB();
   closeModal('emp-modal');
   renderAdmStaff();
@@ -5226,7 +5769,7 @@ function renderAdmMood(){
     const avg = filled.length ? (filled.reduce((a,b)=>a+b,0)/filled.length).toFixed(1) : '—';
     const avgNum = filled.length ? filled.reduce((a,b)=>a+b,0)/filled.length : 0;
     html += `<tr>
-      <td style="font-weight:500">${emp.name.split(' ')[0]} ${emp.name.split(' ')[1]?emp.name.split(' ')[1][0]+'.':''}</td>
+      <td style="font-weight:500">${formatName(emp.name)}</td>
       ${vals.map(v=>v?`<td style="text-align:center;font-size:18px" title="${moodEmoji[v]}">${moodEmoji[v]}</td>`:`<td style="text-align:center;color:var(--muted);font-size:18px">·</td>`).join('')}
       <td style="text-align:center;font-weight:700;font-family:'DM Mono',monospace;color:${avgNum>=4?'var(--green)':avgNum>=3?'var(--accent)':avgNum>0?'var(--red)':'var(--muted)'}">${avg}</td>
     </tr>`;
@@ -5259,7 +5802,9 @@ function renderAdmMood(){
 
 
 function renderLinksEditor(){
-  document.getElementById('adm-links-editor').innerHTML=(db.globalLinks||[]).map((l,i)=>`
+  const _tid = me && me.teamId ? me.teamId : 1;
+  const _links = getTeamLinks(_tid);
+  document.getElementById('adm-links-editor').innerHTML=_links.map((l,i)=>`
     <div class="link-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <input type="text" value="${l.name}" placeholder="Назва" id="gl-n-${i}" style="flex:1">
       <input type="text" value="${l.url}" placeholder="https://..." id="gl-u-${i}" style="flex:2">
@@ -5271,7 +5816,9 @@ function renderLinksEditor(){
 function toggleLinkFeatured(i){
   const links=getLinksForm();
   links[i].featured=!links[i].featured;
-  db.globalLinks=links;
+  const _tid=me&&me.teamId?me.teamId:1;
+  if(!db.teamLinks) db.teamLinks={};
+  db.teamLinks[_tid]=links;
   renderLinksEditor();
   // відновлюємо стан зірок
   db.globalLinks.forEach((l,idx)=>{
@@ -5282,10 +5829,10 @@ function toggleLinkFeatured(i){
     }
   });
 }
-function addGlobalLink(){db.globalLinks=getLinksForm();db.globalLinks.push({name:'',url:'',icon:'🔗',desc:'',featured:false});renderLinksEditor();}
-function removeLink(i){db.globalLinks=getLinksForm();db.globalLinks.splice(i,1);renderLinksEditor();}
-function getLinksForm(){return (db.globalLinks||[]).map((_,i)=>({name:document.getElementById(`gl-n-${i}`)?.value||'',url:document.getElementById(`gl-u-${i}`)?.value||'',icon:document.getElementById(`gl-i-${i}`)?.value||'🔗',desc:'',featured:db.globalLinks[i]?.featured||false}));}
-async function saveLinks(){db.globalLinks=getLinksForm();await saveDB();alert('✅ Посилання збережено!');}
+function addGlobalLink(){const _tid=me&&me.teamId?me.teamId:1;if(!db.teamLinks)db.teamLinks={};db.teamLinks[_tid]=getLinksForm();db.teamLinks[_tid].push({name:'',url:'',icon:'🔗',desc:'',featured:false});renderLinksEditor();}
+function removeLink(i){const _tid=me&&me.teamId?me.teamId:1;if(!db.teamLinks)db.teamLinks={};db.teamLinks[_tid]=getLinksForm();db.teamLinks[_tid].splice(i,1);renderLinksEditor();}
+function getLinksForm(){const _tid=me&&me.teamId?me.teamId:1;const _links=getTeamLinks(_tid);return _links.map((_,i)=>({name:document.getElementById(`gl-n-${i}`)?.value||'',url:document.getElementById(`gl-u-${i}`)?.value||'',icon:document.getElementById(`gl-i-${i}`)?.value||'🔗',desc:'',featured:_links[i]?.featured||false}));}
+async function saveLinks(){const _tid=me&&me.teamId?me.teamId:1;if(!db.teamLinks)db.teamLinks={};db.teamLinks[_tid]=getLinksForm();await saveDB();alert('✅ Посилання збережено!');}
 
 // ── UTILS ──
 function mkey(y,m){return `${y}-${String(m+1).padStart(2,'0')}`;}
@@ -5588,78 +6135,436 @@ async function applyShift(shiftId){
   window._schedSaveTimer = setTimeout(()=>saveDB(), 1500);
 }
 
-// ══ SHIFT TYPES MANAGER ══
+// ══ ХТО НА ЗМІНІ СЬОГОДНІ — ТОПБАР ══
+function initOnShiftBtn(){
+  const wrap = document.getElementById('on-shift-btn-wrap');
+  if(wrap) wrap.style.display = '';
+  refreshOnShiftBtn();
+  // Закривати при кліку поза дропдауном
+  document.addEventListener('click', function(e){
+    const dd = document.getElementById('on-shift-dropdown');
+    const btn = document.getElementById('on-shift-btn-wrap');
+    if(dd && !dd.contains(e.target) && !btn.contains(e.target)){
+      dd.style.display = 'none';
+    }
+  });
+}
+
+function refreshOnShiftBtn(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  const key = mkey(y, m);
+  const sched = (db.schedule && db.schedule[key]) || {};
+
+  // Визначаємо яких агентів показувати
+  let staff = [];
+  if(me.type === 'admin' || me.type === 'auditor'){
+    // TL і аудитор — тільки своя команда
+    const tid = me.teamId || 1;
+    staff = db.staff.filter(s=>(s.teamId||1)===tid);
+  } else if(me.type === 'chief'){
+    // Чіф — всі команди
+    staff = db.staff || [];
+  } else {
+    // Агент — своя команда
+    const tid = (me.data && me.data.teamId) || 1;
+    staff = db.staff.filter(s=>(s.teamId||1)===tid);
+  }
+
+  const onShift = staff.map(emp=>{
+    const shiftId = (sched[emp.id]||{})[today] || 'off';
+    if(!shiftId || shiftId==='off') return null;
+    const sh = getShift(shiftId);
+    return {emp, sh, shiftId};
+  }).filter(Boolean);
+
+  // Оновити лічильник
+  const countEl = document.getElementById('on-shift-count');
+  if(countEl) countEl.textContent = onShift.length + ' на зміні';
+
+  // Зберігаємо для дропдауну
+  window._onShiftData = onShift;
+}
+
+function toggleOnShiftDropdown(){
+  const dd = document.getElementById('on-shift-dropdown');
+  if(!dd) return;
+  if(dd.style.display === 'none' || !dd.style.display){
+    refreshOnShiftBtn();
+    renderOnShiftDropdown();
+    dd.style.display = 'block';
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+function renderOnShiftDropdown(){
+  const dd = document.getElementById('on-shift-dropdown');
+  if(!dd) return;
+  const onShift = window._onShiftData || [];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('uk',{weekday:'long',day:'numeric',month:'long'});
+
+  if(!onShift.length){
+    dd.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Сьогодні ніхто не працює</div>';
+    return;
+  }
+
+  // Групуємо по типу зміни (час)
+  const byShift = {};
+  onShift.forEach(({emp, sh})=>{
+    const key = sh.time || sh.label || '?';
+    if(!byShift[key]) byShift[key] = {sh, emps:[]};
+    byShift[key].emps.push(emp);
+  });
+
+  const rows = Object.entries(byShift)
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([time, {sh, emps}])=>{
+      const names = emps.map(e=>formatName(e.name)).join(', ');
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${sh.color};flex-shrink:0"></div>
+          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${sh.color}">${sh.time||''}</span>
+          <span style="font-size:11px;color:var(--muted2)">${sh.label||''}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:auto">${emps.length} ос.</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${emps.map(e=>`<span style="background:${sh.color}18;border:1px solid ${sh.color}35;border-radius:6px;padding:2px 8px;font-size:11px;color:var(--text)">${formatName(e.name)}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('<div style="height:1px;background:var(--border);margin:8px 0"></div>');
+
+  dd.innerHTML = `
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase">${dateStr}</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent2);margin-bottom:12px">👥 НА ЗМІНІ — ${onShift.length}</div>
+    ${rows}`;
+}
+
+
+let permSchedY, permSchedM;
+
+function renderEmpPermTabs(){
+  const perms = me.data.permissions || [];
+  ['schedule','perf','announce','links'].forEach(p=>{
+    const tab = document.getElementById('perm-tab-'+p);
+    if(tab) tab.style.display = perms.includes(p) ? '' : 'none';
+  });
+}
+
+function empPermTab(perm, el){
+  // Приховати всі etab
+  document.querySelectorAll('.etab').forEach(e=>e.style.display='none');
+  document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('etab-perm-'+perm).style.display='block';
+  el.classList.add('active');
+  if(perm==='schedule') renderPermSched();
+  if(perm==='perf') renderPermPerf();
+  if(perm==='announce') renderPermAnnounce();
+  if(perm==='links') renderPermLinks();
+}
+
+function renderPermSched(){
+  const now = new Date();
+  if(!permSchedY){ permSchedY=now.getFullYear(); permSchedM=now.getMonth(); }
+  document.getElementById('perm-sched-title').textContent = MONTHS_UK[permSchedM]+' '+permSchedY;
+  renderLegend('perm-legend');
+  const key = mkey(permSchedY, permSchedM);
+  if(!db.schedule[key]) db.schedule[key]={};
+  // Показуємо графік своєї команди з можливістю редагування
+  const teamId = me.data.teamId || 1;
+  const staff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  renderSchedTable('perm-sched-table', permSchedY, permSchedM, true, staff);
+}
+
+function permSchedNav(d){
+  permSchedM+=d;
+  if(permSchedM<0){permSchedM=11;permSchedY--;}
+  if(permSchedM>11){permSchedM=0;permSchedY++;}
+  renderPermSched();
+}
+
+async function saveScheduleFromPerm(){
+  await saveDB();
+  sbToast('✅ Графік збережено','var(--green)','rgba(74,222,128,.1)');
+}
+
+function renderPermPerf(){
+  const el = document.getElementById('perm-perf-content');
+  if(!el) return;
+  // Використовуємо той самий renderAdmPerf але в контейнері агента
+  // Тимчасово підмінимо me.type щоб myStaff() повернув правильних людей
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:var(--glass-border);border-radius:10px;padding:6px 12px">
+        <span style="font-size:11px;color:var(--muted)">З</span>
+        <input type="date" id="perm-week-from" onchange="permAutoFillTo()" style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer">
+      </div>
+      <span style="color:var(--muted)">→</span>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:var(--glass-border);border-radius:10px;padding:6px 12px">
+        <span style="font-size:11px;color:var(--muted)">По</span>
+        <input type="date" id="perm-week-to" style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer">
+      </div>
+      <button class="btn-add" onclick="permAddWeek()">➕ Додати тиждень</button>
+    </div>
+    <div id="perm-perf-weeks"></div>`;
+  renderPermPerfWeeks();
+}
+
+function permAutoFillTo(){
+  const f = document.getElementById('perm-week-from');
+  const t = document.getElementById('perm-week-to');
+  if(!f||!f.value) return;
+  const d = new Date(f.value);
+  d.setDate(d.getDate()+6);
+  t.value = d.toISOString().slice(0,10);
+}
+
+function permAddWeek(){
+  const fromVal = document.getElementById('perm-week-from')?.value;
+  const toVal   = document.getElementById('perm-week-to')?.value;
+  if(!fromVal||!toVal){ alert('Вибери дати'); return; }
+  const label = fmtDateShort(fromVal)+'–'+fmtDateShort(toVal);
+  const monthKey = fromVal.slice(0,7);
+  if(!db.perf) db.perf={};
+  const teamId = me.data.teamId||1;
+  const staff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  const autoShifts = calcAutoShifts(fromVal, toVal);
+  staff.forEach(emp=>{
+    if(!db.perf[emp.id]) db.perf[emp.id]=[];
+    if(!db.perf[emp.id].find(d=>d.week===label)){
+      const s = autoShifts[emp.id]||{shiftChats:0,shifts:0};
+      db.perf[emp.id].push({week:label,monthKey,dateFrom:fromVal,dateTo:toVal,letters:0,chats:0,shiftChats:s.shiftChats,shifts:s.shifts});
+    }
+  });
+  renderPermPerfWeeks();
+}
+
+function renderPermPerfWeeks(){
+  const el = document.getElementById('perm-perf-weeks');
+  if(!el) return;
+  const teamId = me.data.teamId||1;
+  const staff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  const allWeeks = new Set();
+  Object.values(db.perf||{}).forEach(rows=>rows.forEach(r=>allWeeks.add(r.week)));
+  const weeks = [...allWeeks].sort();
+  if(!weeks.length){ el.innerHTML='<div class="empty-state">Додайте тиждень вище</div>'; return; }
+  const curWeek = weeks[weeks.length-1];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="sec-title" style="margin:0">ВВЕДЕННЯ ДАНИХ</div>
+      <select id="perm-week-sel" class="col-map-select" style="width:auto" onchange="renderPermPerfTable()">
+        ${weeks.slice().reverse().map(w=>`<option value="${w}" ${w===curWeek?'selected':''}>${w}</option>`).join('')}
+      </select>
+    </div>
+    <div class="tbl-wrap" style="margin-bottom:16px;overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Агент</th><th>Листи</th><th>Чати</th><th style="color:var(--blue)">Змін чатів 🤖</th><th style="color:var(--muted2)">Змін заг. 🤖</th><th style="color:var(--blue)">Ср.чатів/зм.</th><th style="color:var(--teal)">Ср.заг.</th><th style="color:var(--accent2)">Total</th></tr></thead>
+        <tbody id="perm-perf-body"></tbody>
+      </table>
+    </div>
+    <button class="btn-save" onclick="savePermPerf()">💾 Зберегти</button>`;
+  renderPermPerfTable();
+}
+
+function renderPermPerfTable(){
+  const sel = document.getElementById('perm-week-sel');
+  const week = sel ? sel.value : '';
+  const tbody = document.getElementById('perm-perf-body');
+  if(!tbody) return;
+  const teamId = me.data.teamId||1;
+  const staff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  tbody.innerHTML = staff.map(emp=>{
+    const row = ((db.perf||{})[emp.id]||[]).find(d=>d.week===week)||{letters:0,chats:0,shiftChats:0,shifts:0};
+    const l=row.letters||0, ch=row.chats||0, sc=row.shiftChats||0, st=row.shifts||0;
+    const tot=l+ch, avg=sc>0?(ch/sc).toFixed(1):'—', avgt=st>0?(tot/st).toFixed(1):'—';
+    return `<tr>
+      <td style="white-space:nowrap;font-weight:500">${emp.name}</td>
+      <td><input type="number" min="0" class="esc-input" id="ppl-${emp.id}" value="${l}" oninput="recalcPermRow(${emp.id})" style="width:70px"></td>
+      <td><input type="number" min="0" class="esc-input" id="ppc-${emp.id}" value="${ch}" oninput="recalcPermRow(${emp.id})" style="width:70px"></td>
+      <td><input type="number" min="0" class="esc-input" id="ppsc-${emp.id}" value="${sc}" oninput="recalcPermRow(${emp.id})" style="width:70px;border-color:rgba(126,184,247,.4)"></td>
+      <td><input type="number" min="0" class="esc-input" id="ppst-${emp.id}" value="${st}" oninput="recalcPermRow(${emp.id})" style="width:70px;border-color:rgba(100,116,139,.4)"></td>
+      <td id="ppavg-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--blue);font-weight:600">${avg}</td>
+      <td id="ppavgt-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:600">${avgt}</td>
+      <td id="pptot-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--accent2);font-weight:700">${tot.toLocaleString('uk')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function recalcPermRow(empId){
+  const l=+document.getElementById(`ppl-${empId}`)?.value||0;
+  const ch=+document.getElementById(`ppc-${empId}`)?.value||0;
+  const sc=+document.getElementById(`ppsc-${empId}`)?.value||0;
+  const st=+document.getElementById(`ppst-${empId}`)?.value||0;
+  const tot=l+ch;
+  document.getElementById(`ppavg-${empId}`).textContent  = sc>0?(ch/sc).toFixed(1):'—';
+  document.getElementById(`ppavgt-${empId}`).textContent = st>0?(tot/st).toFixed(1):'—';
+  document.getElementById(`pptot-${empId}`).textContent  = tot.toLocaleString('uk');
+}
+
+async function savePermPerf(){
+  const sel = document.getElementById('perm-week-sel');
+  if(!sel) return;
+  const selWeek = sel.value;
+  if(!db.perf) db.perf={};
+  const teamId = me.data.teamId||1;
+  const staff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  staff.forEach(emp=>{
+    const l=+document.getElementById(`ppl-${emp.id}`)?.value||0;
+    const ch=+document.getElementById(`ppc-${emp.id}`)?.value||0;
+    const sc=+document.getElementById(`ppsc-${emp.id}`)?.value||0;
+    const st=+document.getElementById(`ppst-${emp.id}`)?.value||0;
+    const tot=l+ch, avgChat=sc>0?Math.round((ch/sc)*10)/10:0, avgTotal=st>0?Math.round((tot/st)*10)/10:0;
+    if(!db.perf[emp.id]) db.perf[emp.id]=[];
+    const idx = db.perf[emp.id].findIndex(d=>d.week===selWeek);
+    const existing = idx>=0 ? db.perf[emp.id][idx] : {};
+    const entry = {...existing, week:selWeek, letters:l, chats:ch, shiftChats:sc, shifts:st, avgChat, avgTotal, total:tot};
+    if(idx>=0) db.perf[emp.id][idx]=entry; else db.perf[emp.id].push(entry);
+  });
+  await saveDB();
+  sbToast('✅ Продуктивність збережена','var(--green)','rgba(74,222,128,.1)');
+}
+
+function renderPermAnnounce(){
+  const teamId = me.data.teamId||1;
+  const anns = (db.announcements||[]).filter(a=>!a.teamId||a.teamId===teamId);
+  const list = document.getElementById('perm-announce-list');
+  if(!list) return;
+  if(!anns.length){ list.innerHTML='<div class="empty-state">Оголошень ще немає</div>'; return; }
+  const sorted = [...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
+  list.innerHTML = sorted.map(a=>`
+    <div class="announce-card ${a.pinned?'pinned':''}">
+      ${a.pinned?'<div class="announce-pin">📌</div>':''}
+      <div class="announce-author">👤 ${a.author}</div>
+      <div class="announce-text">${a.text}</div>
+      <div class="announce-ts">🕐 ${a.ts}</div>
+      <button class="announce-del" onclick="deletePermAnnouncement('${a.id}')">Видалити</button>
+    </div>`).join('');
+}
+
+async function postAnnouncementFromPerm(){
+  const text = document.getElementById('perm-ann-text').value.trim();
+  if(!text){ alert('Введіть текст'); return; }
+  const pinned = document.getElementById('perm-ann-pin').checked;
+  const teamId = me.data.teamId||1;
+  const team = TEAMS.find(t=>t.id===teamId);
+  if(!db.announcements) db.announcements=[];
+  db.announcements.unshift({
+    id:'an_'+Date.now(), text, pinned, teamId,
+    author: me.data.name,
+    ts: new Date().toLocaleString('uk',{day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'})
+  });
+  document.getElementById('perm-ann-text').value='';
+  document.getElementById('perm-ann-pin').checked=false;
+  await saveDB();
+  renderPermAnnounce();
+}
+
+async function deletePermAnnouncement(id){
+  db.announcements=(db.announcements||[]).filter(a=>a.id!==id);
+  await saveDB();
+  renderPermAnnounce();
+}
+
+function renderPermLinks(){
+  const el = document.getElementById('perm-links-editor');
+  if(!el) return;
+  renderLinksEditor(el);
+}
 function renderShiftTypesManager(){
   const teamId = me && me.teamId ? me.teamId : 1;
   const shifts = getTeamShifts(teamId);
   const el = document.getElementById('adm-shift-types-content');
   if(!el) return;
 
-  const colorBtns = SHIFT_COLORS.map(c=>
-    `<button onclick="selectPickerColor('${c.hex}')" title="${c.name}"
-      style="width:26px;height:26px;border-radius:50%;background:${c.hex};border:2px solid transparent;cursor:pointer;transition:.15s"
-      id="pcolor_${c.hex.replace('#','')}"
-      onmouseover="this.style.borderColor='white'" onmouseout="updateColorBtns()"></button>`
-  ).join('');
+  const isChatTeam = teamId === 1;
+
+  // Для Chat — стара палітра кружечків, для інших — color input
+  const colorPickerHtml = isChatTeam
+    ? `<div id="shift-color-picker" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        ${SHIFT_COLORS.map(c=>
+          `<button onclick="selectPickerColor('${c.hex}')" title="${c.name}"
+            style="width:26px;height:26px;border-radius:50%;background:${c.hex};border:2px solid transparent;cursor:pointer;transition:.15s"
+            id="pcolor_${c.hex.replace('#','')}"
+            onmouseover="this.style.borderColor='white'" onmouseout="updateColorBtns()"></button>`
+        ).join('')}
+      </div>`
+    : `<div style="display:flex;align-items:center;gap:12px">
+        <input type="color" id="shift-color-wheel" value="${_selectedShiftColor||'#b57bee'}"
+          oninput="selectPickerColor(this.value)"
+          style="width:48px;height:40px;border:var(--glass-border);border-radius:10px;cursor:pointer;background:none;padding:2px">
+        <div id="color-preview-swatch" style="width:36px;height:36px;border-radius:50%;background:${_selectedShiftColor||'#b57bee'};border:2px solid rgba(255,255,255,.2);transition:.2s"></div>
+        <div>
+          <div id="color-preview-hex" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${_selectedShiftColor||'#b57bee'}">${_selectedShiftColor||'#b57bee'}</div>
+          <div style="font-size:11px;color:var(--muted)">Будь-який колір</div>
+        </div>
+      </div>`;
 
   el.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+    <div style="background:var(--surface);backdrop-filter:var(--glass-blur);border:var(--glass-border);border-radius:14px;padding:20px;margin-bottom:20px">
       <div class="sec-title" style="margin-top:0">ДОДАТИ ТИП ЗМІНИ</div>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px">
         <div>
           <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Назва</label>
-          <input id="new-shift-label" type="text" placeholder="напр. Чати" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="new-shift-label" type="text" placeholder="напр. Чати" style="width:100%;background:rgba(255,255,255,.06);border:var(--glass-border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
         </div>
         <div>
           <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Час початку</label>
-          <input id="new-shift-time" type="text" placeholder="09:00" maxlength="5" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Mono',monospace;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="new-shift-time" type="text" placeholder="09:00" maxlength="5" style="width:100%;background:rgba(255,255,255,.06);border:var(--glass-border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Mono',monospace;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
         </div>
         <button class="btn-add" onclick="addShiftType()" style="white-space:nowrap;height:42px">+ Додати</button>
       </div>
       <div style="margin-bottom:10px">
         <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Опис зміни</label>
-        <input id="new-shift-desc" type="text" placeholder="напр. Обробка вхідних чатів, відповіді клієнтам" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <input id="new-shift-desc" type="text" placeholder="напр. Обробка вхідних чатів, відповіді клієнтам" style="width:100%;background:rgba(255,255,255,.06);border:var(--glass-border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
       </div>
       <div style="margin-bottom:6px">
         <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Колір</label>
-        <div id="shift-color-picker" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${colorBtns}</div>
+        ${colorPickerHtml}
       </div>
-      <input type="hidden" id="new-shift-color" value="${SHIFT_COLORS[0].hex}">
+      <input type="hidden" id="new-shift-color" value="${_selectedShiftColor||SHIFT_COLORS[0].hex}">
     </div>
 
     <div class="sec-title">МОЇ ТИПИ ЗМІН</div>
     ${shifts.length===0?'<div class="empty-state">Додайте перший тип зміни вище</div>':
       `<div style="display:flex;flex-direction:column;gap:8px">
         ${shifts.map((s,i)=>`
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px">
+          <div style="background:var(--surface);backdrop-filter:var(--glass-blur);border:var(--glass-border);border-radius:12px;padding:12px 16px">
             <div style="display:flex;align-items:center;gap:12px">
-              <div style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+              <div style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0;cursor:pointer" onclick="quickEditShiftColor('${s.id}')" title="Змінити колір"></div>
               <div style="flex:1">
                 <div style="font-weight:600;font-size:14px;color:${s.color}">${s.time||'—'}</div>
                 <div style="font-size:12px;color:var(--muted2)">${s.label}</div>
                 ${s.desc ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">📋 ${s.desc}</div>` : ''}
               </div>
               <div style="display:flex;gap:6px;align-items:center">
+                ${!isChatTeam?`<input type="color" id="qcolor-${s.id}" value="${s.color}" onchange="applyQuickShiftColor('${s.id}',this.value)" style="width:0;height:0;opacity:0;position:absolute">`:''}
                 <button class="btn-sm" onclick="toggleShiftDesc('${s.id}')" style="padding:4px 8px;font-size:11px" title="Редагувати опис">✏️</button>
                 ${i>0?`<button class="btn-sm" onclick="moveShiftType(${i},-1)" style="padding:4px 8px">↑</button>`:''}
                 ${i<shifts.length-1?`<button class="btn-sm" onclick="moveShiftType(${i},1)" style="padding:4px 8px">↓</button>`:''}
                 <button class="btn-sm red" onclick="deleteShiftType('${s.id}')">🗑</button>
               </div>
             </div>
-            <div id="desc-edit-${s.id}" style="display:none;margin-top:10px;display:none">
-              <input type="text" id="desc-input-${s.id}" value="${(s.desc||'').replace(/"/g,'&quot;')}" placeholder="Опис зміни..." style="width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;margin-bottom:6px">
+            <div id="desc-edit-${s.id}" style="display:none;margin-top:10px">
+              <input type="text" id="desc-input-${s.id}" value="${(s.desc||'').replace(/"/g,'&quot;')}" placeholder="Опис зміни..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--accent);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;margin-bottom:6px">
               <button class="btn-save" onclick="saveShiftDesc('${s.id}')" style="font-size:12px;padding:6px 14px">💾 Зберегти</button>
             </div>
           </div>`).join('')}
       </div>`
     }`;
-  updateColorBtns();
+  if(isChatTeam) updateColorBtns();
 }
 
 let _selectedShiftColor = SHIFT_COLORS[0].hex;
 function selectPickerColor(hex){
   _selectedShiftColor = hex;
-  document.getElementById('new-shift-color').value = hex;
+  const hiddenInput = document.getElementById('new-shift-color');
+  if(hiddenInput) hiddenInput.value = hex;
+  // Оновити превью для color wheel
+  const swatch = document.getElementById('color-preview-swatch');
+  const hexLabel = document.getElementById('color-preview-hex');
+  if(swatch){ swatch.style.background = hex; }
+  if(hexLabel){ hexLabel.style.color = hex; hexLabel.textContent = hex; }
   updateColorBtns();
 }
 function updateColorBtns(){
@@ -5667,6 +6572,23 @@ function updateColorBtns(){
     const btn = document.getElementById('pcolor_'+c.hex.replace('#',''));
     if(btn) btn.style.borderColor = c.hex===_selectedShiftColor ? 'white' : 'transparent';
   });
+}
+
+function quickEditShiftColor(shiftId){
+  const teamId = me && me.teamId ? me.teamId : 1;
+  if(teamId === 1) return; // Chat — не відкриваємо
+  const inp = document.getElementById('qcolor-'+shiftId);
+  if(inp) inp.click();
+}
+
+async function applyQuickShiftColor(shiftId, newColor){
+  const teamId = me && me.teamId ? me.teamId : 1;
+  if(!db.shiftTypes||!db.shiftTypes[teamId]) return;
+  const sh = db.shiftTypes[teamId].find(s=>s.id===shiftId);
+  if(!sh) return;
+  sh.color = newColor;
+  await saveDB();
+  renderShiftTypesManager();
 }
 
 function addShiftType(){
@@ -5850,7 +6772,7 @@ function renderAuditorCompanySchedules(){
     if(!members.length) return;
     const isMyTeam = (me.data.teamId||1)===team.id;
 
-    let thead = `<thead><tr><th class="name-col" style="min-width:130px;${isMyTeam?'color:var(--accent2)':''}">${team.name}</th>`;
+    let thead = `<thead><tr><th class="name-col" style="min-width:100px;${isMyTeam?'color:var(--accent2)':''}">${team.name}</th>`;
     days.forEach(d=>{
       const dt=new Date(auditorCompanyCalY,auditorCompanyCalM,d);
       const dow=DAYS_UK[(dt.getDay()+6)%7];
@@ -5889,9 +6811,9 @@ function renderAuditorCompanySchedules(){
           <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
-      const shortName=emp.name;
+      const shortName=formatName(emp.name);
       tbody+=`<tr style="${isMe?'background:rgba(181,123,238,.05);':''}">`+
-        `<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px;${isMe?'color:var(--accent2);font-weight:700':''}">${shortName}${isMe?' 👈':''}</td>${cells}</tr>`;
+        `<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${shortName}${isMe?' 👈':''}</td>${cells}</tr>`;
     });
     tbody+='</tbody>';
 
@@ -6135,7 +7057,7 @@ function renderAdmCompanySchedules(){
     const members = db.staff.filter(s=>(s.teamId||1)===team.id);
     if(!members.length) return;
     const isMyTeam = team.id === (me&&me.teamId);
-    let thead = `<thead><tr><th class="name-col" style="min-width:130px;${isMyTeam?'color:var(--accent2)':''}">${team.name}</th>`;
+    let thead = `<thead><tr><th class="name-col" style="min-width:100px;${isMyTeam?'color:var(--accent2)':''}">${team.name}</th>`;
     days.forEach(d=>{
       const dt=new Date(admCompanyCalY,admCompanyCalM,d);
       const dow=DAYS_UK[(dt.getDay()+6)%7];
@@ -6170,8 +7092,8 @@ function renderAdmCompanySchedules(){
         const shDesc2  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
       });
-      const shortName=emp.name;
-      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
+      const shortName=formatName(emp.name);
+      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${shortName}</td>${cells}</tr>`;
     });
     tbody+='</tbody>';
     html+=`<div style="margin-bottom:24px"><div class="sched-wrap" style="border-radius:12px;overflow-x:auto;border:1px solid ${isMyTeam?'rgba(245,200,66,.3)':'var(--border)'}"><table class="sched-table" style="min-width:600px">${thead}${tbody}</table></div></div>`;
@@ -6282,7 +7204,7 @@ function renderCompanySchedules(){
     const teamMembers = db.staff.filter(s=>(s.teamId||1)===team.id);
     if(!teamMembers.length) return;
 
-    let thead = `<thead><tr><th class="name-col" style="min-width:130px">${team.name}</th>`;
+    let thead = `<thead><tr><th class="name-col" style="min-width:100px">${team.name}</th>`;
     days.forEach(d=>{
       const dt=new Date(companyCalY,companyCalM,d);
       const dow=DAYS_UK[(dt.getDay()+6)%7];
@@ -6322,8 +7244,8 @@ function renderCompanySchedules(){
           <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
         </td>`;
       });
-      const shortName=emp.name;
-      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:130px">${shortName}</td>${cells}</tr>`;
+      const shortName=formatName(emp.name);
+      tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${shortName}</td>${cells}</tr>`;
     });
     tbody+='</tbody>';
 
