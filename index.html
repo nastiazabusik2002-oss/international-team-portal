@@ -3154,6 +3154,21 @@ function renderHomePerfCards(){
 }
 
 
+function autoFillWeekTo(){
+  const fromEl = document.getElementById('week-date-from');
+  const toEl   = document.getElementById('week-date-to');
+  if(!fromEl || !fromEl.value) return;
+  const from = new Date(fromEl.value);
+  const to = new Date(from);
+  to.setDate(from.getDate()+6);
+  toEl.value = to.toISOString().slice(0,10);
+}
+
+function fmtDateShort(dateStr){
+  const [y,m,d] = dateStr.split('-');
+  return `${d}.${m}`;
+}
+
 function addPerfWeekFromDates(){
   const fromVal = document.getElementById('week-date-from')?.value;
   const toVal   = document.getElementById('week-date-to')?.value;
