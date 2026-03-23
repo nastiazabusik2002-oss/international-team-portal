@@ -3155,14 +3155,20 @@ function renderHomePerfCards(){
 
 
 function addPerfWeekFromDates(){
-  const fromVal = document.getElementById('week-date-from').value;
-  const toVal   = document.getElementById('week-date-to').value;
+  const fromVal = document.getElementById('week-date-from')?.value;
+  const toVal   = document.getElementById('week-date-to')?.value;
   if(!fromVal || !toVal){ alert('Вибери початок і кінець тижня'); return; }
   const label = fmtDateShort(fromVal)+'–'+fmtDateShort(toVal);
   const monthKey = fromVal.slice(0,7);
   if(!db.perf) db.perf = {};
+  const staff = myStaff();
+  if(!staff || !staff.length){
+    alert('Немає агентів у команді. Перевірте налаштування.');
+    return;
+  }
   const autoShifts = calcAutoShifts(fromVal, toVal);
-  myStaff().forEach(emp=>{
+  let added = 0;
+  staff.forEach(emp=>{
     if(!db.perf[emp.id]) db.perf[emp.id]=[];
     if(!db.perf[emp.id].find(d=>d.week===label)){
       const s = autoShifts[emp.id]||{shiftChats:0, shifts:0};
@@ -3173,6 +3179,7 @@ function addPerfWeekFromDates(){
         shiftChats: s.shiftChats,
         shifts: s.shifts
       });
+      added++;
     }
   });
   document.getElementById('week-date-from').value='';
@@ -3249,13 +3256,24 @@ function getCurMonthKey(allPerfData, week){
 
 function getWeekList(){
   if(!db.perf) return [];
+  const staff = myStaff();
   const all = new Set();
-  const myIds = new Set(myStaff().map(s=>String(s.id)));
-  Object.entries(db.perf).forEach(([empId, rows])=>{
-    if(!myIds.has(String(empId))) return;
-    rows.forEach(r=>all.add(r.week));
+  if(!staff || !staff.length){
+    // fallback — показуємо всі тижні якщо staff порожній
+    Object.values(db.perf).forEach(rows=>rows.forEach(r=>all.add(r.week)));
+  } else {
+    const myIds = new Set(staff.map(s=>String(s.id)));
+    Object.entries(db.perf).forEach(([empId, rows])=>{
+      if(!myIds.has(String(empId))) return;
+      rows.forEach(r=>all.add(r.week));
+    });
+  }
+  // Сортуємо тижні по даті (label типу "01.03–07.03")
+  return [...all].sort((a,b)=>{
+    const da = a.split('–')[0].split('.').reverse().join('');
+    const db2 = b.split('–')[0].split('.').reverse().join('');
+    return da.localeCompare(db2);
   });
-  return [...all];
 }
 
 function renderAdmPerf(){
