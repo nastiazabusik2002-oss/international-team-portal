@@ -909,7 +909,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
                 <span style="font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.5px">З</span>
-                <input type="date" id="week-date-from" onchange="autoFillWeekTo()"
+                <input type="date" id="week-date-from"
                   style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;min-width:140px;-webkit-appearance:none">
               </div>
               <span style="font-size:12px;color:var(--muted)">→</span>
@@ -919,7 +919,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
                   style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;min-width:140px;-webkit-appearance:none">
               </div>
             </div>
-            <button class="btn-add" onclick="addPerfWeekFromDates()">➕ Додати тиждень</button>
+            <button class="btn-add" onclick="addPerfWeekFromDates()">➕ Додати період</button>
             <button class="btn-save" onclick="exportPerfExcel()">📥 Вигрузити Excel</button>
           </div>
         </div>
@@ -3155,13 +3155,7 @@ function renderHomePerfCards(){
 
 
 function autoFillWeekTo(){
-  const fromEl = document.getElementById('week-date-from');
-  const toEl   = document.getElementById('week-date-to');
-  if(!fromEl || !fromEl.value) return;
-  const from = new Date(fromEl.value);
-  const to = new Date(from);
-  to.setDate(from.getDate()+6);
-  toEl.value = to.toISOString().slice(0,10);
+  // Залишаємо порожньою — тепер юзер сам вибирає кінцеву дату
 }
 
 function fmtDateShort(dateStr){
@@ -3318,7 +3312,7 @@ function renderAdmPerf(){
         </select>
         ${dateRangeInfo}
         ${hasDateRange?`<button class="btn-sm" onclick="refreshAutoShifts()" title="Перерахувати зміни з графіку">🔄 Оновити зміни</button>`:''}
-        <button class="btn-sm red" onclick="deletePerfWeek()" style="margin-left:4px">🗑 Видалити тиждень</button>
+        <button class="btn-sm red" onclick="deletePerfWeek()" style="margin-left:4px">🗑 Видалити період</button>
       </div>
       <div class="tbl-wrap" style="margin-bottom:20px;overflow-x:auto">
         <table class="tbl" id="perf-input-table">
@@ -3425,7 +3419,7 @@ async function deletePerfWeek(){
   const selEl = document.getElementById('perf-week-sel');
   if(!selEl) return;
   const selWeek = selEl.value;
-  if(!confirm(`Видалити тиждень "${selWeek}"? Це незворотно.`)) return;
+  if(!confirm(`Видалити період "${selWeek}"? Це незворотно.`)) return;
   myStaff().forEach(emp=>{
     if(db.perf && db.perf[emp.id])
       db.perf[emp.id] = db.perf[emp.id].filter(d=>d.week!==selWeek);
@@ -4973,6 +4967,21 @@ function sbSaving(){
 // Auto-refresh DB every 30s (pick up changes from other users)
 async function autoRefreshDB(){
   if(_isSaving) return; // don't overwrite during active save
+
+  // Не оновлювати якщо користувач зараз вводить дані в таблицю продуктивності
+  const activeAdm = document.querySelector('.adm-section.active');
+  if(activeAdm && activeAdm.id === 'adm-perf'){
+    const focused = document.activeElement;
+    if(focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')){
+      return; // юзер активно вводить — пропускаємо рефреш
+    }
+    // Також перевіримо чи є незбережені зміни — якщо будь-яке поле відрізняється від db
+    const perfInputs = document.querySelectorAll('#perf-input-body input');
+    if(perfInputs.length > 0){
+      return; // таблиця відкрита з даними — не перезаписуємо
+    }
+  }
+
   try{
     const res=await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v6&select=value',{headers:SB_HDR});
     if(!res.ok){sbOffline();return;}
@@ -4983,7 +4992,6 @@ async function autoRefreshDB(){
         _lastDbStr=fresh;
         db=JSON.parse(fresh);
         // Re-render current view
-        const activeAdm=document.querySelector('.adm-section.active');
         if(me){
           if(me.type==='admin'){
             const btn=document.querySelector('.adm-tab.active');
