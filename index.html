@@ -54,10 +54,47 @@ body.theme-light{
 body.theme-light{color-scheme:light}
 
 /* wish pills */
-.wish-pill{font-size:9px;background:var(--accent-dim);color:var(--accent2);border:1px dashed var(--accent-glow);border-radius:4px;padding:2px 5px;margin-top:3px;cursor:pointer;display:block;text-align:center;transition:.15s;user-select:none}
-.wish-pill:hover{background:rgba(181,123,238,.22)}
-.wish-empty{font-size:9px;color:var(--muted);opacity:.4;cursor:pointer;padding:2px 5px;border-radius:4px;border:1px dashed transparent;display:block;margin-top:3px;text-align:center;transition:.15s;user-select:none}
-.wish-empty:hover{opacity:.8;border-color:var(--border2);color:var(--muted2)}
+.wish-pill{font-size:9px;background:var(--accent-dim);color:var(--accent2);border:1px dashed var(--accent-glow);border-radius:4px;padding:2px 5px;margin-top:3px;cursor:pointer;display:block;text-align:center;transition:.15s;user-select:none;font-weight:600}
+.wish-pill:hover{background:rgba(181,123,238,.28)}
+.wish-empty{
+  font-size:9px;
+  font-weight:700;
+  color:var(--accent2);
+  opacity:1;
+  cursor:pointer;
+  padding:3px 6px;
+  border-radius:5px;
+  border:1px solid var(--accent-glow);
+  background:var(--accent-dim);
+  display:block;
+  margin-top:3px;
+  text-align:center;
+  transition:.18s;
+  user-select:none;
+  letter-spacing:.3px;
+}
+.wish-empty:hover{
+  opacity:1;
+  border-color:var(--accent);
+  background:rgba(181,123,238,.22);
+  transform:translateY(-1px);
+  box-shadow:0 2px 8px var(--accent-glow);
+}
+body.theme-light .wish-empty{
+  color:#7c3aed;
+  border-color:rgba(124,58,237,.45);
+  background:rgba(124,58,237,.1);
+}
+body.theme-light .wish-empty:hover{
+  background:rgba(124,58,237,.18);
+  border-color:#7c3aed;
+  box-shadow:0 2px 8px rgba(124,58,237,.25);
+}
+body.theme-light .wish-pill{
+  color:#7c3aed;
+  border-color:rgba(124,58,237,.45);
+  background:rgba(124,58,237,.1);
+}
 .wish-pill.limit-warn{border-color:rgba(248,113,113,.5)!important;background:rgba(248,113,113,.1)!important}
 .wish-badge{font-size:9px;background:var(--accent-dim);color:var(--accent2);border:1px dashed var(--accent-glow);border-radius:3px;padding:1px 4px;display:inline-block;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 
@@ -1523,6 +1560,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <button class="btn-cancel" id="wish-clear-btn" onclick="saveWish(true)" style="color:var(--red);border-color:var(--red)">🗑 Видалити</button>
       <button class="btn-save" onclick="saveWish(false)">Зберегти</button>
     </div>
+    <div id="wish-lock-msg" style="display:none;margin-top:10px;text-align:center;font-size:13px;color:var(--muted2);background:var(--surface2);border-radius:8px;padding:10px 14px"></div>
   </div>
 </div>
 
@@ -1918,7 +1956,17 @@ function buildDefault(){
   };
 }
 
-// ══ TEAM FILTER — повертає тільки співробітників поточного тім ліда ══
+// ══ WISH DEADLINE PER TEAM ══
+// { teamId: { from: день місяця, to: день місяця } }
+const WISH_DEADLINES = {
+  7: { from: 1, to: 20 }, // Involuntary Issues Support
+};
+const WISH_DEFAULT_DEADLINE = { from: 1, to: 25 };
+
+function getWishDeadline(){
+  const teamId = me && (me.teamId || (me.data && me.data.teamId)) || 1;
+  return WISH_DEADLINES[teamId] || WISH_DEFAULT_DEADLINE;
+}
 // Форматування імені: "Прізвище І." або "Прізвище Ім'я" (повне)
 function formatName(fullName, short=true){
   const p = (fullName||'').trim().split(' ');
@@ -2775,15 +2823,18 @@ function renderEmpCal(){
   const deadlineBanner=document.getElementById('wish-deadline-banner');
   if(deadlineBanner){
     const today=now.getDate(), thisM=now.getMonth(), thisY=now.getFullYear();
-    const daysLeft=25-today;
-    const isCurrentMonth=thisM===now.getMonth()&&thisY===now.getFullYear();
+    const dl = getWishDeadline();
+    const daysLeft = dl.to - today;
+    const tooEarly = today < dl.from;
     if(isNextMonth){
-      if(daysLeft>0){
-        deadlineBanner.innerHTML=`<div style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">📅 Дедлайн побажань — <b>25 ${MONTHS_UK[thisM]}</b> · залишилось <b style="color:var(--accent)">${daysLeft} ${daysLeft===1?'день':daysLeft<5?'дні':'днів'}</b></div>`;
+      if(tooEarly){
+        deadlineBanner.innerHTML=`<div style="background:rgba(126,184,247,.08);border:1px solid rgba(126,184,247,.25);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:var(--muted2)">📅 Побажання відкриються <b style="color:var(--blue)">${dl.from} ${MONTHS_UK[thisM]}</b></div>`;
+      } else if(daysLeft>0){
+        deadlineBanner.innerHTML=`<div style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">📅 Дедлайн побажань — <b>${dl.to} ${MONTHS_UK[thisM]}</b> · залишилось <b style="color:var(--accent)">${daysLeft} ${daysLeft===1?'день':daysLeft<5?'дні':'днів'}</b></div>`;
       } else if(daysLeft===0){
         deadlineBanner.innerHTML=`<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px">⚠️ <b>Сьогодні останній день</b> для побажань!</div>`;
       } else {
-        deadlineBanner.innerHTML=`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--muted2)">🔒 Дедлайн минув 25-го — побажання закриті</div>`;
+        deadlineBanner.innerHTML=`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--muted2)">🔒 Дедлайн минув ${dl.to}-го — побажання закриті</div>`;
       }
     } else { deadlineBanner.innerHTML=''; }
   }
@@ -2806,10 +2857,11 @@ function renderEmpCal(){
   const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
   const myComments=((db.dayComments||{})[me.data.id]||(db.dayComments||{})[String(me.data.id)]||{})[key]||{};
   const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
-  // Count off-wishes per day across all agents (for lічильник)
+  // Count off-wishes per day — тільки по своїй команді
   const offWishCount={};
   if(isNextMonth){
-    myStaff().forEach(emp=>{
+    const teamStaff = db.staff.filter(s=>(s.teamId||1)===(me.data.teamId||1));
+    teamStaff.forEach(emp=>{
       const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
       Object.entries(ew).forEach(([day,w])=>{
         if(w&&w.shift==='off'){
@@ -2854,7 +2906,7 @@ function renderEmpCal(){
         const label=wishLabel+(wishComment?' 💬':'');
         wishHtml=`<div class="wish-pill${isMyOff&&isLimit?' limit-warn':''}" onclick="openWishModal(${d},'${key}')" title="${wishLabel}${wishComment?' · '+wishComment:''}">${label||'💌'}</div>${counterHtml}`;
       } else {
-        wishHtml=`<div class="wish-empty" onclick="openWishModal(${d},'${key}')">💌</div>${counterHtml}`;
+        wishHtml=`<div class="wish-empty" onclick="openWishModal(${d},'${key}')">💌 Побажання</div>${counterHtml}`;
       }
     }
     return shiftHtml+bdayHtml+commentHtml+wishHtml;
@@ -2866,6 +2918,9 @@ function renderEmpCal(){
 let _wishDay=null,_wishKey=null;
 function openWishModal(day,key){
   _wishDay=day; _wishKey=key;
+  const now=new Date(), today=now.getDate();
+  const dl=getWishDeadline();
+  const isLocked = today < dl.from || today > dl.to;
   const myWishes=((db.wishes||{})[me.data.id]||(db.wishes||{})[String(me.data.id)]||{})[key]||{};
   const cur=myWishes[day]||{};
   document.getElementById('wish-modal-title').textContent=`ПОБАЖАННЯ — ${day} ЧИСЛО`;
@@ -2879,7 +2934,22 @@ function openWishModal(day,key){
     if(cur.shift===s.id) opt.selected=true;
     sel.appendChild(opt);
   });
-  document.getElementById('wish-clear-btn').style.display=cur.shift?'':'none';
+  document.getElementById('wish-clear-btn').style.display=cur.shift&&!isLocked?'':'none';
+  // Show lock message if deadline not active
+  const saveBtn=document.querySelector('#wish-modal .btn-save');
+  const lockMsg=document.getElementById('wish-lock-msg');
+  if(isLocked){
+    if(saveBtn) saveBtn.style.display='none';
+    if(lockMsg){
+      lockMsg.style.display='block';
+      lockMsg.textContent = today < dl.from
+        ? `📅 Побажання відкриються з ${dl.from}-го числа`
+        : `🔒 Дедлайн минув ${dl.to}-го числа`;
+    }
+  } else {
+    if(saveBtn) saveBtn.style.display='';
+    if(lockMsg) lockMsg.style.display='none';
+  }
   document.getElementById('wish-modal').classList.add('open');
 }
 async function saveWishMonthNote(key){
@@ -2895,8 +2965,15 @@ async function saveWishMonthNote(key){
 async function saveWish(clear){
   // Check deadline
   const now=new Date();
-  if(now.getDate()>25 && !clear){
-    alert('⚠️ Дедлайн минув! Побажання приймались до 25-го числа.'); return;
+  const today=now.getDate();
+  const dl=getWishDeadline();
+  if(!clear){
+    if(today < dl.from){
+      alert(`⚠️ Побажання ще не відкриті! Прийматимуться з ${dl.from}-го числа.`); return;
+    }
+    if(today > dl.to){
+      alert(`⚠️ Дедлайн минув! Побажання приймались до ${dl.to}-го числа.`); return;
+    }
   }
   const shift=clear?'':document.getElementById('wm-shift').value;
   const empId=me.data.id;
@@ -3891,7 +3968,9 @@ function renderAdmWishes(){
   const notesEl=document.getElementById('wishes-month-notes');
   if(notesEl){
     const key2=mkey(wishesAdmY,wishesAdmM);
-    const notes=myStaff().map(emp=>{
+    const myTeamId2 = me && me.teamId;
+    const staffForNotes = myTeamId2 ? db.staff.filter(s=>(s.teamId||1)===myTeamId2) : myStaff();
+    const notes=staffForNotes.map(emp=>{
       const note=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key2+'_note']||'';
       return note?{name:emp.name,note}:null;
     }).filter(Boolean);
@@ -3911,10 +3990,13 @@ function renderAdmWishes(){
   const last=new Date(wishesAdmY,wishesAdmM+1,0).getDate();
   const days=[]; for(let d=1;d<=last;d++) days.push(d);
   function isWeekend(d){ const dow=new Date(wishesAdmY,wishesAdmM,d).getDay(); return dow===0||dow===6; }
+  // Явний фільтр по команді тім ліда — захист від витоку чужих побажань
+  const myTeamId = me && me.teamId;
+  const teamStaffOnly = myTeamId ? db.staff.filter(s=>(s.teamId||1)===myTeamId) : myStaff();
 
   // Pre-count off-wishes per day
   const admOffCount={};
-  myStaff().forEach(emp=>{
+  teamStaffOnly.forEach(emp=>{
     const ew=((wishes[emp.id]||wishes[String(emp.id)]||{})[key])||{};
     Object.entries(ew).forEach(([day,w])=>{
       if(w&&w.shift==='off') admOffCount[day]=(admOffCount[day]||0)+1;
@@ -3947,7 +4029,7 @@ function renderAdmWishes(){
 
   // Body — one row per agent with wish display + clickable schedule cell
   let tbody='<tbody>';
-  myStaff().forEach(emp=>{
+  teamStaffOnly.forEach(emp=>{
     const empWishes=(wishes[emp.id]||wishes[String(emp.id)]||{})[key]||{};
     const empSched=existSched[emp.id]||{};
     const shortName=formatName(emp.name);
