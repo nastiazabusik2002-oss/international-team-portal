@@ -386,13 +386,84 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 @media(max-width:640px){
   .login-box{width:100%;margin:16px;padding:36px 24px}
   .content{padding:20px 14px}
-  .topbar{padding:0 14px}
-  .nav-tabs{padding:0 14px}
+  .topbar{padding:0 10px;height:auto;min-height:52px;flex-wrap:wrap;gap:6px;padding-top:8px;padding-bottom:8px}
+  .topbar-logo{font-size:18px;letter-spacing:3px}
+  .topbar-r{gap:6px;flex-wrap:wrap}
+  .topbar-who{font-size:11px}
+  .btn-logout{padding:4px 10px;font-size:11px}
+  #sb-status{font-size:10px;padding:3px 7px}
+  #on-shift-btn{padding:4px 8px;font-size:12px}
+  #anim-toggle-btn,#theme-btn{padding:4px 8px;font-size:13px}
+  .nav-tabs{padding:0 10px}
+  .nav-tab{padding:11px 12px;font-size:12px}
   .calc-grid{grid-template-columns:1fr}
   .shift-today-row{grid-template-columns:1fr}
   .modal-grid{grid-template-columns:1fr}
   .link-row{grid-template-columns:1fr 1fr 34px}
   .link-row input:nth-child(3){display:none}
+}
+
+/* ══ FULLSCREEN SCHEDULE OVERLAY (mobile) ══ */
+#sched-fullscreen-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  background:var(--bg);
+  flex-direction:column;
+}
+#sched-fullscreen-overlay.open{display:flex}
+#sched-fullscreen-inner{
+  flex:1;
+  overflow:auto;
+  padding:8px;
+}
+#sched-fullscreen-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 14px;
+  background:var(--surface);
+  border-bottom:var(--glass-border);
+  flex-shrink:0;
+}
+#sched-fullscreen-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:20px;
+  letter-spacing:3px;
+  color:var(--accent2);
+}
+#sched-fullscreen-close{
+  background:var(--red-dim);
+  border:1px solid rgba(248,113,113,.3);
+  border-radius:8px;
+  color:var(--red);
+  padding:6px 14px;
+  font-size:13px;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.btn-expand-sched{
+  display:none;
+  background:var(--accent-dim);
+  border:1px solid var(--accent-glow);
+  border-radius:10px;
+  color:var(--accent2);
+  padding:8px 16px;
+  font-size:13px;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  font-weight:600;
+  margin-bottom:12px;
+  width:100%;
+  text-align:center;
+  transition:.2s;
+}
+.btn-expand-sched:hover{background:rgba(181,123,238,.22)}
+@media(max-width:768px){
+  .btn-expand-sched{display:block}
+  .sched-table th,.sched-table td{padding:2px 1px;font-size:9px}
+  .sched-table .name-col{min-width:80px;font-size:10px;padding:5px 6px}
 }
 </style>
 </head>
@@ -578,6 +649,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <span style="font-size:12px;color:var(--muted2)">Тільки дні що залишились</span>
           </label>
         </div>
+        <button class="btn-expand-sched" onclick="openSchedFullscreen()">⛶ Розгорнути графік на весь екран</button>
         <div class="sched-wrap"><table class="sched-table" id="team-sched-table"></table></div>
       </div>
       <div id="etab-exchange" class="etab" style="display:none">
@@ -7561,6 +7633,58 @@ document.addEventListener('click', function(e){
 
 <!-- SHIFT TOOLTIP ELEMENT -->
 <div id="shift-tooltip"></div>
+
+<!-- ══ FULLSCREEN SCHEDULE OVERLAY ══ -->
+<div id="sched-fullscreen-overlay">
+  <div id="sched-fullscreen-bar">
+    <span id="sched-fullscreen-title">ГРАФІК КОМАНДИ</span>
+    <button id="sched-fullscreen-close" onclick="closeSchedFullscreen()">✕ Закрити</button>
+  </div>
+  <div id="sched-fullscreen-inner"></div>
+</div>
+
+<script>
+function openSchedFullscreen(){
+  const src = document.getElementById('team-sched-table');
+  if(!src) return;
+  const inner = document.getElementById('sched-fullscreen-inner');
+  // Clone the table into overlay
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'overflow-x:auto;min-height:100%';
+  const clone = src.cloneNode(true);
+  clone.style.cssText = 'border-collapse:collapse;font-size:11px';
+  wrap.appendChild(clone);
+  inner.innerHTML = '';
+  inner.appendChild(wrap);
+
+  const overlay = document.getElementById('sched-fullscreen-overlay');
+  overlay.classList.add('open');
+
+  // Request landscape if Screen Orientation API is available
+  if(screen.orientation && screen.orientation.lock){
+    screen.orientation.lock('landscape').catch(()=>{});
+  }
+  // Scroll to today column
+  setTimeout(()=>{
+    const today = wrap.querySelector('th[data-today="1"]') || null;
+    if(today) today.scrollIntoView({inline:'center',block:'nearest'});
+  }, 100);
+}
+
+function closeSchedFullscreen(){
+  const overlay = document.getElementById('sched-fullscreen-overlay');
+  overlay.classList.remove('open');
+  // Unlock orientation
+  if(screen.orientation && screen.orientation.unlock){
+    screen.orientation.unlock();
+  }
+}
+
+// Close on Escape
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeSchedFullscreen();
+});
+</script>
 
 </body>
 </html>
