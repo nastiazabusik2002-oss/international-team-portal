@@ -1692,12 +1692,12 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
 
 <!-- OFFER SHIFT MODAL -->
 <div class="modal-ov" id="offer-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:480px;width:95vw">
     <h3>ЗАПРОПОНУВАТИ ЗМІНУ</h3>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Оберіть день, в який хочете передати свою зміну</p>
-    <div class="day-picker" id="offer-day-picker"></div>
-    <div class="field" style="margin-top:16px"><label>Коментар (необов'язково)</label><input type="text" id="offer-comment" placeholder="Причина, уточнення..."></div>
-    <div id="offer-shift-preview" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Оберіть день зі зміною, яку хочете передати</p>
+    <div id="offer-day-picker" style="margin-bottom:4px"></div>
+    <div id="offer-shift-preview" style="margin-top:12px;font-size:13px;color:var(--muted);min-height:38px"></div>
+    <div class="field" style="margin-top:12px"><label>Коментар (необов'язково)</label><input type="text" id="offer-comment" placeholder="Причина, уточнення..."></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('offer-modal')">Скасувати</button>
       <button class="btn-save" onclick="submitOffer()">Запропонувати</button>
@@ -1966,6 +1966,24 @@ const WISH_DEFAULT_DEADLINE = { from: 1, to: 25 };
 function getWishDeadline(){
   const teamId = me && (me.teamId || (me.data && me.data.teamId)) || 1;
   return WISH_DEADLINES[teamId] || WISH_DEFAULT_DEADLINE;
+}
+
+// ══ WISH PRESETS — фіксовані побажання агентів ══
+const WISH_PRESETS = [
+  { id:'morning', label:'Ранкова', icon:'🌅', color:'#7eb8f7' },
+  { id:'day',     label:'Денна',   icon:'☀️',  color:'#4ade80' },
+  { id:'evening', label:'Вечірня', icon:'🌆', color:'#fb923c' },
+  { id:'night',   label:'Нічна',   icon:'🌙', color:'#a78bfa' },
+];
+function getWishPreset(id){ return WISH_PRESETS.find(p=>p.id===id)||null; }
+function getWishLabel(shiftVal){
+  if(!shiftVal) return '';
+  if(shiftVal==='off') return '🌙 Вих';
+  const preset=getWishPreset(shiftVal);
+  if(preset) return preset.icon+' '+preset.label;
+  // fallback для старих збережених даних
+  const sh=getShift(shiftVal);
+  return sh?(sh.time||sh.label||shiftVal):shiftVal;
 }
 // Форматування імені: "Прізвище І." або "Прізвище Ім'я" (повне)
 function formatName(fullName, short=true){
@@ -2898,10 +2916,7 @@ function renderEmpCal(){
         ?`<div style="font-size:9px;font-weight:600;color:${isLimit?'var(--red)':'var(--muted2)'};margin-top:2px;text-align:center" title="Хочуть вихідний: ${offCount} з 14">🌙×${offCount}${isLimit?' ⚠️':''}</div>`
         :'';
       if(wish){
-        const wishShift=wish.shift?getShift(wish.shift):null;
-        const wishLabel=(wishShift&&wish.shift!=='off')
-          ?wishShift.short
-          :wish.shift==='off'?'🌙вих':'';
+        const wishLabel = getWishLabel(wish.shift);
         const wishComment=wish.comment||'';
         const label=wishLabel+(wishComment?' 💬':'');
         wishHtml=`<div class="wish-pill${isMyOff&&isLimit?' limit-warn':''}" onclick="openWishModal(${d},'${key}')" title="${wishLabel}${wishComment?' · '+wishComment:''}">${label||'💌'}</div>${counterHtml}`;
@@ -2925,13 +2940,12 @@ function openWishModal(day,key){
   const cur=myWishes[day]||{};
   document.getElementById('wish-modal-title').textContent=`ПОБАЖАННЯ — ${day} ЧИСЛО`;
   const sel=document.getElementById('wm-shift');
-  const teamId = me&&me.data?(me.data.teamId||1):1;
-  const tshifts = getTeamShifts(teamId);
-  sel.innerHTML=`<option value="">— без побажань —</option><option value="off"${cur.shift==='off'?' selected':''}>Вихідний 🌙</option>`;
-  tshifts.forEach(s=>{
+  sel.innerHTML=`<option value="">— без побажань —</option><option value="off"${cur.shift==='off'?' selected':''}>🌙 Вихідний</option>`;
+  WISH_PRESETS.forEach(p=>{
     const opt=document.createElement('option');
-    opt.value=s.id; opt.textContent=(s.time||'')+(s.label?' — '+s.label:'');
-    if(cur.shift===s.id) opt.selected=true;
+    opt.value=p.id;
+    opt.textContent=p.icon+' '+p.label;
+    if(cur.shift===p.id) opt.selected=true;
     sel.appendChild(opt);
   });
   document.getElementById('wish-clear-btn').style.display=cur.shift&&!isLocked?'':'none';
@@ -4047,11 +4061,14 @@ function renderAdmWishes(){
       // Wish badge
       let wishBadge='';
       if(w){
-        const ws=w.shift?getShift(w.shift):null;
-        const wLabel=(ws&&w.shift!=='off')?(ws.time||ws.label||ws.short):(w.shift==='off'?'🌙':'' );
+        const wLabel = getWishLabel(w.shift);
         const wComment=w.comment?` title="${w.comment}"`:'';
         const offOver=w.shift==='off'&&(admOffCount[d]||0)>=4;
-        wishBadge=`<div${wComment} style="font-size:9px;color:${offOver?'var(--red)':'var(--accent)'};background:${offOver?'rgba(248,113,113,.1)':'rgba(245,200,66,.1)'};border:1px dashed ${offOver?'rgba(248,113,113,.4)':'rgba(245,200,66,.35)'};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}</div>`;
+        const preset = w.shift && w.shift!=='off' ? getWishPreset(w.shift) : null;
+        const badgeColor = preset ? preset.color : (offOver?'var(--red)':'var(--accent)');
+        const badgeBg = preset ? preset.color+'18' : (offOver?'rgba(248,113,113,.1)':'rgba(245,200,66,.1)');
+        const badgeBorder = preset ? preset.color+'44' : (offOver?'rgba(248,113,113,.4)':'rgba(245,200,66,.35)');
+        wishBadge=`<div${wComment} style="font-size:9px;color:${badgeColor};background:${badgeBg};border:1px dashed ${badgeBorder};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}</div>`;
       }
 
       // Clickable shift cell
@@ -5490,17 +5507,76 @@ function renderExchange(){
 function openOfferModal(){
   offerSelectedDay=null;
   const now=new Date();
-  const key=mkey(now.getFullYear(),now.getMonth());
+  const year=now.getFullYear(), month=now.getMonth();
+  const key=mkey(year,month);
   const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
-  const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  let html='';
+  const last=new Date(year,month+1,0).getDate();
+  const first=new Date(year,month,1);
+  const startDow=(first.getDay()+6)%7; // Mon=0
+
+  // Build calendar grid
+  const DAYS_SHORT=['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+  let html=`<div style="margin-bottom:8px;font-size:11px;color:var(--muted);text-align:center">
+    ${MONTHS_UK[month]} ${year} · Оберіть день зі зміною
+  </div>`;
+
+  // Weekday headers
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">`;
+  DAYS_SHORT.forEach(d=>{
+    html+=`<div style="text-align:center;font-size:10px;color:var(--muted);padding:3px 0;letter-spacing:.5px">${d}</div>`;
+  });
+  html+='</div>';
+
+  // Day cells
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+
+  // Empty cells before first day
+  for(let i=0;i<startDow;i++){
+    html+=`<div></div>`;
+  }
+
   for(let d=1;d<=last;d++){
     const shiftId=mySched[d]||'off';
     const sh=getShift(shiftId);
     const hasShift=shiftId&&shiftId!=='off';
-    html+=`<div class="day-pick-btn ${hasShift?'has-shift':'no-shift'}" onclick="selectOfferDay(${d},'${shiftId}')" id="opd-${d}">`+
-      `${d}<br><span style="font-size:9px;color:${sh.color}">${sh.time||sh.label||'—'}</span></div>`;
+    const isToday=now.getDate()===d;
+    const dow=new Date(year,month,d).getDay();
+    const isWknd=dow===0||dow===6;
+
+    const bg = hasShift ? `${sh.color}18` : 'transparent';
+    const border = hasShift ? `1px solid ${sh.color}55` : isWknd ? '1px solid rgba(167,139,250,.15)' : '1px solid var(--border)';
+    const numColor = isToday ? 'var(--accent2)' : isWknd ? 'var(--purple)' : 'var(--muted2)';
+    const cursor = hasShift ? 'pointer' : 'default';
+    const opacity = hasShift ? '1' : '.45';
+    const todayRing = isToday ? 'outline:2px solid var(--accent);outline-offset:-2px;' : '';
+
+    html+=`<div id="opd-${d}"
+      onclick="${hasShift?`selectOfferDay(${d},'${shiftId}')`:''}"
+      style="
+        border-radius:8px;
+        border:${border};
+        background:${bg};
+        padding:5px 3px;
+        text-align:center;
+        cursor:${cursor};
+        opacity:${opacity};
+        transition:.15s;
+        ${todayRing}
+        min-height:48px;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+      "
+      ${hasShift?`onmouseover="this.style.borderColor='${sh.color}';this.style.background='${sh.color}28'"
+       onmouseout="if(!this.classList.contains('offer-selected')){this.style.borderColor='${sh.color}55';this.style.background='${sh.color}18'}"`:''}>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${numColor}">${d}</div>
+      ${hasShift
+        ? `<div style="font-size:10px;font-weight:700;color:${sh.color};line-height:1">${sh.time||sh.label||'?'}</div>
+           ${sh.label&&sh.time?`<div style="font-size:8px;color:${sh.color};opacity:.8;line-height:1">${sh.label}</div>`:''}`
+        : `<div style="font-size:9px;color:var(--muted)">—</div>`
+      }
+    </div>`;
   }
+  html+='</div>';
+
   document.getElementById('offer-day-picker').innerHTML=html;
   document.getElementById('offer-shift-preview').innerHTML='';
   document.getElementById('offer-comment').value='';
@@ -5509,12 +5585,25 @@ function openOfferModal(){
 
 function selectOfferDay(day,shiftId){
   offerSelectedDay={day,shiftId};
-  document.querySelectorAll('.day-pick-btn').forEach(b=>b.classList.remove('selected'));
-  document.getElementById('opd-'+day).classList.add('selected');
+  // Reset all cells
+  document.querySelectorAll('[id^="opd-"]').forEach(b=>{
+    b.classList.remove('offer-selected');
+    b.style.outline='';
+  });
+  const cell=document.getElementById('opd-'+day);
+  if(cell){
+    cell.classList.add('offer-selected');
+    cell.style.outline='2px solid var(--accent)';
+  }
   const sh=getShift(shiftId);
   document.getElementById('offer-shift-preview').innerHTML=shiftId==='off'
     ?`<span style="color:var(--muted)">Це вихідний — зміни немає</span>`
-    :`<span style="font-family:'DM Mono',monospace;color:${sh.color};font-weight:600">${sh.time||sh.label||'?'}</span> ${sh.label&&sh.time?sh.label:''}${sh.time?' ('+sh.time+')':''}` ;
+    :`<div style="display:flex;align-items:center;gap:8px;background:${sh.color}18;border:1px solid ${sh.color}44;border-radius:8px;padding:8px 12px">
+        <span style="width:10px;height:10px;border-radius:50%;background:${sh.color};display:inline-block;flex-shrink:0"></span>
+        <span style="font-family:'DM Mono',monospace;color:${sh.color};font-weight:700;font-size:14px">${sh.time||sh.label||'?'}</span>
+        ${sh.label&&sh.time?`<span style="font-size:12px;color:var(--muted2)">${sh.label}</span>`:''}
+        <span style="font-size:12px;color:var(--muted);margin-left:auto">${day} число</span>
+      </div>`;
 }
 
 async function submitOffer(){
