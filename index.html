@@ -5392,14 +5392,15 @@ setInterval(autoRefreshDB, 60000);
 function renderExchange(){
   if(!db.exchanges) db.exchanges=[];
   const myId=me.data.id;
+  const myTeamId=me.data.teamId||1;
   const myName=me.data.name;
 
   // Пропозиції які я виклав (open)
   const myOffers=(db.exchanges).filter(ex=>ex.fromId===myId&&ex.status==='open');
   // Хтось хоче обмінятись зі мною — чекає мого підтвердження
   const pendingForMe=(db.exchanges).filter(ex=>ex.fromId===myId&&ex.status==='pending');
-  // Пропозиції інших (open), де я можу запропонувати обмін
-  const othersOffers=(db.exchanges).filter(ex=>ex.fromId!==myId&&ex.status==='open');
+  // Пропозиції інших (open) — ТІЛЬКИ своя команда
+  const othersOffers=(db.exchanges).filter(ex=>ex.fromId!==myId&&ex.status==='open'&&(ex.teamId||1)===myTeamId);
   // Мої заявки на обмін (pending) — чекаю відповіді іншого
   const myPending=(db.exchanges).filter(ex=>ex.responderId===myId&&ex.status==='pending');
 
@@ -5616,6 +5617,7 @@ async function submitOffer(){
   const offer={
     id:'ex_'+Date.now(),
     fromId:me.data.id, fromName:me.data.name,
+    teamId: me.data.teamId||1,
     day:offerSelectedDay.day, month:now.getMonth()+1, year:now.getFullYear(),
     shiftId:offerSelectedDay.shiftId,
     comment:document.getElementById('offer-comment').value,
