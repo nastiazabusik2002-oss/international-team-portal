@@ -254,7 +254,10 @@ body.theme-light .sched-table .name-col{background:rgba(240,235,255,.92)}
 .shift-cell-off{color:var(--muted);font-size:13px;opacity:.35}
 
 /* shift picker */
-.shift-picker{position:fixed;z-index:9999;background:rgba(22,17,42,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:var(--glass-border);border-radius:16px;padding:12px;box-shadow:0 16px 48px rgba(0,0,0,.6),0 0 0 1px var(--accent-glow);min-width:200px;max-width:280px}
+.shift-picker{position:fixed;z-index:9999;background:rgba(22,17,42,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:var(--glass-border);border-radius:16px;padding:12px;box-shadow:0 16px 48px rgba(0,0,0,.6),0 0 0 1px var(--accent-glow);min-width:200px;max-width:280px;max-height:70vh;overflow-y:auto}
+.shift-picker::-webkit-scrollbar{width:4px}
+.shift-picker::-webkit-scrollbar-track{background:transparent}
+.shift-picker::-webkit-scrollbar-thumb{background:rgba(181,123,238,.35);border-radius:4px}
 .shift-picker-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .shift-picker-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:9px;border:1px solid transparent;cursor:pointer;margin-bottom:4px;font-family:'DM Sans',sans-serif;font-size:13px;transition:.15s;text-align:left;background:transparent}
 .shift-picker-btn:hover{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.07)}
@@ -3202,7 +3205,7 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
       const shiftId=empSched[d]||'off';
       const sh=getShift(shiftId);
       const hasShift=shiftId&&shiftId!=='off';
-      if(hasShift) shiftCount++;
+      if(hasShift && shiftId!=='vacation') shiftCount++;
       let bg='';
       if(isToday) bg='rgba(245,200,66,.07)';
       else if(wknd) bg='rgba(245,200,66,.13)';
@@ -3247,7 +3250,7 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
     let count=0;
     myStaff().forEach(emp=>{
       const shiftId=((sched[emp.id]||{})[d])||'off';
-      if(shiftId&&shiftId!=='off'&&shiftId!=='vac') count++;
+      if(shiftId&&shiftId!=='off'&&shiftId!=='vacation') count++;
     });
     const clr=count===0?'var(--muted)':count<=3?'var(--orange)':count<=7?'var(--blue)':'var(--green)';
     tfoot+=`<td style="text-align:center;background:${bg};padding:5px 2px;border-top:1px solid var(--border)">
@@ -6781,15 +6784,35 @@ function openShiftPicker(e, empId, day, key){
 
   const picker = document.createElement('div');
   picker.className='shift-picker'; picker.id='shift-picker-popup';
+  picker.style.maxHeight='70vh';
+  picker.style.overflowY='auto';
   picker.innerHTML=html;
   document.body.appendChild(picker);
 
-  // Position near cell
-  const rect=e.currentTarget.getBoundingClientRect();
-  let top=rect.bottom+6, left=rect.left;
-  if(left+290>window.innerWidth) left=window.innerWidth-295;
-  if(top+400>window.innerHeight) top=rect.top-picker.offsetHeight-6;
-  picker.style.top=top+'px'; picker.style.left=left+'px';
+  // Position near cell — after render so offsetHeight is correct
+  requestAnimationFrame(()=>{
+    const rect=e.currentTarget.getBoundingClientRect();
+    const ph=picker.offsetHeight;
+    const pw=picker.offsetWidth||290;
+    let top, left;
+
+    // Prefer below, fallback above
+    if(rect.bottom+ph+8 <= window.innerHeight){
+      top = rect.bottom+6;
+    } else if(rect.top-ph-6 >= 0){
+      top = rect.top-ph-6;
+    } else {
+      // Center vertically if neither fits
+      top = Math.max(8, (window.innerHeight-ph)/2);
+    }
+
+    left = rect.left;
+    if(left+pw+8 > window.innerWidth) left = window.innerWidth-pw-8;
+    if(left < 8) left = 8;
+
+    picker.style.top=top+'px';
+    picker.style.left=left+'px';
+  });
 
   setTimeout(()=>document.addEventListener('click',closeShiftPicker,{once:true}),10);
 }
