@@ -1905,6 +1905,7 @@ async function runMigrations(){
 async function saveDB(){
   sbSaving();
   _isSaving=true;
+  _lastSaveTime=Date.now(); // блокуємо autoRefresh на 10 секунд після збереження
   try{
     const val=JSON.stringify(db);
     console.log('[saveDB] saving, size:', val.length);
@@ -5348,22 +5349,30 @@ function sbSaving(){
   if(el){el.textContent='↑ saving...';el.style.color='var(--accent)';el.style.background='var(--accent-dim)';el.style.borderColor='rgba(245,200,66,.2)';}
 }
 
-// Auto-refresh DB every 30s (pick up changes from other users)
-async function autoRefreshDB(){
-  if(_isSaving) return; // don't overwrite during active save
+// Auto-refresh DB every 60s (pick up changes from other users)
+let _lastSaveTime = 0; // timestamp of last saveDB call
 
-  // Не оновлювати якщо користувач зараз вводить дані в таблицю продуктивності
+async function autoRefreshDB(){
+  // Не оновлювати під час збереження
+  if(_isSaving) return;
+
+  // Не оновлювати якщо збереження було менше 10 секунд тому
+  if(Date.now() - _lastSaveTime < 10000) return;
+
+  // Не оновлювати якщо адмін редагує графік або продуктивність
   const activeAdm = document.querySelector('.adm-section.active');
-  if(activeAdm && activeAdm.id === 'adm-perf'){
-    const focused = document.activeElement;
-    if(focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')){
-      return; // юзер активно вводить — пропускаємо рефреш
+  if(activeAdm){
+    const id = activeAdm.id;
+    // Захищаємо графік і продуктивність від авто-перезапису
+    if(id === 'adm-schedule' || id === 'adm-perf'){
+      return;
     }
-    // Також перевіримо чи є незбережені зміни — якщо будь-яке поле відрізняється від db
-    const perfInputs = document.querySelectorAll('#perf-input-body input');
-    if(perfInputs.length > 0){
-      return; // таблиця відкрита з даними — не перезаписуємо
-    }
+  }
+
+  // Не оновлювати якщо фокус на будь-якому input/textarea
+  const focused = document.activeElement;
+  if(focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA' || focused.tagName === 'SELECT')){
+    return;
   }
 
   try{
@@ -5373,13 +5382,16 @@ async function autoRefreshDB(){
     if(rows.length && rows[0].value){
       const fresh=rows[0].value;
       if(fresh!==_lastDbStr){
+        // Ще раз перевіряємо — може за час fetch щось змінилось
+        if(_isSaving || Date.now() - _lastSaveTime < 10000) return;
         _lastDbStr=fresh;
         db=JSON.parse(fresh);
         // Re-render current view
         if(me){
           if(me.type==='admin'){
             const btn=document.querySelector('.adm-tab.active');
-            if(activeAdm&&btn){ const id=activeAdm.id.replace('adm-',''); admTab(id,btn); }
+            const activeAdm2=document.querySelector('.adm-section.active');
+            if(activeAdm2&&btn){ const id=activeAdm2.id.replace('adm-',''); admTab(id,btn); }
           } else renderEmployee();
         }
       }
