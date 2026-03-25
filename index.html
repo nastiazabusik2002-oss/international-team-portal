@@ -6786,33 +6786,31 @@ function openShiftPicker(e, empId, day, key){
   picker.className='shift-picker'; picker.id='shift-picker-popup';
   picker.style.maxHeight='70vh';
   picker.style.overflowY='auto';
+  picker.style.visibility='hidden'; // hide while measuring
   picker.innerHTML=html;
   document.body.appendChild(picker);
 
-  // Position near cell — after render so offsetHeight is correct
-  requestAnimationFrame(()=>{
-    const rect=e.currentTarget.getBoundingClientRect();
-    const ph=picker.offsetHeight;
-    const pw=picker.offsetWidth||290;
-    let top, left;
+  // Measure after append (now has real dimensions)
+  const rect=e.currentTarget.getBoundingClientRect();
+  const ph=picker.offsetHeight;
+  const pw=picker.offsetWidth||280;
+  let top, left;
 
-    // Prefer below, fallback above
-    if(rect.bottom+ph+8 <= window.innerHeight){
-      top = rect.bottom+6;
-    } else if(rect.top-ph-6 >= 0){
-      top = rect.top-ph-6;
-    } else {
-      // Center vertically if neither fits
-      top = Math.max(8, (window.innerHeight-ph)/2);
-    }
+  if(rect.bottom+ph+8 <= window.innerHeight){
+    top = rect.bottom+6;
+  } else if(rect.top-ph-6 >= 0){
+    top = rect.top-ph-6;
+  } else {
+    top = Math.max(8, (window.innerHeight-ph)/2);
+  }
 
-    left = rect.left;
-    if(left+pw+8 > window.innerWidth) left = window.innerWidth-pw-8;
-    if(left < 8) left = 8;
+  left = rect.left;
+  if(left+pw+8 > window.innerWidth) left = window.innerWidth-pw-8;
+  if(left < 8) left = 8;
 
-    picker.style.top=top+'px';
-    picker.style.left=left+'px';
-  });
+  picker.style.top=top+'px';
+  picker.style.left=left+'px';
+  picker.style.visibility=''; // show
 
   setTimeout(()=>document.addEventListener('click',closeShiftPicker,{once:true}),10);
 }
@@ -7484,7 +7482,7 @@ function renderAuditorCompanySchedules(){
       if(isToday) bg='rgba(181,123,238,.3)';
       else if(wknd) bg='rgba(167,139,250,.07)';
       const todayStyle=isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
-      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px;${todayStyle}">
+      thead+=`<th style="min-width:22px;padding:2px 1px;text-align:center;background:${bg};font-size:8px;${todayStyle}">
         ${office?`<div style="font-size:8px;line-height:1;margin-bottom:1px" title="Офісний день">🏢</div>`:'<div style="font-size:8px;line-height:1;margin-bottom:1px;opacity:0"> </div>'}
         <div style="opacity:${isToday?1:.6};font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${dow}</div>
         <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
@@ -7509,7 +7507,7 @@ function renderAuditorCompanySchedules(){
         const shColor = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
         </td>`;
       });
       const shortName=formatName(emp.name);
@@ -7769,7 +7767,7 @@ function renderAdmCompanySchedules(){
       if(isToday) bg='rgba(181,123,238,.3)';
       else if(wknd) bg='rgba(167,139,250,.07)';
       const todayStyle=isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
-      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px;${todayStyle}">
+      thead+=`<th style="min-width:22px;padding:2px 1px;text-align:center;background:${bg};font-size:8px;${todayStyle}">
         ${office?`<div style="font-size:8px;line-height:1;margin-bottom:1px" title="Офісний день">🏢</div>`:'<div style="font-size:8px;line-height:1;margin-bottom:1px;opacity:0"> </div>'}
         <div style="opacity:${isToday?1:.6};font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${dow}</div>
         <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
@@ -7791,7 +7789,7 @@ function renderAdmCompanySchedules(){
         const shTime2  = sh&&shiftId!=='off' ? (sh.time||'') : '';
         const shColor2 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc2  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
-        cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span></td>`;
+        cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span></td>`;
       });
       const shortName=formatName(emp.name);
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${shortName}</td>${cells}</tr>`;
@@ -7916,7 +7914,7 @@ function renderCompanySchedules(){
       if(isToday) bg='rgba(181,123,238,.3)';
       else if(wknd) bg='rgba(167,139,250,.07)';
       const todayStyle=isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
-      thead+=`<th style="min-width:28px;padding:4px 2px;text-align:center;background:${bg};font-size:9px;${todayStyle}">
+      thead+=`<th style="min-width:22px;padding:2px 1px;text-align:center;background:${bg};font-size:8px;${todayStyle}">
         ${office?`<div style="font-size:8px;line-height:1;margin-bottom:1px" title="Офісний день">🏢</div>`:'<div style="font-size:8px;line-height:1;margin-bottom:1px;opacity:0"> </div>'}
         <div style="opacity:${isToday?1:.6};font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${dow}</div>
         <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
@@ -7942,7 +7940,7 @@ function renderCompanySchedules(){
         const shColor3 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc3  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time||sh.label||'?'):'?'):'·'}</span>
+          <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
         </td>`;
       });
       const shortName=formatName(emp.name);
