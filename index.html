@@ -8735,19 +8735,13 @@ function renderTlScheduleTable(el){
         }
         if(sh){ dispTime = sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?'); dispColor = sh.color; }
       }
-      if(isMe){
-        // Клікабельна клітинка — тільки для себе
-        cells += `<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span class="sh-tip-cell" onclick="openTlShiftPicker(event,'${person.id}',${d},'${key}')"
-            data-l="${sh?sh.label:''}" data-t="${sh?sh.time:''}" data-c="${sh?sh.color:''}" data-d=""
-            style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor};cursor:pointer;
-            display:inline-block;min-width:20px;line-height:1.8">${dispTime}</span>
-        </td>`;
-      } else {
-        cells += `<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor}">${dispTime}</span>
-        </td>`;
-      }
+      // Всі клітинки клікабельні — кожен може редагувати будь-кого
+      cells += `<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
+        <span class="sh-tip-cell" onclick="openTlShiftPicker(event,'${person.id}',${d},'${key}')"
+          data-l="${sh?sh.label:''}" data-t="${sh?sh.time:''}" data-c="${sh?sh.color:''}" data-d=""
+          style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor};cursor:pointer;
+          display:inline-block;min-width:20px;line-height:1.8">${dispTime}</span>
+      </td>`;
     });
     const typeLabel = person.type==='chief'?'Chief':'TL';
     const typeColor = person.type==='chief'?'var(--accent)':'var(--blue)';
