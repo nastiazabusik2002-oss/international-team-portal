@@ -691,6 +691,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="nav-tab" id="perm-tab-perf" style="display:none" onclick="empPermTab('perf',this)">📊 Продуктивність</div>
       <div class="nav-tab" id="perm-tab-announce" style="display:none" onclick="empPermTab('announce',this)">📢 Оголошення</div>
       <div class="nav-tab" id="perm-tab-links" style="display:none" onclick="empPermTab('links',this)">🔗 Посилання</div>
+      <div class="nav-tab" onclick="empTab('guide',this)">📖 Інструкція</div>
     </div>
     <div class="content">
       <div id="etab-home" class="etab">
@@ -922,6 +923,13 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div id="company-sched-container"></div>
       </div>
 
+      <!-- GUIDE TAB (EMPLOYEE) -->
+      <div id="etab-guide" class="etab" style="display:none">
+        <div class="page-h">ІНСТРУКЦІЯ</div>
+        <div class="page-sub">Як користуватись платформою TTN Team</div>
+        <div id="emp-guide-content"></div>
+      </div>
+
       <!-- PERMISSION TABS -->
       <div id="etab-perm-schedule" class="etab" style="display:none">
         <div class="page-h">ГРАФІК КОМАНДИ</div>
@@ -987,6 +995,9 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <button class="adm-tab" onclick="admTab('links',this)">🔗 Посилання</button>
         <button class="adm-tab" onclick="admTab('remarks',this)" id="adm-remarks-tab" style="display:none">📋 Зауваження</button>
         <button class="adm-tab" onclick="admTab('company',this)">🏢 Компанія</button>
+        <button class="adm-tab" onclick="admTab('guide',this)">📖 Інструкція</button>
+        <button class="adm-tab" id="adm-my-kpi-tab" style="display:none" onclick="admTab('my-kpi',this)">🏆 Мій KPI</button>
+        <button class="adm-tab" id="adm-tl-exchange-tab" style="display:none" onclick="admTab('tl-exchange',this)">🔄 Зміни TL/Chief</button>
       </div>
       <div class="adm-section active" id="adm-staff">
         <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1269,6 +1280,27 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div id="adm-company-sched-container"></div>
       </div>
 
+      <!-- GUIDE (ADMIN) -->
+      <div class="adm-section" id="adm-guide">
+        <div class="page-h">ІНСТРУКЦІЯ</div>
+        <div class="page-sub">Керівництво тім ліда по роботі з платформою</div>
+        <div id="adm-guide-content"></div>
+      </div>
+
+      <!-- MY KPI (only for TL1,2,3) -->
+      <div class="adm-section" id="adm-my-kpi">
+        <div class="page-h">МІЙ KPI</div>
+        <div class="page-sub">Оцінки від керівництва по місяцях</div>
+        <div id="adm-my-kpi-content"></div>
+      </div>
+
+      <!-- TL/CHIEF EXCHANGE (only for TL1,2,3) -->
+      <div class="adm-section" id="adm-tl-exchange">
+        <div class="page-h">ЗМІНИ TL / CHIEF</div>
+        <div class="page-sub">Обмін змінами між тім лідами та керівництвом</div>
+        <div id="adm-tl-exchange-content"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1377,6 +1409,8 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
     <div class="nav-tab" onclick="chiefTab('salary',this)">💰 Зарплата</div>
     <div class="nav-tab" onclick="chiefTab('reviews',this)">⭐ Відгуки</div>
     <div class="nav-tab" onclick="chiefTab('mood',this)">😊 Настрій</div>
+    <div class="nav-tab" onclick="chiefTab('tl-kpi',this)">🏆 KPI тім лідів</div>
+    <div class="nav-tab" onclick="chiefTab('tl-exchange',this)">🔄 Зміни TL/Chief</div>
   </div>
   <div class="content">
 
@@ -1421,6 +1455,20 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="page-h">НАСТРІЙ КОМАНД</div>
       <div class="page-sub">Поточний тиждень</div>
       <div id="chief-mood-content"></div>
+    </div>
+
+    <!-- TL KPI TAB -->
+    <div id="ctab-tl-kpi" class="etab" style="display:none">
+      <div class="page-h">KPI ТІМ ЛІДІВ</div>
+      <div class="page-sub">Щомісячна оцінка керівників відділів</div>
+      <div id="chief-tl-kpi-content"></div>
+    </div>
+
+    <!-- TL EXCHANGE TAB -->
+    <div id="ctab-tl-exchange" class="etab" style="display:none">
+      <div class="page-h">ЗМІНИ TL / CHIEF</div>
+      <div class="page-sub">Обмін змінами між тім лідами та керівництвом</div>
+      <div id="chief-tl-exchange-content"></div>
     </div>
 
   </div>
@@ -1802,12 +1850,12 @@ const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
 const TL_PASS = '20rhenbqnsvksl26';
 const CHIEF_PASS = '20rhenbqnsvksl26';
 const CHIEFS = [
-  { id: 'chief_1', name: 'Марія Фартушок' },
-  { id: 'chief_2', name: 'Максим Горинь'  },
+  { id: 'chief_1', name: 'Fartushok Mariia' },
+  { id: 'chief_2', name: 'Horyn Maksym'     },
 ];
 const TEAMS = [
-  { id: 1, name: 'Chat',                        lead: 'Настя Забусик',       pass: TL_PASS },
-  { id: 2, name: 'Air Customer Care',           lead: 'Kobylianskyi Yurii',  pass: TL_PASS },
+  { id: 1, name: 'Chat',                        lead: 'Zabusyk Anastasiia',    pass: TL_PASS },
+  { id: 2, name: 'Air Customer Care',           lead: 'Kobylianskyi Yurii',    pass: TL_PASS },
   { id: 3, name: 'Customer Care UA/B2B',        lead: 'Maslii Oleksandra',   pass: TL_PASS },
   { id: 4, name: 'Post Sales Support',          lead: 'Luchko Yaroslav',     pass: TL_PASS },
   { id: 5, name: 'Ticketing Support',           lead: 'Sheliakova Anastasiia', pass: TL_PASS },
@@ -2114,6 +2162,12 @@ function showApp(){
     document.getElementById('emp-view').style.display='none';
     document.getElementById('auditor-view').style.display='none';
     document.getElementById('admin-view').style.display='block';
+    // Показуємо KPI і TL Exchange тільки для команд 1, 2, 3
+    const isTlKpi = [1,2,3].includes(me.teamId);
+    const kpiTab = document.getElementById('adm-my-kpi-tab');
+    const tlExTab = document.getElementById('adm-tl-exchange-tab');
+    if(kpiTab) kpiTab.style.display = isTlKpi ? '' : 'none';
+    if(tlExTab) tlExTab.style.display = isTlKpi ? '' : 'none';
     burgerInit('admin','staff');
     renderAdmin();
   } else if(me.type==='chief'){
@@ -2268,6 +2322,7 @@ function empTab(tab,el){
   if(tab==='kudos'){renderKudosList();}
   if(tab==='company'){renderCompanyTab();}
   if(tab==='remarks'){renderEmpRemarks();}
+  if(tab==='guide'){renderEmpGuide();}
 }
 
 // ══ NOTES ══
@@ -5039,10 +5094,12 @@ function chiefTab(tab, el){
   document.getElementById('ctab-'+tab).style.display='block';
   if(el) el.classList.add('active');
   _burgerActive = tab; renderBurgerList();
-  if(tab==='schedule') renderChiefSched();
-  if(tab==='salary')   renderChiefSalary();
-  if(tab==='reviews')  renderChiefReviews();
-  if(tab==='mood')     renderChiefMood();
+  if(tab==='schedule')    renderChiefSched();
+  if(tab==='salary')      renderChiefSalary();
+  if(tab==='reviews')     renderChiefReviews();
+  if(tab==='mood')        renderChiefMood();
+  if(tab==='tl-kpi')      renderChiefTlKpi();
+  if(tab==='tl-exchange') renderTlExchange('chief');
 }
 
 function renderChiefView(){
@@ -5747,6 +5804,9 @@ function admTab(tab,el){
   if(tab==='mood'){renderAdmMood();}
   if(tab==='remarks'){initAdmRemarksFilters(); renderAdmRemarks();}
   if(tab==='company'){renderAdmCompanyTab();}
+  if(tab==='guide'){renderAdmGuide();}
+  if(tab==='my-kpi'){renderAdmMyKpi();}
+  if(tab==='tl-exchange'){renderTlExchange('tl');}
 }
 
 function toggleSchedAccordion(id){
@@ -8104,7 +8164,696 @@ function closeSchedFullscreen(){
   }
 }
 
-// ══ BURGER MENU ══
+// ══ GUIDE ══
+const GUIDE_SECTIONS_EMP = [
+  {
+    icon:'🏠', title:'Головна сторінка',
+    text:`На головній ти бачиш свою поточну зміну, таймер до її початку або кінця, та короткий огляд продуктивності за останній тиждень. Також тут відображаються оголошення від керівника та дні народження колег.`
+  },
+  {
+    icon:'📅', title:'Мій графік',
+    text:`Тут відображається твій особистий розклад на місяць. Поточний місяць показує фактичний графік. Якщо перейти на наступний місяць — з'явиться можливість залишити побажання на кожен день (кнопка "💌 Побажання"). Побажання приймаються до певного числа місяця — дедлайн відображається у банері зверху. Можна вказати: Ранкова, Денна, Вечірня, Нічна або Вихідний.`
+  },
+  {
+    icon:'💰', title:'Зарплата',
+    text:`У цьому розділі ти можеш переглянути свої виплати за кожен місяць — кількість денних та нічних змін, бонус та підсумкову суму. Дані вносить тім лід після закриття місяця.`
+  },
+  {
+    icon:'👥', title:'Команда',
+    text:`Загальний графік твоєї команди на місяць. Можна перемикати місяці стрілками. Перемикач "Тільки дні що залишились" дозволяє бачити лише майбутні дні. На мобільному є кнопка "Розгорнути графік" для зручного перегляду в горизонтальному режимі.`
+  },
+  {
+    icon:'🔄', title:'Обмін змін',
+    text:`Якщо тобі потрібно передати свою зміну — натисни "Запропонувати свою зміну", обери день з графіка і додай коментар. Пропозиція буде видна колегам твоєї команди. Якщо хочеш взяти чиюсь зміну — знайди її в "Пропозиціях колег" та натисни "Обмінятись". Обмін відбувається тільки між людьми однієї команди.`
+  },
+  {
+    icon:'⭐', title:'Відгуки',
+    text:`Тут відображається кількість відгуків по сайтах за кожен місяць. Дані вносить тім лід.`
+  },
+  {
+    icon:'📊', title:'Продуктивність',
+    text:`Динаміка твоїх показників по тижнях: середня кількість чатів за зміну, загальний показник та total за тиждень. Дані вносить тім лід щотижня.`
+  },
+  {
+    icon:'📢', title:'Оголошення',
+    text:`Тут публікує важливу інформацію твій тім лід — зміни в роботі, нагадування, важливі новини. Також є посилання на Telegram-канал команди.`
+  },
+  {
+    icon:'📝', title:'Нотатки',
+    text:`Особистий нотатник — видно тільки тобі. Можна створювати нотатки, питання для 1:1, тікети або нагадування. Дані зберігаються в загальній базі під твоїм акаунтом.`
+  },
+  {
+    icon:'🙏', title:'Подяки',
+    text:`Можна відправити подяку колезі — обери людину, напиши текст і обери емодзі. Подяки видно всій команді. Це маленький але важливий спосіб підтримати атмосферу в команді 💛`
+  },
+  {
+    icon:'🔑', title:'Пароль від акаунту',
+    text:`Якщо забув пароль або хочеш його змінити — звернись до свого тім ліда. Тільки тім лід може встановити або змінити пароль агента через панель управління у вкладці "Агенти".`
+  },
+  {
+    icon:'🏢', title:'Компанія',
+    text:`Загальний вид графіків усіх команд компанії та настрій — середня оцінка настрою по кожній команді за сьогодні. Можна переглядати графіки різних місяців.`
+  },
+];
+
+const GUIDE_SECTIONS_ADM = [
+  {
+    icon:'👥', title:'Агенти',
+    text:`Список всіх агентів твоєї команди. Можна додати нового агента кнопкою "Додати агента" — вказати ім'я, роль, пароль, ставку та KPI. Редагування і видалення доступні через кнопки в таблиці.`
+  },
+  {
+    icon:'📅', title:'Графік',
+    text:`Основний інструмент тім ліда. Обери місяць стрілками. Клікни на клітинку агента щоб поставити або змінити зміну — відкриється picker зі списком типів змін. Нижче таблиці є акордеон "Побажання агентів" — там видно що кожен агент хоче на наступний місяць. Там само можна редагувати графік і зберегти побажання як основний графік кнопкою "Зберегти як графік". Типи змін для своєї команди налаштовуються в акордеоні "Типи змін".`
+  },
+  {
+    icon:'💰', title:'Закрити місяць',
+    text:`Після завершення місяця — тут вводяться дані для розрахунку зарплати кожного агента: кількість денних і нічних змін та бонус. Система автоматично підрахує суму на основі ставки та KPI агента. Після збереження дані стають доступні агентам у вкладці "Зарплата".`
+  },
+  {
+    icon:'📊', title:'Продуктивність',
+    text:`Щотижня вноси дані по кожному агенту: кількість листів, чатів, чатів за зміну та кількість змін. Система розраховує середні показники. Щоб додати новий тиждень — обери дати "від" і "до" та натисни "Додати тиждень". Після заповнення — "Зберегти".`
+  },
+  {
+    icon:'😊', title:'Команда (вайб)',
+    text:`Тут відображається настрій команди сьогодні та подяки між агентами. Можна бачити хто і кому відправив подяку, та публікувати оголошення безпосередньо у стрічку.`
+  },
+  {
+    icon:'📢', title:'Оголошення',
+    text:`Публікуй важливі повідомлення для команди. Можна закріпити важливі — вони відображатимуться зверху. Агенти бачать оголошення у своїй вкладці "Оголошення".`
+  },
+  {
+    icon:'🔗', title:'Посилання',
+    text:`Додавай корисні посилання для команди — внутрішні ресурси, документи, інструменти. Агенти бачать їх у своїй вкладці "Посилання".`
+  },
+  {
+    icon:'🔑', title:'Паролі агентів та тім лідів',
+    text:`Пароль агента може змінити тільки тім лід — через вкладку "Агенти" → кнопка "Редагувати" → поле "Пароль". Якщо тобі потрібно змінити власний пароль тім ліда — звертайся до <b style='color:var(--accent2)'>Zabusyk Anastasiia</b>. Тільки вона має доступ до паролів тім лідів.`
+  },
+  {
+    icon:'🏢', title:'Компанія',
+    text:`Загальний огляд графіків всіх команд компанії та настрій. Твоя команда підсвічена золотим.`
+  },
+];
+
+function buildGuideHTML(sections){
+  return sections.map((s,i)=>`
+    <div style="margin-bottom:10px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface)">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.g-arrow').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(90deg)'"
+        style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:.15s"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <span style="font-size:20px;width:28px;text-align:center;flex-shrink:0">${s.icon}</span>
+        <span style="font-weight:600;font-size:14px;flex:1">${s.title}</span>
+        <span class="g-arrow" style="color:var(--muted);font-size:18px;transition:.2s;flex-shrink:0">›</span>
+      </div>
+      <div style="display:none;padding:0 18px 16px 60px;font-size:13px;color:var(--muted2);line-height:1.7;border-top:1px solid var(--border)">
+        <div style="padding-top:14px">${s.text}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderEmpGuide(){
+  const el = document.getElementById('emp-guide-content');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:14px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px">
+      <span style="font-size:32px">👋</span>
+      <div>
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px">Привіт! Тут зібрана вся інформація по роботі з платформою</div>
+        <div style="font-size:13px;color:var(--muted2)">Натискай на розділ щоб розгорнути опис</div>
+      </div>
+    </div>
+    ${buildGuideHTML(GUIDE_SECTIONS_EMP)}`;
+}
+
+function renderAdmGuide(){
+  const el = document.getElementById('adm-guide-content');
+  if(!el) return;
+
+  const topbarDiagram = `
+<div style="margin-bottom:28px">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">ТОПБАР — ВЕРХНЯ ПАНЕЛЬ</div>
+  <div style="background:rgba(14,11,26,.8);border:1px solid var(--border2);border-radius:14px;padding:16px;position:relative;overflow:visible">
+    <!-- Mock topbar -->
+    <div style="background:rgba(255,255,255,.055);border-radius:10px;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;background:linear-gradient(135deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">TTN TEAM</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted)">Привіт, <b style="color:var(--text)">Настя · Chat</b></span>
+        <span id="g-sync" style="font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2)">⬤ sync</span>
+        <span style="background:rgba(181,123,238,.1);border:1px solid rgba(181,123,238,.3);border-radius:8px;color:var(--accent2);padding:4px 10px;font-size:12px">👥 10 на зміні</span>
+        <span style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:14px">🌸</span>
+        <span style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:14px">🌙</span>
+        <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(220,210,255,.4);padding:5px 12px;font-size:12px">Вийти</span>
+      </div>
+    </div>
+    <!-- Annotations -->
+    <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--green)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">⬤ sync / offline</div>
+        <div style="font-size:12px;color:var(--muted2)">Статус з'єднання з базою. Зелений — все ок, червоний — проблема з інтернетом або збереженням</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">👥 N на зміні</div>
+        <div style="font-size:12px;color:var(--muted2)">Показує хто сьогодні працює — без переходу у графік. Натисни щоб побачити список по змінах</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--pink)">
+        <div style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px">🌸 Анімація</div>
+        <div style="font-size:12px;color:var(--muted2)">Увімк/вимк сезонну анімацію (сніг, пелюстки тощо). Налаштування зберігається</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--blue)">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">🌙 Тема</div>
+        <div style="font-size:12px;color:var(--muted2)">Перемикач темної / світлої теми</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+  const schedDiagram = `
+<div style="margin-bottom:28px">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">ВКЛАДКА ГРАФІК</div>
+  <div style="background:rgba(14,11,26,.8);border:1px solid var(--border2);border-radius:14px;padding:16px">
+    <!-- Mock schedule toolbar -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <button style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);width:30px;height:30px;cursor:default">‹</button>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px">Квітень 2026</span>
+      <button style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);width:30px;height:30px;cursor:default">›</button>
+      <button style="background:linear-gradient(135deg,#9333ea,#b57bee);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-weight:700;font-size:13px;cursor:default">Зберегти графік</button>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--muted2);padding:6px 12px;font-size:12px;cursor:default">✏️ Повний</button>
+        <button style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:8px;color:var(--accent);padding:6px 12px;font-size:12px;cursor:default">👁 Компакт</button>
+        <button style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--muted2);padding:6px 12px;font-size:12px;cursor:default">👤 Агент</button>
+        <button style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--muted2);padding:6px 12px;font-size:12px;cursor:default">📅 Весь місяць</button>
+      </span>
+    </div>
+    <!-- Annotations grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">‹ Місяць ›</div>
+        <div style="font-size:12px;color:var(--muted2)">Перемикай місяці. Поточний день підсвічений фіолетовим</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--green)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">Зберегти графік</div>
+        <div style="font-size:12px;color:var(--muted2)">Зберігає всі зміни в базу. Натискай після редагування — зміни видні агентам одразу</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--blue)">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">✏️ Повний / 👁 Компакт</div>
+        <div style="font-size:12px;color:var(--muted2)">Повний — великі клітинки з назвою зміни. Компакт — лише цифра години, більше днів на екрані</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--purple)">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:4px">👤 Агент / 📅 Весь місяць</div>
+        <div style="font-size:12px;color:var(--muted2)">Агент — показує тільки поточного тижня. Весь місяць — повний місяць одразу</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--orange)">
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:4px">Клік на клітинку</div>
+        <div style="font-size:12px;color:var(--muted2)">Відкриває picker зі списком змін команди. Обери зміну або "Вихідний / очистити"</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--teal)">
+        <div style="font-size:11px;font-weight:700;color:var(--teal);margin-bottom:4px">Фільтри + ∑</div>
+        <div style="font-size:12px;color:var(--muted2)">Фільтруй по типу зміни або агенту. Стовпець ∑ — кількість робочих змін за місяць (відпустки не рахуються)</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--pink)">
+        <div style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px">⠿ Перетягнути рядок</div>
+        <div style="font-size:12px;color:var(--muted2)">Захопи рядок агента за ручку зліва і перетягни щоб змінити порядок в таблиці</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">💌 Побажання (акордеон)</div>
+        <div style="font-size:12px;color:var(--muted2)">Розгорни акордеон "Побажання" під таблицею — видно що кожен агент хоче на наступний місяць. Можна відразу редагувати і зберегти як графік</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+  const agentsDiagram = `
+<div style="margin-bottom:28px">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">ВКЛАДКА АГЕНТИ — ПРАВА ДОСТУПУ</div>
+  <div style="background:rgba(14,11,26,.8);border:1px solid var(--border2);border-radius:14px;padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--blue)">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Редагувати агента</div>
+        <div style="font-size:12px;color:var(--muted2)">Натисни "Редагувати" — можна змінити ім'я, пароль, ставку, KPI, роль і дату народження</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">📋 Редагувати графік</div>
+        <div style="font-size:12px;color:var(--muted2)">Дає агенту доступ до редагування графіку команди — він бачить додаткову вкладку "Графік команди"</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--green)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">📊 Вносити продуктивність</div>
+        <div style="font-size:12px;color:var(--muted2)">Агент може вносити дані продуктивності за тиждень</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--orange)">
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:4px">📢 Писати оголошення</div>
+        <div style="font-size:12px;color:var(--muted2)">Агент може публікувати оголошення для команди</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--teal)">
+        <div style="font-size:11px;font-weight:700;color:var(--teal);margin-bottom:4px">🔗 Редагувати посилання</div>
+        <div style="font-size:12px;color:var(--muted2)">Агент може додавати та видаляти посилання для команди</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--muted2)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:4px">⚠️ Права набирають силу</div>
+        <div style="font-size:12px;color:var(--muted2)">Після збереження прав агент побачить нові вкладки при наступному вході в систему</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+  const shiftTypesDiagram = `
+<div style="margin-bottom:28px">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">ТИПИ ЗМІН (акордеон у вкладці Графік)</div>
+  <div style="background:rgba(14,11,26,.8);border:1px solid var(--border2);border-radius:14px;padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">Назва + час</div>
+        <div style="font-size:12px;color:var(--muted2)">Наприклад "Чати" + "08:00". Час відображається в клітинці графіку</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--pink)">
+        <div style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px">Колір — будь-який</div>
+        <div style="font-size:12px;color:var(--muted2)">Відкриється color picker — можна обрати будь-який колір для зміни. Колір відображається в таблиці та легенді</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--green)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">Опис зміни</div>
+        <div style="font-size:12px;color:var(--muted2)">Необов'язково. Показується в тултипі при кліку на зміну в таблиці — корисно для нових агентів</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;border-left:3px solid var(--blue)">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Зміни тільки твоєї команди</div>
+        <div style="font-size:12px;color:var(--muted2)">Кожна команда налаштовує свої типи змін окремо — вони не перетинаються з іншими командами</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+  el.innerHTML = `
+    <div style="background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.25);border-radius:14px;padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:14px">
+      <span style="font-size:32px">👑</span>
+      <div>
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px">Інструкція тім ліда — візуальний гайд</div>
+        <div style="font-size:13px;color:var(--muted2)">Пояснення всіх елементів інтерфейсу платформи TTN Team</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.3);border-radius:14px;padding:14px 20px;margin-bottom:28px;display:flex;align-items:center;gap:14px">
+      <span style="font-size:28px">🔑</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--red);margin-bottom:4px">Паролі тім лідів</div>
+        <div style="font-size:13px;color:var(--muted2)">Змінити пароль тім ліда може тільки <b style="color:var(--accent2)">Zabusyk Anastasiia</b>. Якщо забули пароль або треба змінити — звертайтесь до неї особисто або в Telegram.</div>
+      </div>
+    </div>
+
+    ${topbarDiagram}
+    ${schedDiagram}
+    ${agentsDiagram}
+    ${shiftTypesDiagram}
+
+    <div style="margin-bottom:10px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">РЕШТА ВКЛАДОК</div>
+      ${buildGuideHTML(GUIDE_SECTIONS_ADM)}
+    </div>`;
+}
+
+// ══ TL KPI ══
+const TL_KPI_CRITERIA = [
+  { id:'one_on_one',  label:'Проведення 1:1 з агентами',       icon:'💬' },
+  { id:'development', label:'Розвиток і ініціатива',            icon:'🚀' },
+  { id:'quality',     label:'Якість роботи агентів',            icon:'⭐' },
+  { id:'discipline',  label:'Дисциплінарні показники агентів',  icon:'📋' },
+];
+const TL_KPI_LEADS = [
+  { teamId:1, name:'Zabusyk Anastasiia' },
+  { teamId:2, name:'Kobylianskyi Yurii' },
+  { teamId:3, name:'Maslii Oleksandra' },
+];
+
+function tlKpiKey(year,month){ return year+'-'+(String(month+1).padStart(2,'0')); }
+
+function renderChiefTlKpi(){
+  const el=document.getElementById('chief-tl-kpi-content');
+  if(!el) return;
+  if(!db.tlKpi) db.tlKpi={};
+  const now=new Date();
+  let monthOpts='';
+  const nextD=new Date(now.getFullYear(),now.getMonth()+1,1);
+  monthOpts+=`<option value="${tlKpiKey(nextD.getFullYear(),nextD.getMonth())}">${MONTHS_UK[nextD.getMonth()]} ${nextD.getFullYear()}</option>`;
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const k=tlKpiKey(d.getFullYear(),d.getMonth());
+    monthOpts+=`<option value="${k}">${MONTHS_UK[d.getMonth()]} ${d.getFullYear()}</option>`;
+  }
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+      <label style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Місяць:</label>
+      <select id="tl-kpi-month-sel" onchange="renderChiefTlKpiTable()" style="background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">${monthOpts}</select>
+      <button onclick="saveTlKpi()" style="background:linear-gradient(135deg,#9333ea,#b57bee);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:13px;cursor:pointer">💾 Зберегти</button>
+      <span id="tl-kpi-saved" style="font-size:12px;color:var(--green);opacity:0;transition:.3s"></span>
+    </div>
+    <div id="tl-kpi-table-wrap"></div>`;
+  renderChiefTlKpiTable();
+}
+
+function renderChiefTlKpiTable(){
+  const wrap=document.getElementById('tl-kpi-table-wrap');
+  if(!wrap) return;
+  const sel=document.getElementById('tl-kpi-month-sel');
+  const monthKey=sel?sel.value:tlKpiKey(new Date().getFullYear(),new Date().getMonth());
+  const saved=(db.tlKpi&&db.tlKpi[monthKey])||{};
+  const starBtn=(tlId,critId,val,cur)=>
+    `<button onclick="setTlKpiStar(${tlId},'${critId}',${val},'${monthKey}')"
+      style="background:${cur>=val?'rgba(245,200,66,.2)':'var(--surface2)'};border:1px solid ${cur>=val?'rgba(245,200,66,.5)':'var(--border)'};
+      border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;transition:.15s" title="${val}">${cur>=val?'⭐':'☆'}</button>`;
+  let html='';
+  TL_KPI_LEADS.forEach(tl=>{
+    const tlData=saved[tl.teamId]||{};
+    const scores=TL_KPI_CRITERIA.map(c=>tlData[c.id]||0);
+    const filled=scores.filter(v=>v>0);
+    const avg=filled.length?( filled.reduce((a,b)=>a+b,0)/filled.length ):0;
+    const avgStr=avg>0?avg.toFixed(1):'—';
+    const avgColor=avg>=4.5?'var(--green)':avg>=3?'var(--accent)':avg>0?'var(--orange)':'var(--muted)';
+    html+=`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-weight:700;font-size:16px">${tl.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${TEAMS.find(t=>t.id===tl.teamId)?.name||''}</div>
+          </div>
+          <div style="text-align:center;background:var(--surface2);border-radius:12px;padding:10px 20px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:${avgColor};line-height:1">${avgStr}</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:1px">СЕРЕДНЄ</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">
+          ${TL_KPI_CRITERIA.map(c=>{
+            const cur=tlData[c.id]||0;
+            return `<div style="background:var(--surface2);border-radius:10px;padding:12px 14px">
+              <div style="font-size:12px;color:var(--muted2);margin-bottom:8px">${c.icon} ${c.label}</div>
+              <div style="display:flex;gap:4px;align-items:center">
+                ${[1,2,3,4,5].map(v=>starBtn(tl.teamId,c.id,v,cur)).join('')}
+                ${cur?`<span style="font-size:13px;color:var(--accent);margin-left:6px;font-weight:600">${cur}/5</span>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  });
+  wrap.innerHTML=html;
+}
+
+function setTlKpiStar(tlId,critId,val,monthKey){
+  if(!db.tlKpi) db.tlKpi={};
+  if(!db.tlKpi[monthKey]) db.tlKpi[monthKey]={};
+  if(!db.tlKpi[monthKey][tlId]) db.tlKpi[monthKey][tlId]={};
+  const cur=db.tlKpi[monthKey][tlId][critId]||0;
+  db.tlKpi[monthKey][tlId][critId]=cur===val?0:val;
+  renderChiefTlKpiTable();
+}
+
+async function saveTlKpi(){
+  await saveDB();
+  const sp=document.getElementById('tl-kpi-saved');
+  if(sp){sp.textContent='✅ Збережено';sp.style.opacity='1';setTimeout(()=>sp.style.opacity='0',2000);}
+}
+
+function renderAdmMyKpi(){
+  const el=document.getElementById('adm-my-kpi-content');
+  if(!el) return;
+  if(!db.tlKpi) db.tlKpi={};
+  const teamId=me&&me.teamId;
+  const tlInfo=TL_KPI_LEADS.find(t=>t.teamId===teamId);
+  if(!tlInfo){el.innerHTML='<div class="empty-state">KPI не призначено для вашої команди</div>';return;}
+  const months=Object.keys(db.tlKpi).filter(k=>db.tlKpi[k][teamId]).sort().reverse();
+  if(!months.length){
+    el.innerHTML=`<div class="empty-state" style="padding:60px">
+      <div style="font-size:48px;margin-bottom:16px">🏆</div>
+      <div style="font-size:15px;margin-bottom:8px">Оцінок ще немає</div>
+      <div style="font-size:12px;color:var(--muted)">Chief ще не виставив оцінки</div>
+    </div>`;
+    return;
+  }
+  // Latest month summary cards
+  const latestKey=months[0];
+  const latestData=(db.tlKpi[latestKey][teamId])||{};
+  const [ly,lm]=latestKey.split('-');
+  const latestLabel=MONTHS_UK[parseInt(lm)-1]+' '+ly;
+  let html=`<div style="font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Останній місяць: ${latestLabel}</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px">`;
+  TL_KPI_CRITERIA.forEach(c=>{
+    const val=latestData[c.id]||0;
+    const color=val>=4?'var(--green)':val>=3?'var(--accent)':val>0?'var(--orange)':'var(--muted)';
+    const stars='⭐'.repeat(val)+'☆'.repeat(5-val);
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center">
+      <div style="font-size:24px;margin-bottom:6px">${c.icon}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.3">${c.label}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:${color};line-height:1">${val||'—'}</div>
+      <div style="font-size:12px;letter-spacing:1px;margin-top:4px">${val?stars:''}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  // History
+  if(months.length>1){
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">ДИНАМІКА</div>`;
+    html+=`<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)"><table style="border-collapse:collapse;width:100%;min-width:400px">
+      <thead><tr style="background:rgba(255,255,255,.04)">
+        <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border)">Місяць</th>
+        ${TL_KPI_CRITERIA.map(c=>`<th style="padding:10px;text-align:center;font-size:18px;border-bottom:1px solid var(--border)">${c.icon}</th>`).join('')}
+        <th style="padding:10px;text-align:center;font-size:10px;color:var(--accent2);border-bottom:1px solid var(--border)">Ср.</th>
+      </tr></thead><tbody>`;
+    months.forEach(k=>{
+      const d=(db.tlKpi[k][teamId])||{};
+      const [y,m]=k.split('-');
+      const scores=TL_KPI_CRITERIA.map(c=>d[c.id]||0);
+      const filled=scores.filter(v=>v>0);
+      const avg=filled.length?(filled.reduce((a,b)=>a+b,0)/filled.length):0;
+      const avgColor=avg>=4?'var(--green)':avg>=3?'var(--accent)':avg>0?'var(--orange)':'var(--muted)';
+      html+=`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 14px;font-size:13px;color:var(--muted2)">${MONTHS_UK[parseInt(m)-1]} ${y}</td>
+        ${TL_KPI_CRITERIA.map(c=>{
+          const v=d[c.id]||0;
+          const col=v>=4?'var(--green)':v>=3?'var(--accent)':v>0?'var(--orange)':'var(--muted)';
+          return `<td style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:${col};padding:8px">${v||'—'}</td>`;
+        }).join('')}
+        <td style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:${avgColor};padding:8px">${avg>0?avg.toFixed(1):'—'}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+  el.innerHTML=html;
+}
+
+// ══ TL/CHIEF EXCHANGE ══
+const TL_EXCHANGE_PEOPLE=[
+  {id:'tl_1',   name:'Zabusyk Anastasiia',  type:'tl',    teamId:1},
+  {id:'tl_2',   name:'Kobylianskyi Yurii',  type:'tl',    teamId:2},
+  {id:'tl_3',   name:'Maslii Oleksandra',   type:'tl',    teamId:3},
+  {id:'chief_1',name:'Fartushok Mariia',    type:'chief'},
+  {id:'chief_2',name:'Horyn Maksym',        type:'chief'},
+];
+
+function getTlExchangeMe(){
+  if(me.type==='chief') return TL_EXCHANGE_PEOPLE.find(p=>p.id===me.data.id);
+  if(me.type==='admin'&&[1,2,3].includes(me.teamId)) return TL_EXCHANGE_PEOPLE.find(p=>p.teamId===me.teamId);
+  return null;
+}
+
+// Повертає об'єкт зміни з правильної команди
+function getTlExShift(ex){
+  const teamId = ex.shiftTeamId || 1;
+  const shifts = getTeamShifts(teamId);
+  return shifts.find(s=>s.id===ex.shiftId) || getShift(ex.shiftId);
+}
+
+function renderTlExchange(role){
+  const cid = role==='chief' ? 'chief-tl-exchange-content' : 'adm-tl-exchange-content';
+  const el = document.getElementById(cid);
+  if(!el) return;
+  if(!db.tlSchedule) db.tlSchedule = {};
+  const now = new Date();
+  // Month nav state
+  if(!window._tlSchedY) window._tlSchedY = now.getFullYear();
+  if(!window._tlSchedM) window._tlSchedM = now.getMonth();
+  renderTlScheduleTable(el);
+}
+
+function tlSchedNav(d){
+  window._tlSchedM += d;
+  if(window._tlSchedM < 0){ window._tlSchedM = 11; window._tlSchedY--; }
+  if(window._tlSchedM > 11){ window._tlSchedM = 0; window._tlSchedY++; }
+  const role = me.type==='chief' ? 'chief' : 'tl';
+  const cid = role==='chief' ? 'chief-tl-exchange-content' : 'adm-tl-exchange-content';
+  const el = document.getElementById(cid);
+  if(el) renderTlScheduleTable(el);
+}
+
+function renderTlScheduleTable(el){
+  const year = window._tlSchedY;
+  const month = window._tlSchedM;
+  const key = year + '-' + String(month+1).padStart(2,'0');
+  if(!db.tlSchedule) db.tlSchedule = {};
+  const sched = db.tlSchedule[key] || {};
+  const now = new Date();
+  const isNow = now.getFullYear()===year && now.getMonth()===month;
+  const last = new Date(year, month+1, 0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  function isWeekend(d){ const dow=new Date(year,month,d).getDay(); return dow===0||dow===6; }
+
+  // Визначаємо поточного юзера
+  const myP = getTlExchangeMe();
+  const myId = myP ? myP.id : null;
+
+  // Заголовок таблиці
+  let thead = `<thead><tr>`;
+  thead += `<th class="name-col" style="min-width:130px">УЧАСНИК</th>`;
+  days.forEach(d=>{
+    const dt = new Date(year,month,d);
+    const dow = DAYS_UK[(dt.getDay()+6)%7];
+    const isToday = isNow && now.getDate()===d;
+    const wknd = isWeekend(d);
+    let bg = isToday?'rgba(181,123,238,.3)':wknd?'rgba(167,139,250,.07)':'';
+    const todayStyle = isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
+    thead += `<th style="width:32px;min-width:32px;padding:4px 2px;text-align:center;background:${bg};font-size:9px;${todayStyle}">
+      <div style="opacity:${isToday?1:.6};color:${isToday?'var(--accent2)':'inherit'}">${dow}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
+    </th>`;
+  });
+  thead += `</tr></thead>`;
+
+  // Рядки по кожному з 5 учасників
+  let tbody = '<tbody>';
+  TL_EXCHANGE_PEOPLE.forEach(person=>{
+    const personSched = sched[person.id] || {};
+    const isMe = person.id === myId;
+    let cells = '';
+    days.forEach(d=>{
+      const isToday = isNow && now.getDate()===d;
+      const wknd = isWeekend(d);
+      const bg = isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.04)':'';
+      const todayBorder = isToday?'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);':'';
+      const shiftRaw = personSched[d];
+      // shiftRaw може бути "teamId__shiftId" або просто shiftId
+      let sh = null, dispTime = '·', dispColor = 'var(--muted)';
+      if(shiftRaw && shiftRaw !== 'off'){
+        if(shiftRaw.includes('__')){
+          const [tid, sid] = shiftRaw.split('__');
+          sh = getTeamShifts(parseInt(tid)).find(s=>s.id===sid);
+        } else {
+          sh = getShift(shiftRaw);
+        }
+        if(sh){ dispTime = sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?'); dispColor = sh.color; }
+      }
+      if(isMe){
+        // Клікабельна клітинка — тільки для себе
+        cells += `<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
+          <span class="sh-tip-cell" onclick="openTlShiftPicker(event,'${person.id}',${d},'${key}')"
+            data-l="${sh?sh.label:''}" data-t="${sh?sh.time:''}" data-c="${sh?sh.color:''}" data-d=""
+            style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor};cursor:pointer;
+            display:inline-block;min-width:20px;line-height:1.8">${dispTime}</span>
+        </td>`;
+      } else {
+        cells += `<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor}">${dispTime}</span>
+        </td>`;
+      }
+    });
+    const typeLabel = person.type==='chief'?'Chief':'TL';
+    const typeColor = person.type==='chief'?'var(--accent)':'var(--blue)';
+    tbody += `<tr ${isMe?'style="background:rgba(181,123,238,.04)"':''}>
+      <td class="name-col" style="font-size:12px;padding:5px 10px;font-weight:${isMe?700:500}">
+        ${person.name.split(' ')[0]}
+        <span style="font-size:9px;color:${typeColor};background:${typeColor}18;border-radius:4px;padding:1px 5px;margin-left:4px">${typeLabel}</span>
+        ${isMe?'<span style="font-size:9px;color:var(--accent2);margin-left:4px">← ти</span>':''}
+      </td>
+      ${cells}
+    </tr>`;
+  });
+  tbody += '</tbody>';
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="cal-nav" onclick="tlSchedNav(-1)">‹</button>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px">${MONTHS_UK[month]} ${year}</span>
+      <button class="cal-nav" onclick="tlSchedNav(1)">›</button>
+      <button onclick="saveTlSchedule()" style="background:linear-gradient(135deg,#9333ea,#b57bee);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-weight:700;font-size:13px;cursor:pointer;margin-left:8px">💾 Зберегти</button>
+      <span id="tl-sched-saved" style="font-size:12px;color:var(--green);opacity:0;transition:.3s"></span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Клікай на свої клітинки щоб поставити зміну</div>
+    <div class="sched-wrap" style="border-radius:12px;overflow-x:auto;border:1px solid var(--border)">
+      <table class="sched-table">${thead}${tbody}</table>
+    </div>`;
+}
+
+function openTlShiftPicker(e, personId, day, key){
+  e.stopPropagation();
+  // Close existing
+  const old = document.getElementById('tl-shift-picker-popup');
+  if(old) old.remove();
+
+  // Capture rect BEFORE any DOM changes
+  const rect = e.currentTarget.getBoundingClientRect();
+
+  let html = `<div class="shift-picker-title">ЗМІНА — День ${day}</div>`;
+  TEAMS.forEach(team=>{
+    const shifts = getTeamShifts(team.id);
+    if(!shifts.length) return;
+    html += `<div style="font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:4px 4px 2px;margin-top:4px">${team.name}</div>`;
+    shifts.forEach(s=>{
+      const val = `${team.id}__${s.id}`;
+      html += `<button class="shift-picker-btn" onclick="applyTlShift('${personId}',${day},'${key}','${val}')">
+        <div class="shift-picker-dot" style="background:${s.color}"></div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:${s.color}">${s.time||'—'}</div>
+          <div style="font-size:11px;color:var(--muted2)">${s.label}</div>
+        </div>
+      </button>`;
+    });
+  });
+  html += `<button class="shift-picker-clear" onclick="applyTlShift('${personId}',${day},'${key}','off')">✕ Вихідний / очистити</button>`;
+
+  const picker = document.createElement('div');
+  picker.className = 'shift-picker'; picker.id = 'tl-shift-picker-popup';
+  picker.style.maxHeight = '70vh'; picker.style.overflowY = 'auto';
+  picker.style.visibility = 'hidden';
+  picker.innerHTML = html;
+  document.body.appendChild(picker);
+
+  // Position using pre-captured rect
+  const ph = picker.offsetHeight, pw = picker.offsetWidth||280;
+  let top = (rect.bottom + ph + 8 <= window.innerHeight) ? rect.bottom+6 : rect.top-ph-6;
+  if(top < 8) top = Math.max(8,(window.innerHeight-ph)/2);
+  let left = rect.left;
+  if(left+pw+8 > window.innerWidth) left = window.innerWidth-pw-8;
+  if(left < 8) left = 8;
+  picker.style.top = top+'px'; picker.style.left = left+'px';
+  picker.style.visibility = '';
+
+  // Close on outside click — use capture phase with delay to skip current event
+  const closeHandler = (ev)=>{
+    if(!picker.contains(ev.target)){
+      picker.remove();
+      document.removeEventListener('click', closeHandler, true);
+    }
+  };
+  setTimeout(()=>document.addEventListener('click', closeHandler, true), 150);
+}
+
+async function applyTlShift(personId, day, key, val){
+  if(!db.tlSchedule) db.tlSchedule = {};
+  if(!db.tlSchedule[key]) db.tlSchedule[key] = {};
+  if(!db.tlSchedule[key][personId]) db.tlSchedule[key][personId] = {};
+  if(val==='off'){
+    delete db.tlSchedule[key][personId][day];
+  } else {
+    db.tlSchedule[key][personId][day] = val;
+  }
+  const old = document.getElementById('tl-shift-picker-popup');
+  if(old) old.remove();
+  await saveDB();
+  const role = me.type==='chief'?'chief':'tl';
+  const cid = role==='chief'?'chief-tl-exchange-content':'adm-tl-exchange-content';
+  const el = document.getElementById(cid);
+  if(el) renderTlScheduleTable(el);
+}
+
+async function saveTlSchedule(){
+  await saveDB();
+  const sp = document.getElementById('tl-sched-saved');
+  if(sp){ sp.textContent='✅ Збережено'; sp.style.opacity='1'; setTimeout(()=>sp.style.opacity='0',2000); }
+}
+
 const BURGER_TABS = {
   emp: [
     {key:'home',     icon:'🏠', label:'Головна'},
@@ -8119,6 +8868,7 @@ const BURGER_TABS = {
     {key:'notes',    icon:'📝', label:'Нотатки'},
     {key:'kudos',    icon:'🙏', label:'Подяки'},
     {key:'company',  icon:'🏢', label:'Компанія'},
+    {key:'guide',    icon:'📖', label:'Інструкція'},
   ],
   admin: [
     {key:'staff',      icon:'👥', label:'Агенти'},
@@ -8129,6 +8879,7 @@ const BURGER_TABS = {
     {key:'announce',   icon:'📢', label:'Оголошення'},
     {key:'links',      icon:'🔗', label:'Посилання'},
     {key:'company',    icon:'🏢', label:'Компанія'},
+    {key:'guide',      icon:'📖', label:'Інструкція'},
   ],
   auditor: [
     {key:'remarks',  icon:'📋', label:'Зауваження'},
