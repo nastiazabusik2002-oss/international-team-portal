@@ -828,14 +828,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div id="etab-announce" class="etab" style="display:none">
         <div class="page-h">ОГОЛОШЕННЯ</div>
         <div class="page-sub">Від керівника команди</div>
-        <a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(0,136,204,.15),rgba(0,136,204,.05));border:1px solid rgba(0,136,204,.35);border-radius:14px;padding:16px 20px;margin-bottom:18px;text-decoration:none;transition:.2s" onmouseover="this.style.borderColor='rgba(0,136,204,.6)'" onmouseout="this.style.borderColor='rgba(0,136,204,.35)'">
-          <div style="width:44px;height:44px;background:#29b6f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✈️</div>
-          <div>
-            <div style="font-weight:600;font-size:14px;color:#29b6f6;letter-spacing:.5px">Telegram канал</div>
-            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Головні новини та оновлення від керівника</div>
-          </div>
-          <div style="margin-left:auto;color:#29b6f6;font-size:18px;opacity:.7">→</div>
-        </a>
+        <div id="emp-tg-banner-wrap"></div>
         <div id="emp-announce-list"></div>
       </div>
       <div id="etab-links" class="etab" style="display:none">
@@ -1953,7 +1946,7 @@ async function runMigrations(){
 async function saveDB(){
   sbSaving();
   _isSaving=true;
-  _lastSaveTime=Date.now(); // блокуємо autoRefresh на 10 секунд після збереження
+  _lastSaveTime=Date.now(); // блокуємо autoRefresh на 30 секунд після збереження
   try{
     const val=JSON.stringify(db);
     console.log('[saveDB] saving, size:', val.length);
@@ -2145,9 +2138,26 @@ function doLogin(){
 
 function logout(){
   me=null;
+  // Ховаємо всі view — незалежно від того хто був залогінений
   document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('emp-view').style.display='none';
+  document.getElementById('admin-view').style.display='none';
+  document.getElementById('auditor-view').style.display='none';
   document.getElementById('chief-view').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  // Скидаємо всі глобальні стани
+  _burgerRole=null; _burgerActive=null;
+  _schedFilter=null; _agentFilter=null;
+  window._tlSchedY=undefined; window._tlSchedM=undefined;
+  wishesAdmY=undefined; analyticsY=undefined;
+  // Закриваємо будь-які відкриті picker/overlay
+  const picker=document.getElementById('shift-picker-popup');
+  if(picker) picker.remove();
+  const tlPicker=document.getElementById('tl-shift-picker-popup');
+  if(tlPicker) tlPicker.remove();
+  burgerClose();
+  closeSchedFullscreen();
+  // Скидаємо форму логіну
   document.getElementById('login-team').value='';
   buildLoginSel();
 }
@@ -2155,14 +2165,16 @@ function logout(){
 function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  // Завжди ховаємо всі view перед тим як показати потрібний
+  document.getElementById('emp-view').style.display='none';
+  document.getElementById('admin-view').style.display='none';
+  document.getElementById('auditor-view').style.display='none';
+  document.getElementById('chief-view').style.display='none';
   initAnimBtn();
   initOnShiftBtn();
   if(me.type==='admin'){
     document.getElementById('topbar-name').textContent= me.leadName ? me.leadName.split(' ')[0]+' · '+me.teamName : 'Адміністратор';
-    document.getElementById('emp-view').style.display='none';
-    document.getElementById('auditor-view').style.display='none';
     document.getElementById('admin-view').style.display='block';
-    // Показуємо KPI і TL Exchange тільки для команд 1, 2, 3
     const isTlKpi = [1,2,3].includes(me.teamId);
     const kpiTab = document.getElementById('adm-my-kpi-tab');
     const tlExTab = document.getElementById('adm-tl-exchange-tab');
@@ -2172,36 +2184,21 @@ function showApp(){
     renderAdmin();
   } else if(me.type==='chief'){
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0]+' · Chief';
-    document.getElementById('emp-view').style.display='none';
-    document.getElementById('admin-view').style.display='none';
-    document.getElementById('auditor-view').style.display='none';
     document.getElementById('chief-view').style.display='block';
     burgerInit('chief','schedule');
     renderChiefView();
   } else if(me.type==='auditor'){
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0]+' · Аудитор';
-    document.getElementById('emp-view').style.display='none';
-    document.getElementById('admin-view').style.display='none';
     document.getElementById('auditor-view').style.display='block';
     burgerInit('auditor','remarks');
     renderAuditorView();
   } else {
     document.getElementById('topbar-name').textContent=me.data.name.split(' ')[0];
     const perms = me.data.permissions || [];
-    if(perms.length > 0){
-      document.getElementById('emp-view').style.display='block';
-      document.getElementById('auditor-view').style.display='none';
-      document.getElementById('admin-view').style.display='none';
-      burgerInit('emp','home');
-      renderEmployee();
-      renderEmpPermTabs();
-    } else {
-      document.getElementById('emp-view').style.display='block';
-      document.getElementById('auditor-view').style.display='none';
-      document.getElementById('admin-view').style.display='none';
-      burgerInit('emp','home');
-      renderEmployee();
-    }
+    document.getElementById('emp-view').style.display='block';
+    burgerInit('emp','home');
+    renderEmployee();
+    if(perms.length > 0) renderEmpPermTabs();
   }
 }
 
@@ -2745,10 +2742,10 @@ function renderEmployee(){
   const reviewsTab = document.querySelector('.nav-tab[onclick*="\'reviews\'"]');
   if(reviewsTab) reviewsTab.style.display = [4,5,6,7].includes(teamId) ? 'none' : '';
 
-  // Ticketing Support (5): hide salary, perf tabs and home stats/calculator
+  // Зарплата — тільки для Chat (teamId=1)
   const salaryTab = document.querySelector('.nav-tab[onclick*="salary"]');
   const perfTab   = document.querySelector('.nav-tab[onclick*="\'perf\'"]');
-  if(salaryTab) salaryTab.style.display = isTicketing ? 'none' : '';
+  if(salaryTab) salaryTab.style.display = teamId === 1 ? '' : 'none';
   if(perfTab)   perfTab.style.display   = isTicketing ? 'none' : '';
 
   // Home page blocks
@@ -3405,6 +3402,19 @@ function renderAnnounceAdmin(){
 function renderAnnounceEmp(){
   const list=document.getElementById('emp-announce-list');
   const teamId = me && me.data && (me.data.teamId||1);
+  // Telegram банер — тільки для команди Chat (teamId=1)
+  const tgWrap = document.getElementById('emp-tg-banner-wrap');
+  if(tgWrap){
+    tgWrap.innerHTML = teamId===1
+      ? `<a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(0,136,204,.15),rgba(0,136,204,.05));border:1px solid rgba(0,136,204,.35);border-radius:14px;padding:16px 20px;margin-bottom:18px;text-decoration:none;transition:.2s" onmouseover="this.style.borderColor='rgba(0,136,204,.6)'" onmouseout="this.style.borderColor='rgba(0,136,204,.35)'">
+          <div style="width:44px;height:44px;background:#29b6f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✈️</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:#29b6f6;letter-spacing:.5px">Telegram канал</div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:2px">Головні новини та оновлення від керівника</div>
+          </div>
+          <div style="margin-left:auto;color:#29b6f6;font-size:18px;opacity:.7">→</div>
+        </a>` : '';
+  }
   const anns=(db.announcements||[]).filter(a=>!a.teamId || a.teamId===teamId);
   if(!anns.length){list.innerHTML='<div class="empty-state">Поки що немає оголошень</div>';return;}
   const sorted=[...anns.filter(a=>a.pinned),...anns.filter(a=>!a.pinned)];
@@ -3422,7 +3432,10 @@ function renderAnnounceHomeBanner(){
   const pinned=(db.announcements||[]).filter(a=>a.pinned && (!a.teamId || a.teamId===teamId));
   const el=document.getElementById('emp-home-announce');
   if(!el) return;
-  const tgBanner=`<a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.25);border-radius:9px;padding:7px 14px;margin-bottom:10px;text-decoration:none;font-size:12px;color:#29b6f6;transition:.15s" onmouseover="this.style.background='rgba(0,136,204,.18)'" onmouseout="this.style.background='rgba(0,136,204,.1)'">✈️ <b>Telegram канал</b> — новини від керівника →</a>`;
+  // Telegram банер — тільки для Chat (teamId=1)
+  const tgBanner = teamId===1
+    ? `<a href="https://t.me/+yROaShJNKJw5NDky" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.25);border-radius:9px;padding:7px 14px;margin-bottom:10px;text-decoration:none;font-size:12px;color:#29b6f6;transition:.15s" onmouseover="this.style.background='rgba(0,136,204,.18)'" onmouseout="this.style.background='rgba(0,136,204,.1)'">✈️ <b>Telegram канал</b> — новини від керівника →</a>`
+    : '';
   if(!pinned.length){el.innerHTML=tgBanner;return;}
   el.innerHTML=tgBanner+pinned.map(a=>`
     <div class="announce-card pinned" style="margin-bottom:12px">
@@ -3978,10 +3991,12 @@ function getBdayInfo(emp){
 }
 
 function renderBdayBanner(){
-  // Show on employee home — upcoming birthdays in next 7 days
+  // Show on employee home — upcoming birthdays in next 7 days, ONLY own team
   const el = document.getElementById('emp-bday-banner');
   if(!el) return;
-  const upcoming = myStaff().map(emp=>({emp, info:getBdayInfo(emp)}))
+  const myTeamId = me && me.data && (me.data.teamId||1);
+  const teamStaff = db.staff.filter(s=>(s.teamId||1)===myTeamId);
+  const upcoming = teamStaff.map(emp=>({emp, info:getBdayInfo(emp)}))
     .filter(x=>x.info&&x.info.isSoon)
     .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
   if(!upcoming.length){el.innerHTML='';return;}
@@ -3999,8 +4014,10 @@ function renderBdayBanner(){
 }
 
 function renderAdmBdayBanner(){
-  // Show in schedule header for admin
-  const upcoming = myStaff().map(emp=>({emp, info:getBdayInfo(emp)}))
+  // Show in schedule header for admin — only own team
+  const myTeamId = me && me.teamId;
+  const teamStaff = myTeamId ? db.staff.filter(s=>(s.teamId||1)===myTeamId) : myStaff();
+  const upcoming = teamStaff.map(emp=>({emp, info:getBdayInfo(emp)}))
     .filter(x=>x.info&&x.info.isSoon)
     .sort((a,b)=>a.info.daysUntil-b.info.daysUntil);
   return upcoming.map(({emp,info})=>{
@@ -4013,10 +4030,12 @@ function renderAdmBdayBanner(){
   }).join('');
 }
 
-// Check if a specific calendar day has a birthday
+// Check if a specific calendar day has a birthday — only own team
 function getDayBdays(year, month, day){
   // month is 0-based
-  return myStaff().filter(emp=>{
+  const myTeamId = me && (me.teamId || (me.data && (me.data.teamId||1)));
+  const teamStaff = myTeamId ? db.staff.filter(s=>(s.teamId||1)===myTeamId) : myStaff();
+  return teamStaff.filter(emp=>{
     if(!emp.birthday) return false;
     const [mm,dd] = emp.birthday.split('-').map(Number);
     return mm-1===month && dd===day;
@@ -5413,17 +5432,14 @@ async function autoRefreshDB(){
   // Не оновлювати під час збереження
   if(_isSaving) return;
 
-  // Не оновлювати якщо збереження було менше 10 секунд тому
-  if(Date.now() - _lastSaveTime < 10000) return;
+  // Не оновлювати якщо збереження було менше 30 секунд тому
+  if(Date.now() - _lastSaveTime < 30000) return;
 
-  // Не оновлювати якщо адмін редагує графік або продуктивність
+  // Не оновлювати якщо адмін редагує графік, продуктивність або побажання
   const activeAdm = document.querySelector('.adm-section.active');
   if(activeAdm){
     const id = activeAdm.id;
-    // Захищаємо графік і продуктивність від авто-перезапису
-    if(id === 'adm-schedule' || id === 'adm-perf'){
-      return;
-    }
+    if(id === 'adm-schedule' || id === 'adm-perf') return;
   }
 
   // Не оновлювати якщо фокус на будь-якому input/textarea
@@ -5439,10 +5455,47 @@ async function autoRefreshDB(){
     if(rows.length && rows[0].value){
       const fresh=rows[0].value;
       if(fresh!==_lastDbStr){
-        // Ще раз перевіряємо — може за час fetch щось змінилось
-        if(_isSaving || Date.now() - _lastSaveTime < 10000) return;
-        _lastDbStr=fresh;
-        db=JSON.parse(fresh);
+        // Фінальна перевірка перед застосуванням
+        if(_isSaving || Date.now() - _lastSaveTime < 30000) return;
+
+        const freshDb = JSON.parse(fresh);
+
+        // MERGE STRATEGY: захищаємо критичні дані від перезапису
+        // Якщо в поточному db є дані яких немає у свіжих — зберігаємо поточні
+        if(db.schedule && freshDb.schedule){
+          Object.keys(db.schedule).forEach(key=>{
+            const cur = db.schedule[key];
+            const frsh = freshDb.schedule[key] || {};
+            // Для кожного агента беремо версію з більшою кількістю даних
+            Object.keys(cur).forEach(empId=>{
+              const curData = cur[empId] || {};
+              const frshData = frsh[empId] || {};
+              const curCount = Object.keys(curData).length;
+              const frshCount = Object.keys(frshData).length;
+              if(curCount > frshCount){
+                // Поточні дані повніші — зберігаємо їх
+                if(!freshDb.schedule[key]) freshDb.schedule[key]={};
+                freshDb.schedule[key][empId] = curData;
+              }
+            });
+          });
+        }
+
+        // Зберігаємо поточні shiftTypes якщо вони є
+        if(db.shiftTypes && Object.keys(db.shiftTypes).length > 0){
+          if(!freshDb.shiftTypes) freshDb.shiftTypes = {};
+          Object.keys(db.shiftTypes).forEach(tid=>{
+            const cur = db.shiftTypes[tid];
+            const frsh = freshDb.shiftTypes[tid];
+            if(cur && cur.length > 0 && (!frsh || frsh.length === 0)){
+              freshDb.shiftTypes[tid] = cur;
+            }
+          });
+        }
+
+        _lastDbStr = fresh;
+        db = freshDb;
+
         // Re-render current view
         if(me){
           if(me.type==='admin'){
@@ -6214,17 +6267,25 @@ function renderAdmSched(){
 
 // ══ ОЧИЩЕННЯ ГРАФІКУ ══
 async function clearSchedMonth(){
-  if(!confirm(`Очистити весь графік за ${MONTHS_UK[admSchedM]} ${admSchedY}?\nЦю дію не можна скасувати.`)) return;
+  const monthLabel = MONTHS_UK[admSchedM]+' '+admSchedY;
+  const teamName = me && me.teamName ? me.teamName : 'вашої команди';
+  // Подвійне підтвердження
+  if(!confirm(`⚠️ УВАГА!\n\nОчистити ВЕСЬ графік команди "${teamName}" за ${monthLabel}?\n\nЦю дію НЕ МОЖНА скасувати.`)) return;
+  if(!confirm(`Підтвердіть ще раз:\nВидалити графік "${teamName}" за ${monthLabel}?`)) return;
   const key = mkey(admSchedY, admSchedM);
+  const myTeamId = me && me.teamId;
   if(!db.schedule) db.schedule = {};
-  db.schedule[key] = {};
-  myStaff().forEach(emp => { db.schedule[key][emp.id] = {}; });
+  if(!db.schedule[key]) db.schedule[key] = {};
+  // Очищуємо ТІЛЬКИ агентів своєї команди — не чіпаємо інші команди
+  const myTeamStaff = myTeamId ? db.staff.filter(s=>(s.teamId||1)===myTeamId) : myStaff();
+  myTeamStaff.forEach(emp => { db.schedule[key][emp.id] = {}; });
   await saveDB();
   renderAdmSched();
 }
 
 async function clearSchedAgent(){
-  const staff = myStaff();
+  const myTeamId = me && me.teamId;
+  const staff = myTeamId ? db.staff.filter(s=>(s.teamId||1)===myTeamId) : myStaff();
   if(!staff.length){ alert('Немає агентів'); return; }
   const options = staff.map((e,i) => `${i+1}. ${e.name}`).join('\n');
   const input = prompt(`Оберіть агента (введіть номер):\n${options}`);
@@ -6232,7 +6293,8 @@ async function clearSchedAgent(){
   const idx = parseInt(input) - 1;
   if(isNaN(idx) || idx < 0 || idx >= staff.length){ alert('Невірний номер'); return; }
   const emp = staff[idx];
-  if(!confirm(`Очистити графік агента ${emp.name} за ${MONTHS_UK[admSchedM]} ${admSchedY}?`)) return;
+  const monthLabel = MONTHS_UK[admSchedM]+' '+admSchedY;
+  if(!confirm(`Очистити графік агента ${emp.name} за ${monthLabel}?\nЦю дію не можна скасувати.`)) return;
   const key = mkey(admSchedY, admSchedM);
   if(!db.schedule) db.schedule = {};
   if(!db.schedule[key]) db.schedule[key] = {};
