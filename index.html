@@ -4388,9 +4388,14 @@ async function runAutoSched(){
     slots_weekday:slotsWeekday,slots_weekend:slotsWeekend,
     agentLimits:agentLimitsSaved, peakDays:[...peakDays]};
 
-  const Y = wishesAdmY!==undefined?wishesAdmY:new Date().getFullYear();
-  const M = wishesAdmM!==undefined?wishesAdmM:new Date().getMonth();
+  // Використовуємо місяць побажань якщо відкрито, інакше наступний місяць від поточного
+  const now2 = new Date();
+  const Y = wishesAdmY!==undefined ? wishesAdmY : (now2.getMonth()===11 ? now2.getFullYear()+1 : now2.getFullYear());
+  const M = wishesAdmM!==undefined ? wishesAdmM : (now2.getMonth()===11 ? 0 : now2.getMonth()+1);
   const key = mkey(Y,M);
+  const monthLabel = MONTHS_UK[M]+' '+Y;
+  // Підтвердження з чітким місяцем — щоб не стерти не той місяць
+  if(!confirm(`🤖 Авто-генерація графіку\n\nМісяць: ${monthLabel}\n\nЦЕ ЗАМІНИТЬ ІСНУЮЧИЙ ГРАФІК ЗА ЦЕЙ МІСЯЦЬ.\nПродовжити?`)) return;
   const daysInMonth = new Date(Y,M+1,0).getDate();
   const staff = myStaff();
   const allShifts = getTeamShifts(me.teamId||1);
