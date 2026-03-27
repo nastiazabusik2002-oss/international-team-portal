@@ -1025,6 +1025,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
     <div class="content">
       <div class="page-h">ПАНЕЛЬ УПРАВЛІННЯ</div>
       <div class="page-sub" id="adm-panel-sub">Адміністратор</div>
+      <div id="adm-office-banner" style="margin-bottom:10px"></div>
       <div class="notice-box">💡 Всі зміни зберігаються у спільному сховищі та одразу видні співробітникам</div>
       <div class="admin-tabs">
         <button class="adm-tab active" onclick="admTab('staff',this)">👥 Агенти</button>
@@ -1447,6 +1448,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
 
 <!-- CHIEF VIEW -->
 <div id="chief-view" style="display:none">
+  <div id="chief-office-banner" style="padding:12px 20px 0"></div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="chiefTab('schedule',this)">📅 Графіки</div>
     <div class="nav-tab" onclick="chiefTab('salary',this)">💰 Зарплата</div>
@@ -1461,7 +1463,6 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
     <div id="ctab-schedule" class="etab">
       <div class="page-h">ГРАФІКИ ВСІХ ВІДДІЛІВ</div>
       <div class="page-sub">Поточний місяць</div>
-      <div id="chief-office-banner" style="margin-bottom:16px"></div>
       <div id="chief-sched-nav" style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
         <button class="btn-sm" onclick="chiefSchedNav(-1)">←</button>
         <span id="chief-sched-title" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px"></span>
@@ -1697,7 +1698,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
 
 <!-- EDIT EMP MODAL -->
 <div class="modal-ov" id="emp-modal">
-  <div class="modal">
+  <div class="modal" style="max-height:92vh;overflow-y:auto">
     <h3 id="modal-name-h">АГЕНТ</h3>
     <div class="modal-grid">
       <div class="field"><label>Ім'я</label><input type="text" id="m-name"></div>
@@ -5273,6 +5274,7 @@ function renderChiefView(){
   chiefSchedY = chiefSalaryY = chiefReviewsY = now.getFullYear();
   chiefSchedM = chiefSalaryM = chiefReviewsM = now.getMonth();
   renderChiefSched();
+  renderChiefOfficeBanner();
 }
 
 // ── SCHEDULE ──
@@ -5319,6 +5321,35 @@ function renderChiefSched(){
           }).join('')}
         </tr></thead>
         <tbody>`;
+    if(team.id===3){
+      TEAM3_SUBGROUPS.forEach((sg,gi)=>{
+        const sgStaff = staff.filter(e=>(e.subteam||0)===gi);
+        if(!sgStaff.length) return;
+        html += `<tr><td colspan="${daysInMonth+1}" style="padding:4px 8px;background:${sg.color}10;border-top:1px solid ${sg.color}33;">
+          <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
+        </td></tr>`;
+        sgStaff.forEach(emp=>{
+          const empSched = sched[emp.id] || sched[String(emp.id)] || {};
+          html += `<tr><td style="white-space:nowrap;font-size:12px">${formatName(emp.name)}</td>`;
+          dayNums.forEach(d=>{
+            const shiftId = empSched[d];
+            const sh = shiftId ? getShift(shiftId) : null;
+            const bg = sh && sh.color ? sh.color+'33' : '';
+            const txt = sh ? (sh.short||sh.time||sh.label[0]||'?') : '';
+            const dow = new Date(chiefSchedY,chiefSchedM,d).getDay();
+            const isWe = dow===0||dow===6;
+            const shLabel = sh&&shiftId&&shiftId!=='off'?(sh.label||''):'';
+            const shTime  = sh&&shiftId&&shiftId!=='off'?(sh.time||''):'';
+            const shColor = sh&&shiftId&&shiftId!=='off'?(sh.color||''):'';
+            const shDesc  = sh&&shiftId&&shiftId!=='off'?(sh.desc||''):'';
+            html+=`<td style="text-align:center;padding:2px;${isWe?'background:rgba(245,200,66,.05)':''}${bg?';background:'+bg:''}">
+              <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}</span>
+            </td>`;
+          });
+          html += '</tr>';
+        });
+      });
+    } else {
     staff.forEach(emp => {
       const empSched = sched[emp.id] || sched[String(emp.id)] || {};
       html += `<tr><td style="white-space:nowrap;font-size:12px">${formatName(emp.name)}</td>`;
@@ -5339,6 +5370,7 @@ function renderChiefSched(){
       });
       html += '</tr>';
     });
+    }
     html += '</tbody></table></div></div>';
   });
 
@@ -6037,6 +6069,34 @@ function toggleSchedAccordion(id){
 function renderAdmin(){
   const sub = document.getElementById('adm-panel-sub');
   if(sub && me && me.teamName) sub.textContent = '👑 Команда: ' + me.teamName + ' · ' + me.leadName;
+  // Office banner для тім ліда
+  const admOfficeBanner = document.getElementById('adm-office-banner');
+  if(admOfficeBanner && me && me.teamId){
+    const now = new Date();
+    let bannerHtml = '';
+    for(let i=0; i<=7; i++){
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+i);
+      if(isOfficeDay(me.teamId, d)){
+        const isToday = i===0;
+        const isTomorrow = i===1;
+        const dateStr = `${d.getDate()} ${MONTHS_UK[d.getMonth()].toLowerCase()}`;
+        const label = isToday ? 'СЬОГОДНІ офісний день 🏢' :
+                      isTomorrow ? 'ЗАВТРА офісний день 🏢' :
+                      `Офісний день — ${dateStr} 🏢`;
+        const bg = isToday ? 'linear-gradient(135deg,rgba(245,200,66,.15),rgba(245,200,66,.05))' : 'var(--surface)';
+        const border = isToday ? 'rgba(245,200,66,.4)' : 'var(--border)';
+        bannerHtml = `<div style="display:inline-flex;align-items:center;gap:10px;background:${bg};border:1px solid ${border};border-radius:12px;padding:10px 16px">
+          <span style="font-size:20px">🏢</span>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:${isToday?'var(--accent)':'var(--text)'}">${label}</div>
+            <div style="font-size:12px;color:var(--muted)">Не забудь повідомити команду</div>
+          </div>
+        </div>`;
+        break;
+      }
+    }
+    admOfficeBanner.innerHTML = bannerHtml;
+  }
   // Show remarks tab only for TLs of audited teams
   const remarksTab = document.getElementById('adm-remarks-tab');
   if(remarksTab) remarksTab.style.display = AUDITED_TEAM_IDS.includes(me&&me.teamId) ? 'block' : 'none';
