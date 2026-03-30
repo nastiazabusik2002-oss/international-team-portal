@@ -1354,7 +1354,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="auditorTab('remarks',this)">📋 Зауваження</div>
     <div class="nav-tab" onclick="auditorTab('history',this)">📁 Архів</div>
-    <div class="nav-tab" onclick="auditorTab('schedule',this)">📅 Мій графік</div>
+    <div class="nav-tab" onclick="auditorTab('schedule',this)">📅 Графік команди</div>
     <div class="nav-tab" onclick="auditorTab('company',this)">🏢 Компанія</div>
   </div>
   <div class="content">
@@ -1411,18 +1411,20 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
 
     <!-- SCHEDULE TAB -->
     <div id="atab-schedule" class="etab" style="display:none">
-      <div class="page-h">МІЙ ГРАФІК</div>
-      <div class="page-sub">Зміни на місяць</div>
-      <div class="cal-header">
+      <div class="page-h">ГРАФІК КОМАНДИ</div>
+      <div class="page-sub">Клікай на свій рядок щоб поставити зміну</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
         <button class="cal-nav" onclick="auditorCalNav(-1)">‹</button>
-        <div class="cal-month-title" id="auditor-cal-title"></div>
+        <span class="cal-month-title" id="auditor-cal-title"></span>
         <button class="cal-nav" onclick="auditorCalNav(1)">›</button>
       </div>
       <div style="margin-bottom:14px" id="auditor-legend"></div>
-      <div class="cal-grid">
-        <div class="cal-weekdays" id="auditor-cal-wds"></div>
-        <div class="cal-days" id="auditor-cal-days"></div>
-      </div>
+      <div id="auditor-team-sched-wrap" style="overflow-x:auto"></div>
+    </div>
+
+    <!-- EXCHANGE TAB (hidden, kept for data compatibility) -->
+    <div id="atab-exchange" class="etab" style="display:none">
+      <div id="auditor-exchange-content"></div>
     </div>
 
     <!-- COMPANY TAB -->
@@ -3683,7 +3685,7 @@ function fmtDateShort(dateStr){
   return `${d}.${m}`;
 }
 
-function addPerfWeekFromDates(){
+async function addPerfWeekFromDates(){
   const fromVal = document.getElementById('week-date-from')?.value;
   const toVal   = document.getElementById('week-date-to')?.value;
   if(!fromVal || !toVal){ alert('Вибери початок і кінець тижня'); return; }
@@ -3713,6 +3715,7 @@ function addPerfWeekFromDates(){
   });
   document.getElementById('week-date-from').value='';
   document.getElementById('week-date-to').value='';
+  await saveDB();
   renderAdmPerf();
 }
 
@@ -7446,7 +7449,7 @@ function permAutoFillTo(){
   t.value = d.toISOString().slice(0,10);
 }
 
-function permAddWeek(){
+async function permAddWeek(){
   const fromVal = document.getElementById('perm-week-from')?.value;
   const toVal   = document.getElementById('perm-week-to')?.value;
   if(!fromVal||!toVal){ alert('Вибери дати'); return; }
@@ -7463,6 +7466,7 @@ function permAddWeek(){
       db.perf[emp.id].push({week:label,monthKey,dateFrom:fromVal,dateTo:toVal,letters:0,chats:0,shiftChats:s.shiftChats,shifts:s.shifts});
     }
   });
+  await saveDB();
   renderPermPerfWeeks();
 }
 
@@ -7717,7 +7721,7 @@ async function applyQuickShiftColor(shiftId, newColor){
   renderShiftTypesManager();
 }
 
-function addShiftType(){
+async function addShiftType(){
   const label = document.getElementById('new-shift-label').value.trim();
   const time  = document.getElementById('new-shift-time').value.trim();
   const desc  = document.getElementById('new-shift-desc').value.trim();
@@ -7731,7 +7735,7 @@ function addShiftType(){
   document.getElementById('new-shift-label').value='';
   document.getElementById('new-shift-time').value='';
   document.getElementById('new-shift-desc').value='';
-  saveDB();
+  await saveDB();
   renderShiftTypesManager();
 }
 
@@ -7745,32 +7749,32 @@ function toggleShiftDesc(id){
   }
 }
 
-function saveShiftDesc(id){
+async function saveShiftDesc(id){
   const teamId = me && me.teamId ? me.teamId : 1;
   if(!db.shiftTypes||!db.shiftTypes[teamId]) return;
   const sh = db.shiftTypes[teamId].find(s=>s.id===id);
   if(!sh) return;
   const inp = document.getElementById('desc-input-'+id);
   sh.desc = inp ? inp.value.trim() : '';
-  saveDB();
+  await saveDB();
   renderShiftTypesManager();
 }
 
-function deleteShiftType(id){
+async function deleteShiftType(id){
   const teamId = me && me.teamId ? me.teamId : 1;
   if(!db.shiftTypes||!db.shiftTypes[teamId]) return;
   db.shiftTypes[teamId] = db.shiftTypes[teamId].filter(s=>s.id!==id);
-  saveDB();
+  await saveDB();
   renderShiftTypesManager();
 }
 
-function moveShiftType(idx, dir){
+async function moveShiftType(idx, dir){
   const teamId = me && me.teamId ? me.teamId : 1;
   const arr = db.shiftTypes[teamId];
   const newIdx = idx+dir;
   if(newIdx<0||newIdx>=arr.length) return;
   [arr[idx],arr[newIdx]]=[arr[newIdx],arr[idx]];
-  saveDB();
+  await saveDB();
   renderShiftTypesManager();
 }
 
@@ -7786,9 +7790,195 @@ function auditorTab(tab, el){
   if(tab==='history')  renderAuditorHistory();
   if(tab==='schedule') renderAuditorCal();
   if(tab==='company')  renderAuditorCompanyTab();
+  if(tab==='exchange') renderAuditorExchange();
 }
 
-let auditorCalY, auditorCalM;
+function renderAuditorExchange(){
+  const el = document.getElementById('auditor-exchange-content');
+  if(!el) return;
+  if(!db.exchanges) db.exchanges = [];
+  const myId = me.data.id;
+  const myTeamId = me.data.teamId || 6;
+  const myName = me.data.name;
+
+  // Використовуємо ту саму логіку що й для звичайних агентів
+  const myOffers = db.exchanges.filter(ex=>ex.fromId===myId&&ex.status==='open');
+  const pendingForMe = db.exchanges.filter(ex=>ex.fromId===myId&&ex.status==='pending');
+  const othersOffers = db.exchanges.filter(ex=>ex.fromId!==myId&&ex.status==='open'&&(ex.teamId||1)===myTeamId);
+  const myPending = db.exchanges.filter(ex=>ex.responderId===myId&&ex.status==='pending');
+
+  const shifts = getTeamShifts(myTeamId);
+
+  let html = `<button onclick="openAuditorOfferModal()" style="background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:12px;padding:11px 22px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:20px">➕ Запропонувати зміну</button>`;
+
+  if(pendingForMe.length){
+    html+=`<div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:16px 18px;margin-bottom:14px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px">🔔 ЗАПИТИ НА ОБМІН</div>`;
+    pendingForMe.forEach(ex=>{
+      const mySh=getShift(ex.shiftId); const theirSh=getShift(ex.responderShiftId||'off');
+      const respName=(db.staff.find(s=>s.id==ex.responderId)||{}).name||'Колега';
+      html+=`<div class="exchange-offer" style="background:var(--surface2);border-radius:10px;margin-bottom:8px;padding:14px 16px">
+        <div class="exo-left">
+          <div class="exo-name" style="color:var(--accent)">⇄ ${respName} хоче обмінятись</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">📅 ${ex.day} ${MONTHS_UK[(ex.month||1)-1]}</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px">
+            <span>Ваша: <b style="color:${mySh.color}">${mySh.time||mySh.label||'?'}</b></span>
+            <span>→</span>
+            <span>їхня: <b style="color:${theirSh.color}">${theirSh.time||theirSh.label||'вих'}</b></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn-take" onclick="auditorConfirmExchange('${ex.id}')">✓ Підтвердити</button>
+          <button class="btn-cancel-offer" onclick="auditorRejectExchange('${ex.id}')">✕ Відхилити</button>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  if(myOffers.length){
+    html+=`<div style="margin-bottom:14px"><div class="sec-title" style="margin-top:0;margin-bottom:10px">МОЇ ПРОПОЗИЦІЇ</div>`;
+    myOffers.forEach(ex=>{
+      const sh=getShift(ex.shiftId);
+      html+=`<div class="exchange-offer"><div class="exo-left">
+        <div class="exo-name">📤 ${ex.day} ${MONTHS_UK[(ex.month||1)-1]} — <span style="color:${sh.color};font-weight:600">${sh.time||sh.label||'?'}</span></div>
+        ${ex.comment?`<div style="font-size:12px;color:var(--muted2)">💬 ${ex.comment}</div>`:''}
+      </div><button class="btn-cancel-offer" onclick="auditorCancelOffer('${ex.id}')">Скасувати</button></div>`;
+    });
+    html+='</div>';
+  }
+
+  html+=`<div class="sec-title" style="margin-top:0;margin-bottom:10px">ПРОПОЗИЦІЇ КОЛЕГ</div>`;
+  if(!othersOffers.length){
+    html+='<div class="empty-state">Наразі немає відкритих пропозицій від колег</div>';
+  } else {
+    html+='<div class="exchange-section">';
+    othersOffers.forEach(ex=>{
+      const sh=getShift(ex.shiftId);
+      const ownerName=(db.staff.find(s=>s.id==ex.fromId)||{}).name||'Колега';
+      const applied=myPending.some(p=>p.id===ex.id);
+      html+=`<div class="exchange-offer"><div class="exo-left">
+        <div class="exo-name">${ownerName}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${ex.day} ${MONTHS_UK[(ex.month||1)-1]}</div>
+        <div style="margin-top:4px;color:${sh.color};font-family:'DM Mono',monospace;font-weight:700">${sh.time||sh.label||'?'}</div>
+        ${ex.comment?`<div style="font-size:12px;color:var(--muted2);margin-top:4px">💬 ${ex.comment}</div>`:''}
+      </div>
+      ${applied
+        ?`<button class="btn-cancel-offer" onclick="auditorWithdrawRequest('${ex.id}')">Відкликати</button>`
+        :`<button class="btn-take" onclick="auditorProposeExchange('${ex.id}')">⇄ Обмінятись</button>`}
+      </div>`;
+    });
+    html+='</div>';
+  }
+  el.innerHTML = html;
+}
+
+function openAuditorOfferModal(){
+  const now=new Date();
+  const shifts=getTeamShifts(me.data.teamId||6);
+  const year=now.getFullYear(), month=now.getMonth();
+  const last=new Date(year,month+1,0).getDate();
+  const startDow=(new Date(year,month,1).getDay()+6)%7;
+  const DAYS_S=['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+  let html=`<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">${MONTHS_UK[month]} ${year}</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">`;
+  DAYS_S.forEach(d=>{html+=`<div style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0">${d}</div>`;});
+  html+=`</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px">`;
+  for(let i=0;i<startDow;i++) html+=`<div></div>`;
+  for(let d=1;d<=last;d++){
+    const dow=new Date(year,month,d).getDay();
+    const wknd=dow===0||dow===6;
+    const today=now.getDate()===d;
+    html+=`<div id="aud-ex-day-${d}" onclick="selectAudExDay(${d})"
+      style="border-radius:8px;border:1px solid ${today?'var(--accent)':wknd?'rgba(167,139,250,.2)':'var(--border)'};
+      padding:5px 2px;text-align:center;cursor:pointer;transition:.15s;min-height:34px;display:flex;align-items:center;justify-content:center">
+      <span style="font-family:'DM Mono',monospace;font-size:12px;color:${today?'var(--accent2)':wknd?'var(--purple)':'var(--muted2)'}">${d}</span>
+    </div>`;
+  }
+  html+=`</div>
+  <div style="margin-bottom:12px">
+    <label style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">Тип зміни</label>
+    <select id="aud-ex-shift" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      ${shifts.map(s=>`<option value="${s.id}">${s.time?s.time+' — ':''}${s.label}</option>`).join('')}
+    </select>
+  </div>
+  <div>
+    <label style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">Коментар</label>
+    <input type="text" id="aud-ex-comment" placeholder="Деталі..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;box-sizing:border-box">
+  </div>`;
+
+  let modal=document.getElementById('aud-offer-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.className='modal-ov'; modal.id='aud-offer-modal';
+    modal.innerHTML=`<div class="modal" style="max-width:440px;width:95vw">
+      <h3>ЗАПРОПОНУВАТИ ЗМІНУ</h3>
+      <div id="aud-offer-body"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('aud-offer-modal')">Скасувати</button>
+        <button class="btn-save" onclick="submitAuditorOffer()">Запропонувати</button>
+      </div></div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('aud-offer-body').innerHTML=html;
+  modal.classList.add('open');
+}
+
+let _audExDay=null;
+function selectAudExDay(d){
+  _audExDay=d;
+  document.querySelectorAll('[id^="aud-ex-day-"]').forEach(el=>{el.style.background='';el.style.borderColor='';});
+  const c=document.getElementById('aud-ex-day-'+d);
+  if(c){c.style.background='var(--accent-dim)';c.style.borderColor='var(--accent)';}
+}
+
+async function submitAuditorOffer(){
+  if(!_audExDay){alert('Оберіть день');return;}
+  const shiftId=document.getElementById('aud-ex-shift')?.value;
+  if(!shiftId){alert('Оберіть зміну');return;}
+  const now=new Date();
+  if(!db.exchanges) db.exchanges=[];
+  db.exchanges.push({
+    id:'ex_'+Date.now(),
+    fromId:me.data.id, fromName:me.data.name,
+    teamId:me.data.teamId||6,
+    day:_audExDay, month:now.getMonth()+1, year:now.getFullYear(),
+    shiftId, comment:document.getElementById('aud-ex-comment')?.value||'',
+    status:'open'
+  });
+  await saveDB();
+  closeModal('aud-offer-modal');
+  renderAuditorExchange();
+}
+
+async function auditorProposeExchange(offerId){
+  const ex=db.exchanges.find(e=>e.id===offerId);
+  if(!ex||ex.status!=='open') return;
+  const key=mkey(ex.year,ex.month-1);
+  const myShiftId=((db.schedule[key]||{})[me.data.id]||{})[ex.day]||'off';
+  ex.status='pending'; ex.responderId=me.data.id; ex.responderName=me.data.name; ex.responderShiftId=myShiftId;
+  await saveDB(); renderAuditorExchange();
+}
+async function auditorConfirmExchange(id){
+  const ex=db.exchanges.find(e=>e.id===id);
+  if(ex) ex.status='done';
+  await saveDB(); renderAuditorExchange();
+  sbToast('✅ Обмін підтверджено!','var(--green)','rgba(74,222,128,.1)');
+}
+async function auditorRejectExchange(id){
+  const ex=db.exchanges.find(e=>e.id===id);
+  if(ex){ex.status='open';delete ex.responderId;delete ex.responderName;delete ex.responderShiftId;}
+  await saveDB(); renderAuditorExchange();
+}
+async function auditorCancelOffer(id){
+  if(db.exchanges) db.exchanges=db.exchanges.filter(e=>e.id!==id);
+  await saveDB(); renderAuditorExchange();
+}
+async function auditorWithdrawRequest(id){
+  const ex=db.exchanges.find(e=>e.id===id);
+  if(ex&&ex.status==='pending'){ex.status='open';delete ex.responderId;delete ex.responderName;delete ex.responderShiftId;}
+  await saveDB(); renderAuditorExchange();
+}
 function auditorCalNav(d){
   auditorCalM+=d;
   if(auditorCalM<0){auditorCalM=11;auditorCalY--;}
@@ -7799,47 +7989,135 @@ function auditorCalNav(d){
 function renderAuditorCal(){
   const now = new Date();
   if(auditorCalY===undefined){ auditorCalY=now.getFullYear(); auditorCalM=now.getMonth(); }
-  document.getElementById('auditor-cal-title').textContent = MONTHS_UK[auditorCalM]+' '+auditorCalY;
+  const titleEl = document.getElementById('auditor-cal-title');
+  if(titleEl) titleEl.textContent = MONTHS_UK[auditorCalM]+' '+auditorCalY;
 
-  // Weekday headers
-  const wds = document.getElementById('auditor-cal-wds');
-  if(wds) wds.innerHTML = DAYS_UK.map(d=>`<div class="cal-wd">${d}</div>`).join('');
-
-  // Legend
   renderLegend('auditor-legend');
 
-  const emp = me.data;
+  const myId = me.data.id;
+  const teamId = me.data.teamId || 6;
   const key = mkey(auditorCalY, auditorCalM);
-  const sched = (db.schedule[key]||{})[emp.id]||{};
-  const first = new Date(auditorCalY, auditorCalM, 1);
-  const last  = new Date(auditorCalY, auditorCalM+1, 0).getDate();
-  const startDow = (first.getDay()+6)%7;
+  const sched = db.schedule[key] || {};
+  const teamStaff = db.staff.filter(s=>(s.teamId||1)===teamId);
+  const last = new Date(auditorCalY, auditorCalM+1, 0).getDate();
+  const days = []; for(let d=1;d<=last;d++) days.push(d);
+  const isNow = now.getMonth()===auditorCalM && now.getFullYear()===auditorCalY;
+  function isWeekend(d){ const dow=new Date(auditorCalY,auditorCalM,d).getDay(); return dow===0||dow===6; }
 
-  const container = document.getElementById('auditor-cal-days');
-  container.innerHTML = '';
+  // Header
+  let thead = `<thead><tr><th class="name-col" style="min-width:110px">АГЕНТ</th>`;
+  days.forEach(d=>{
+    const dt = new Date(auditorCalY,auditorCalM,d);
+    const dow = DAYS_UK[(dt.getDay()+6)%7];
+    const isToday = isNow && now.getDate()===d;
+    const wknd = isWeekend(d);
+    let bg = isToday?'rgba(181,123,238,.3)':wknd?'rgba(167,139,250,.07)':'';
+    const todayStyle = isToday?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;':'';
+    thead += `<th style="text-align:center;min-width:28px;padding:3px 2px;background:${bg};${todayStyle}">
+      <div style="font-size:9px;opacity:${isToday?1:.6};color:${isToday?'var(--accent2)':'inherit'}">${dow}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'inherit'}">${d}</div>
+    </th>`;
+  });
+  thead += `<th style="text-align:center;min-width:36px;position:sticky;right:0;background:var(--surface)">∑</th></tr></thead>`;
 
-  // Empty cells
-  for(let i=0;i<startDow;i++){
-    const d=document.createElement('div'); d.className='cal-day empty'; container.appendChild(d);
+  // Rows
+  let tbody = '<tbody>';
+  teamStaff.forEach(emp=>{
+    const isMe = emp.id === myId;
+    const empSched = sched[emp.id] || {};
+    let shiftCount = 0;
+    let cells = '';
+    days.forEach(d=>{
+      const isToday = isNow && now.getDate()===d;
+      const wknd = isWeekend(d);
+      const shiftId = empSched[d] || 'off';
+      const sh = getShift(shiftId);
+      const hasShift = shiftId && shiftId!=='off';
+      if(hasShift && shiftId!=='vacation') shiftCount++;
+      const bg = isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.04)':'';
+      const dispTime = hasShift&&sh ? (sh.time?sh.time.split(':')[0]:(sh.label||'?')[0]) : '·';
+      const dispColor = hasShift&&sh ? sh.color : 'var(--muted)';
+      const shLabel = sh&&hasShift?(sh.label||''):'';
+      const shTime = sh&&hasShift?(sh.time||''):'';
+      const shColor = sh&&hasShift?(sh.color||''):'';
+
+      // Всі клітинки клікабельні
+      cells += `<td style="background:${bg};padding:2px;text-align:center">
+        <span class="sh-tip-cell" data-l="${shLabel}" data-t="${shTime}" data-c="${shColor}" data-d=""
+          onclick="openAuditorShiftPicker(event,${emp.id},${d},'${key}',${teamId})"
+          style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${dispColor};cursor:pointer;display:inline-block;min-width:20px;line-height:1.8">${dispTime}</span>
+      </td>`;
+    });
+    const sumColor = shiftCount>0?'var(--accent2)':'var(--muted)';
+    tbody += `<tr style="${isMe?'background:rgba(181,123,238,.06);':''}" ${isMe?'title="Твій рядок — клікай щоб редагувати"':''}>
+      <td class="name-col" style="font-size:12px;padding:5px 10px;font-weight:${isMe?700:500}">
+        ${formatName(emp.name)}${isMe?' <span style="font-size:9px;color:var(--accent2)">← ти</span>':''}
+      </td>
+      ${cells}
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${sumColor};position:sticky;right:0;background:var(--surface)">${shiftCount}</td>
+    </tr>`;
+  });
+  tbody += '</tbody>';
+
+  const wrap = document.getElementById('auditor-team-sched-wrap');
+  if(wrap) wrap.innerHTML = `<table class="sched-table" style="min-width:400px">${thead}${tbody}</table>`;
+}
+
+function openAuditorShiftPicker(e, empId, day, key, teamId){
+  e.stopPropagation();
+  const old = document.getElementById('auditor-shift-picker-popup');
+  if(old) old.remove();
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const shifts = getTeamShifts(teamId);
+
+  let html = `<div class="shift-picker-title">ЗМІНА — День ${day}</div>`;
+  shifts.forEach(s=>{
+    html += `<button class="shift-picker-btn" onclick="applyAuditorShift(${empId},${day},'${key}','${s.id}')">
+      <div class="shift-picker-dot" style="background:${s.color}"></div>
+      <div>
+        <div style="font-weight:600;font-size:13px;color:${s.color}">${s.time||'—'}</div>
+        <div style="font-size:11px;color:var(--muted2)">${s.label}</div>
+      </div>
+    </button>`;
+  });
+  html += `<button class="shift-picker-clear" onclick="applyAuditorShift(${empId},${day},'${key}','off')">✕ Вихідний / очистити</button>`;
+
+  const picker = document.createElement('div');
+  picker.className = 'shift-picker'; picker.id = 'auditor-shift-picker-popup';
+  picker.style.visibility = 'hidden';
+  picker.innerHTML = html;
+  document.body.appendChild(picker);
+
+  const ph = picker.offsetHeight, pw = picker.offsetWidth||220;
+  let top = (rect.bottom + ph + 8 <= window.innerHeight) ? rect.bottom+6 : rect.top-ph-6;
+  if(top < 8) top = Math.max(8,(window.innerHeight-ph)/2);
+  let left = rect.left;
+  if(left+pw+8 > window.innerWidth) left = window.innerWidth-pw-8;
+  if(left < 8) left = 8;
+  picker.style.top = top+'px'; picker.style.left = left+'px';
+  picker.style.visibility = '';
+
+  const closeH = (ev)=>{
+    if(!picker.contains(ev.target)){ picker.remove(); document.removeEventListener('click',closeH,true); }
+  };
+  setTimeout(()=>document.addEventListener('click',closeH,true), 150);
+}
+
+async function applyAuditorShift(empId, day, key, shiftId){
+  const old = document.getElementById('auditor-shift-picker-popup');
+  if(old) old.remove();
+  if(!db.schedule) db.schedule={};
+  if(!db.schedule[key]) db.schedule[key]={};
+  if(!db.schedule[key][empId]) db.schedule[key][empId]={};
+  if(shiftId==='off'){
+    delete db.schedule[key][empId][day];
+  } else {
+    db.schedule[key][empId][day] = shiftId;
   }
-
-  for(let day=1; day<=last; day++){
-    const isToday = now.getDate()===day && now.getMonth()===auditorCalM && now.getFullYear()===auditorCalY;
-    const shiftId = sched[day]||'off';
-    const sh = getShift(shiftId);
-    const hasShift = shiftId && shiftId!=='off';
-
-    const div = document.createElement('div');
-    div.className = 'cal-day'+(isToday?' today-day':'');
-    div.innerHTML = `<div class="cal-day-num">${day}</div>`+
-      (hasShift
-        ? `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:2px auto;min-width:42px">
-            <div class="shift-cell-time" style="font-size:11px">${sh.time||sh.label||'?'}</div>
-            ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
-           </div>`
-        : `<div style="color:var(--muted);font-size:11px;text-align:center;padding:4px">—</div>`);
-    container.appendChild(div);
-  }
+  await saveDB();
+  renderAuditorCal();
+  sbToast('✅ Збережено','var(--green)','rgba(74,222,128,.1)');
 }
 
 let auditorCompanyCalY, auditorCompanyCalM;
@@ -7968,6 +8246,11 @@ function renderAuditorView(){
     const label = MONTHS_UK[d.getMonth()]+' '+d.getFullYear();
     mSel.innerHTML += `<option value="${val}">${label}</option>`;
   }
+
+  // Ініціалізуємо і рендеримо календар
+  auditorCalY = now.getFullYear();
+  auditorCalM = now.getMonth();
+  renderAuditorCal();
 }
 
 function onAuditTeamChange(){
@@ -9354,7 +9637,7 @@ const BURGER_TABS = {
   auditor: [
     {key:'remarks',  icon:'📋', label:'Зауваження'},
     {key:'history',  icon:'📁', label:'Архів'},
-    {key:'schedule', icon:'📅', label:'Мій графік'},
+    {key:'schedule', icon:'📅', label:'Графік команди'},
     {key:'company',  icon:'🏢', label:'Компанія'},
   ],
   chief: [
