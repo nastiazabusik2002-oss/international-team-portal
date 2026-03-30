@@ -2157,7 +2157,7 @@ function onTeamSelect(){
   const staff = (db && db.staff) ? db.staff : [];
   const teamStaff = staff.filter(s=>(s.teamId||1)===teamId);
   const sel = document.getElementById('login-sel');
-  sel.innerHTML = `<option value="tl_${teamId}">👑 ${team.lead} (Тім лід)</option>` +
+  sel.innerHTML = `<option value="tl_${teamId}">😎 ${team.lead} (Тім лід)</option>` +
     teamStaff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   accField.style.display='block';
   passField.style.display='block';
@@ -5628,12 +5628,16 @@ async function autoRefreshDB(){
   // Не оновлювати якщо збереження було менше 30 секунд тому
   if(Date.now() - _lastSaveTime < 30000) return;
 
-  // Не оновлювати якщо адмін редагує графік, продуктивність або побажання
+  // Не оновлювати якщо адмін редагує критичні секції
   const activeAdm = document.querySelector('.adm-section.active');
   if(activeAdm){
     const id = activeAdm.id;
-    if(id === 'adm-schedule' || id === 'adm-perf') return;
+    // Блокуємо refresh для: графіку, продуктивності, персоналу, типів змін, посилань, закриття місяця
+    if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly'].includes(id)) return;
   }
+
+  // Не оновлювати якщо відкрите будь-яке модальне вікно (редагування агента, добавлення тощо)
+  if(document.querySelector('.modal.open, .modal-overlay.open')) return;
 
   // Не оновлювати якщо фокус на будь-якому input/textarea
   const focused = document.activeElement;
@@ -5653,20 +5657,18 @@ async function autoRefreshDB(){
 
         const freshDb = JSON.parse(fresh);
 
-        // MERGE STRATEGY: захищаємо критичні дані від перезапису
-        // Якщо в поточному db є дані яких немає у свіжих — зберігаємо поточні
+        // MERGE STRATEGY: захищаємо всі критичні дані від перезапису при autoRefresh
+        // Принцип: якщо поточні дані новіші/повніші — не даємо їм злетіти
+
+        // 1. SCHEDULE — беремо версію агента з більшою кількістю заповнених днів
         if(db.schedule && freshDb.schedule){
           Object.keys(db.schedule).forEach(key=>{
             const cur = db.schedule[key];
             const frsh = freshDb.schedule[key] || {};
-            // Для кожного агента беремо версію з більшою кількістю даних
             Object.keys(cur).forEach(empId=>{
               const curData = cur[empId] || {};
               const frshData = frsh[empId] || {};
-              const curCount = Object.keys(curData).length;
-              const frshCount = Object.keys(frshData).length;
-              if(curCount > frshCount){
-                // Поточні дані повніші — зберігаємо їх
+              if(Object.keys(curData).length > Object.keys(frshData).length){
                 if(!freshDb.schedule[key]) freshDb.schedule[key]={};
                 freshDb.schedule[key][empId] = curData;
               }
@@ -5674,28 +5676,107 @@ async function autoRefreshDB(){
           });
         }
 
-        // Зберігаємо поточні shiftTypes якщо вони є
+        // 2. STAFF — захищаємо список агентів поточної команди від перезапису
+        // Якщо TL щойно додав/видалив агента, autoRefresh не повинен це скасувати
+        if(db.staff && freshDb.staff && me){
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTeamId){
+            // Беремо агентів поточної команди з НАШОГО db (щойно збереженого)
+            const curTeamStaff = db.staff.filter(s=>(s.teamId||1)===myTeamId);
+            // Видаляємо агентів нашої команди зі свіжих даних (можуть бути застарілими)
+            freshDb.staff = freshDb.staff.filter(s=>(s.teamId||1)!==myTeamId);
+            // Вставляємо наших актуальних агентів
+            freshDb.staff.push(...curTeamStaff);
+            // Зберігаємо nextId якщо наш більший (щоб не було дублів id)
+            if((db.nextId||0) > (freshDb.nextId||0)) freshDb.nextId = db.nextId;
+          }
+        }
+
+        // 3. SHIFT TYPES — захищаємо типи змін поточної команди
         if(db.shiftTypes && Object.keys(db.shiftTypes).length > 0){
           if(!freshDb.shiftTypes) freshDb.shiftTypes = {};
           Object.keys(db.shiftTypes).forEach(tid=>{
             const cur = db.shiftTypes[tid];
             const frsh = freshDb.shiftTypes[tid];
-            if(cur && cur.length > 0 && (!frsh || frsh.length === 0)){
+            // Захищаємо якщо наша версія є, а свіжа або порожня, або менша
+            if(cur && cur.length > 0 && (!frsh || frsh.length < cur.length)){
               freshDb.shiftTypes[tid] = cur;
             }
           });
         }
 
+        // 4. TEAM LINKS — захищаємо посилання поточної команди
+        if(db.teamLinks && me){
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTeamId && db.teamLinks[myTeamId]){
+            if(!freshDb.teamLinks) freshDb.teamLinks = {};
+            if(!freshDb.teamLinks[myTeamId] || freshDb.teamLinks[myTeamId].length < db.teamLinks[myTeamId].length){
+              freshDb.teamLinks[myTeamId] = db.teamLinks[myTeamId];
+            }
+          }
+        }
+
+        // 5. DAY COLORS — захищаємо кольори дат поточної команди (Ticketing)
+        if(db.dayColors && me){
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTeamId && db.dayColors[myTeamId]){
+            if(!freshDb.dayColors) freshDb.dayColors = {};
+            if(!freshDb.dayColors[myTeamId]){
+              freshDb.dayColors[myTeamId] = db.dayColors[myTeamId];
+            }
+          }
+        }
+
+        // 6. TL SCHEDULE — захищаємо графік TL/Chief
+        if(db.tlSchedule && freshDb.tlSchedule && me){
+          Object.keys(db.tlSchedule).forEach(key=>{
+            const cur = db.tlSchedule[key];
+            const frsh = freshDb.tlSchedule[key] || {};
+            Object.keys(cur).forEach(personId=>{
+              const curData = cur[personId] || {};
+              const frshData = frsh[personId] || {};
+              if(Object.keys(curData).length > Object.keys(frshData).length){
+                if(!freshDb.tlSchedule[key]) freshDb.tlSchedule[key]={};
+                freshDb.tlSchedule[key][personId] = curData;
+              }
+            });
+          });
+        }
+
+        // 7. STAFF ORDER — порядок агентів
+        if(db.staffOrder && me){
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTeamId && db.staffOrder[myTeamId]){
+            if(!freshDb.staffOrder) freshDb.staffOrder = {};
+            if(!freshDb.staffOrder[myTeamId]){
+              freshDb.staffOrder[myTeamId] = db.staffOrder[myTeamId];
+            }
+          }
+        }
+
         _lastDbStr = fresh;
         db = freshDb;
 
-        // Re-render current view
+        // Re-render current view — правильний рендер для КОЖНОГО типу юзера
         if(me){
           if(me.type==='admin'){
             const btn=document.querySelector('.adm-tab.active');
             const activeAdm2=document.querySelector('.adm-section.active');
             if(activeAdm2&&btn){ const id=activeAdm2.id.replace('adm-',''); admTab(id,btn); }
-          } else renderEmployee();
+          } else if(me.type==='auditor'){
+            // Аудитор — рендеримо активну вкладку аудитора
+            const activeAudTab = document.querySelector('#auditor-view .nav-tab.active');
+            if(activeAudTab){
+              const tabFn = activeAudTab.getAttribute('onclick');
+              if(tabFn && tabFn.includes('remarks')) renderAuditorHistory && renderAuditorHistory();
+              else if(tabFn && tabFn.includes('schedule')) renderAuditorCal && renderAuditorCal();
+              else if(tabFn && tabFn.includes('company')) renderAuditorCompanyTab && renderAuditorCompanyTab();
+            }
+          } else if(me.type==='chief'){
+            // Chief — не перерендерюємо автоматично, щоб не перебити редагування
+          } else {
+            renderEmployee();
+          }
         }
       }
       sbOnline();
