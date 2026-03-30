@@ -6345,56 +6345,81 @@ function renderAdmSchedCompact(){
   theadHTML += '<th style="min-width:32px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">&sum;</th>';
   theadHTML += '</tr></thead>';
 
-  // Рядки
-  var tbodyHTML = '<tbody id="compact-sched-tbody">';
-  for(var si=0; si<staff.length; si++){
-    var emp = staff[si];
-    var empSched = sched[emp.id] || {};
-    var shiftCount = 0;
-    var cellsHTML = '';
-    for(var di2=0; di2<days.length; di2++){
-      var d2 = days[di2];
-      var isToday2 = isNow && now.getDate()===d2;
-      var wknd2 = isWeekend(d2);
-      var shiftId = empSched[d2] || 'off';
-      var sh = getShift(shiftId);
-      var hasShift = shiftId && shiftId !== 'off';
-      if(hasShift && shiftId!=='vacation') shiftCount++;
-      var dayCol2 = dayColors[d2] || null;
-      var bg2 = isToday2 ? 'rgba(181,123,238,.08)' : dayCol2 ? dayCol2+'14' : wknd2 ? 'rgba(167,139,250,.04)' : '';
-      var border2 = isToday2 ? 'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);'
-        : dayCol2 ? 'border-left:1px solid '+dayCol2+'30;border-right:1px solid '+dayCol2+'30;' : '';
-      var shLabel = sh&&hasShift ? (sh.label||'') : '';
-      var shTime  = sh&&hasShift ? (sh.time||'') : '';
-      var shColor = sh&&hasShift ? (sh.color||'') : '';
-      var shDesc  = sh&&hasShift ? (sh.desc||'') : '';
-      var dispTime = hasShift && sh ? (sh.time ? sh.time.split(':')[0] : (sh.label||'?')[0]) : '&#183;';
-      var dispColor = hasShift && sh ? sh.color : 'var(--muted)';
-      cellsHTML += '<td style="background:'+bg2+';padding:1px 0;text-align:center;'+border2+'" data-shift="'+shiftId+'">'
-        + '<span class="sh-tip-cell"'
-        + ' data-l="'+shLabel.replace(/"/g,'&quot;')+'"'
-        + ' data-t="'+shTime+'" data-c="'+shColor+'"'
-        + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
-        + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
-        + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
-        + dispTime+'</span></td>';
+  // Рядки — для команди 3 окремі секції по підгрупах
+  var tbodyHTML = '';
+
+  function buildCompactRows(staffList){
+    var rows = '<tbody id="compact-sched-tbody">';
+    for(var si=0; si<staffList.length; si++){
+      var emp = staffList[si];
+      var empSched = sched[emp.id] || {};
+      var shiftCount = 0;
+      var cellsHTML = '';
+      for(var di2=0; di2<days.length; di2++){
+        var d2 = days[di2];
+        var isToday2 = isNow && now.getDate()===d2;
+        var wknd2 = isWeekend(d2);
+        var shiftId = empSched[d2] || 'off';
+        var sh = getShift(shiftId);
+        var hasShift = shiftId && shiftId !== 'off';
+        if(hasShift && shiftId!=='vacation') shiftCount++;
+        var dayCol2 = dayColors[d2] || null;
+        var bg2 = isToday2 ? 'rgba(181,123,238,.08)' : dayCol2 ? dayCol2+'14' : wknd2 ? 'rgba(167,139,250,.04)' : '';
+        var border2 = isToday2 ? 'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);'
+          : dayCol2 ? 'border-left:1px solid '+dayCol2+'30;border-right:1px solid '+dayCol2+'30;' : '';
+        var shLabel = sh&&hasShift ? (sh.label||'') : '';
+        var shTime  = sh&&hasShift ? (sh.time||'') : '';
+        var shColor = sh&&hasShift ? (sh.color||'') : '';
+        var shDesc  = sh&&hasShift ? (sh.desc||'') : '';
+        var dispTime = hasShift && sh ? (sh.time ? sh.time.split(':')[0] : (sh.label||'?')[0]) : '&#183;';
+        var dispColor = hasShift && sh ? sh.color : 'var(--muted)';
+        cellsHTML += '<td style="background:'+bg2+';padding:1px 0;text-align:center;'+border2+'" data-shift="'+shiftId+'">'
+          + '<span class="sh-tip-cell"'
+          + ' data-l="'+shLabel.replace(/"/g,'&quot;')+'"'
+          + ' data-t="'+shTime+'" data-c="'+shColor+'"'
+          + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
+          + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
+          + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
+          + dispTime+'</span></td>';
+      }
+      var isFiltered = _agentFilter && _agentFilter !== emp.id;
+      var filtStyle = isFiltered ? 'opacity:.12;filter:grayscale(1)' : '';
+      var sumColor = shiftCount > 0 ? 'var(--accent2)' : 'var(--muted)';
+      rows += '<tr data-emp-id="'+emp.id+'" draggable="true" style="'+filtStyle+'"'
+        + ' ondragstart="compactDragStart(event,'+emp.id+')"'
+        + ' ondragover="compactDragOver(event)"'
+        + ' ondrop="compactDrop(event,'+emp.id+')"'
+        + ' ondragend="compactDragEnd(event)">'
+        + '<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;cursor:grab">'
+        + '<span style="color:var(--muted);font-size:9px;margin-right:3px">&#8995;</span>'+formatName(emp.name)
+        + '</td>'
+        + cellsHTML
+        + '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;font-weight:600;color:'+sumColor+';position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">'+shiftCount+'</td>'
+        + '</tr>';
     }
-    var isFiltered = _agentFilter && _agentFilter !== emp.id;
-    var filtStyle = isFiltered ? 'opacity:.12;filter:grayscale(1)' : '';
-    var sumColor = shiftCount > 0 ? 'var(--accent2)' : 'var(--muted)';
-    tbodyHTML += '<tr data-emp-id="'+emp.id+'" draggable="true" style="'+filtStyle+'"'
-      + ' ondragstart="compactDragStart(event,'+emp.id+')"'
-      + ' ondragover="compactDragOver(event)"'
-      + ' ondrop="compactDrop(event,'+emp.id+')"'
-      + ' ondragend="compactDragEnd(event)">'
-      + '<td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;cursor:grab">'
-      + '<span style="color:var(--muted);font-size:9px;margin-right:3px">&#8995;</span>'+formatName(emp.name)
-      + '</td>'
-      + cellsHTML
-      + '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;font-weight:600;color:'+sumColor+';position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">'+shiftCount+'</td>'
-      + '</tr>';
+    rows += '</tbody>';
+    return rows;
   }
-  tbodyHTML += '</tbody>';
+
+  var tableContent = '';
+  if(teamId===3){
+    // Три секції для команди 3
+    for(var gi=0; gi<TEAM3_SUBGROUPS.length; gi++){
+      var sg = TEAM3_SUBGROUPS[gi];
+      var sgStaff = staff.filter(function(e){ return (e.subteam||0)===gi; });
+      var sgCount = sgStaff.length;
+      var dividerRow = '<tr><td colspan="'+(days.length+2)+'" style="padding:6px 10px;background:'+sg.color+'12;border-top:2px solid '+sg.color+'44;border-bottom:1px solid '+sg.color+'22;">'
+        +'<span style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+sg.color+'">'+sg.label+'</span>'
+        +' <span style="font-size:10px;color:var(--muted)">'+sgCount+' агентів</span>'
+        +'</td></tr>';
+      var sgRows = buildCompactRows(sgStaff);
+      // Вставляємо розділювач в tbody
+      tableContent += dividerRow + sgRows.replace('<tbody id="compact-sched-tbody">','').replace('</tbody>','');
+    }
+    tbodyHTML = '<tbody id="compact-sched-tbody">'+tableContent+'</tbody>';
+  } else {
+    tbodyHTML = buildCompactRows(staff);
+  }
 
   container.innerHTML = '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">&#8995; Перетягни рядок щоб змінити порядок агентів</div>'
     + '<div class="sched-wrap"><table class="sched-table">'+theadHTML+tbodyHTML+'</table></div>';
@@ -6476,24 +6501,32 @@ function renderAdmSched(){
   const compactWrap= document.getElementById('adm-sched-compact-wrap');
 
   if(me && me.teamId===3){
-    if(fullWrap)    fullWrap.style.display='none';
-    if(compactWrap) compactWrap.innerHTML='';
-    if(team3Wrap){
-      team3Wrap.style.display='block';
-      team3Wrap.innerHTML = TEAM3_SUBGROUPS.map((sg,gi)=>{
-        const sgStaff = myStaff().filter(e=>(e.subteam||0)===gi);
-        return `<div style="margin-bottom:28px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 14px;background:${sg.color}12;border-left:3px solid ${sg.color};border-radius:0 8px 8px 0">
-            <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
-            <span style="font-size:11px;color:var(--muted)">${sgStaff.length} агентів</span>
-          </div>
-          <div class="sched-wrap"><table class="sched-table" id="adm-sched-table-sg${gi}"></table></div>
-        </div>`;
-      }).join('');
-      TEAM3_SUBGROUPS.forEach((_,gi)=>{
-        const sgStaff = myStaff().filter(e=>(e.subteam||0)===gi);
-        renderSchedTable(`adm-sched-table-sg${gi}`,admSchedY,admSchedM,true,sgStaff);
-      });
+    if(_schedViewMode === 'compact'){
+      // Компактний вид — одна таблиця з розділювачами
+      if(fullWrap)   fullWrap.style.display='none';
+      if(team3Wrap)  team3Wrap.style.display='none';
+      renderAdmSchedCompact();
+    } else {
+      // Повний вид — три окремі таблиці
+      if(compactWrap) compactWrap.innerHTML='';
+      if(fullWrap)    fullWrap.style.display='none';
+      if(team3Wrap){
+        team3Wrap.style.display='block';
+        team3Wrap.innerHTML = TEAM3_SUBGROUPS.map((sg,gi)=>{
+          const sgStaff = myStaff().filter(e=>(e.subteam||0)===gi);
+          return `<div style="margin-bottom:28px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 14px;background:${sg.color}12;border-left:3px solid ${sg.color};border-radius:0 8px 8px 0">
+              <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
+              <span style="font-size:11px;color:var(--muted)">${sgStaff.length} агентів</span>
+            </div>
+            <div class="sched-wrap"><table class="sched-table" id="adm-sched-table-sg${gi}"></table></div>
+          </div>`;
+        }).join('');
+        TEAM3_SUBGROUPS.forEach((_,gi)=>{
+          const sgStaff = myStaff().filter(e=>(e.subteam||0)===gi);
+          renderSchedTable(`adm-sched-table-sg${gi}`,admSchedY,admSchedM,true,sgStaff);
+        });
+      }
     }
   } else {
     if(team3Wrap) team3Wrap.style.display='none';
