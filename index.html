@@ -2813,6 +2813,8 @@ function renderEmployee(){
   const e=me.data;
   const teamId = e.teamId||1;
   const isTicketing = [4, 5, 7].includes(teamId);
+  // Команди без показників зарплати/KPI на головній
+  const hidePayCards = [2, 3, 4, 5, 6, 7].includes(teamId);
 
   // Show remarks tab only for agents in audited teams
   const remarksTab = document.getElementById('emp-remarks-tab');
@@ -2850,18 +2852,17 @@ function renderEmployee(){
   document.getElementById('emp-avatar').innerHTML=generateAvatar(firstName,isBoy);
   renderTodayTomorrow();
 
-  // Показники і калькулятор — ховаємо для Ticketing Support
+  // Показники і калькулятор — ховаємо для команд без зарплатних карток
   const cardsWrap = document.getElementById('emp-cards');
   const calcWrap  = document.getElementById('etab-salary');
   const perfCardsWrap = document.getElementById('emp-home-perf');
-  // Знайдемо заголовок "МОЇ ПОКАЗНИКИ" — він перед emp-cards
   if(cardsWrap && cardsWrap.previousElementSibling){
-    cardsWrap.previousElementSibling.style.display = isTicketing ? 'none' : '';
+    cardsWrap.previousElementSibling.style.display = hidePayCards ? 'none' : '';
   }
-  if(cardsWrap) cardsWrap.style.display = isTicketing ? 'none' : '';
-  if(perfCardsWrap) perfCardsWrap.style.display = isTicketing ? 'none' : '';
+  if(cardsWrap) cardsWrap.style.display = hidePayCards ? 'none' : '';
+  if(perfCardsWrap) perfCardsWrap.style.display = hidePayCards ? 'none' : '';
 
-  if(!isTicketing){
+  if(!hidePayCards){
     const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
     document.getElementById('emp-cards').innerHTML=`
       <div class="kard"><div class="kard-label">Ставка за день</div><div class="kard-val y">${(e.rate||402)} ₴</div></div>
