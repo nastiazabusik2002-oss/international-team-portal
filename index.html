@@ -1336,6 +1336,8 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div class="page-h">МІЙ KPI</div>
         <div class="page-sub">Оцінки від керівництва по місяцях</div>
         <div id="adm-my-kpi-content"></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin:28px 0 16px" id="adm-my-kpi-checklist-title"></div>
+        <div id="adm-my-kpi-checklist"></div>
       </div>
 
       <!-- TL/CHIEF EXCHANGE (only for TL1,2,3) -->
@@ -1509,6 +1511,8 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="page-h">KPI ТІМ ЛІДІВ</div>
       <div class="page-sub">Щомісячна оцінка керівників відділів</div>
       <div id="chief-tl-kpi-content"></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);margin:28px 0 16px">ЧЕКЛІСТ ВИКОНАННЯ</div>
+      <div id="chief-kpi-checklist-wrap"></div>
     </div>
 
     <!-- TL EXCHANGE TAB -->
@@ -1852,7 +1856,6 @@ function getTeamShifts(teamId){
   const tid = teamId || (me && (me.teamId || (me.data && (me.data.teamId||1)))) || 1;
   if(!db.shiftTypes) db.shiftTypes = {};
   if(!db.shiftTypes[tid] || db.shiftTypes[tid].length === 0){
-    // Повертаємо дефолти БЕЗ запису в db — щоб не перетерти збережені типи змін команди
     return DEFAULT_SHIFT_TYPES.map((s,i)=>({
       id: 'ts_'+tid+'_'+i, label:s.label, time:s.time, color:s.color
     }));
@@ -2246,7 +2249,7 @@ function showApp(){
   if(me.type==='admin'){
     document.getElementById('topbar-name').textContent= me.leadName ? me.leadName.split(' ')[0]+' · '+me.teamName : 'Адміністратор';
     document.getElementById('admin-view').style.display='block';
-    const isTlKpi = [1,2,3].includes(me.teamId);
+    const isTlKpi = [1,2,3,6].includes(me.teamId);
     const kpiTab = document.getElementById('adm-my-kpi-tab');
     const tlExTab = document.getElementById('adm-tl-exchange-tab');
     if(kpiTab) kpiTab.style.display = isTlKpi ? '' : 'none';
@@ -5632,11 +5635,10 @@ async function autoRefreshDB(){
   const activeAdm = document.querySelector('.adm-section.active');
   if(activeAdm){
     const id = activeAdm.id;
-    // Блокуємо refresh для: графіку, продуктивності, персоналу, типів змін, посилань, закриття місяця
     if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly'].includes(id)) return;
   }
 
-  // Не оновлювати якщо відкрите будь-яке модальне вікно (редагування агента, добавлення тощо)
+  // Не оновлювати якщо відкрите будь-яке модальне вікно
   if(document.querySelector('.modal-ov.open')) return;
 
   // Не оновлювати якщо фокус на будь-якому input/textarea
@@ -5658,9 +5660,8 @@ async function autoRefreshDB(){
         const freshDb = JSON.parse(fresh);
 
         // MERGE STRATEGY: захищаємо всі критичні дані від перезапису при autoRefresh
-        // Принцип: якщо поточні дані новіші/повніші — не даємо їм злетіти
 
-        // 1. SCHEDULE — беремо версію агента з більшою кількістю заповнених днів
+        // 1. SCHEDULE
         if(db.schedule && freshDb.schedule){
           Object.keys(db.schedule).forEach(key=>{
             const cur = db.schedule[key];
@@ -5676,31 +5677,24 @@ async function autoRefreshDB(){
           });
         }
 
-        // 2. STAFF — захищаємо список агентів поточної команди від перезапису
-        // Якщо TL щойно додав/видалив агента, autoRefresh не повинен це скасувати
+        // 2. STAFF
         if(db.staff && freshDb.staff && me){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId){
-            // Беремо агентів поточної команди з НАШОГО db (щойно збереженого)
             const curTeamStaff = db.staff.filter(s=>(s.teamId||1)===myTeamId);
-            // Видаляємо агентів нашої команди зі свіжих даних (можуть бути застарілими)
             freshDb.staff = freshDb.staff.filter(s=>(s.teamId||1)!==myTeamId);
-            // Вставляємо наших актуальних агентів
             freshDb.staff.push(...curTeamStaff);
-            // Зберігаємо nextId якщо наш більший (щоб не було дублів id)
             if((db.nextId||0) > (freshDb.nextId||0)) freshDb.nextId = db.nextId;
           }
         }
 
-        // 3. SHIFT TYPES — захищаємо типи змін поточної команди
+        // 3. SHIFT TYPES
         if(db.shiftTypes && Object.keys(db.shiftTypes).length > 0){
           if(!freshDb.shiftTypes) freshDb.shiftTypes = {};
           const myTid = me ? String(me.teamId || (me.data && me.data.teamId) || 1) : null;
           Object.keys(db.shiftTypes).forEach(tid=>{
             const cur = db.shiftTypes[tid];
             const frsh = freshDb.shiftTypes[tid];
-            // Для своєї команди — завжди зберігаємо поточну версію (безумовно)
-            // Для чужих команд — тільки якщо свіжа порожня/менша
             if(cur && cur.length > 0){
               if(tid === myTid || !frsh || frsh.length < cur.length){
                 freshDb.shiftTypes[tid] = cur;
@@ -5709,28 +5703,26 @@ async function autoRefreshDB(){
           });
         }
 
-        // 4. TEAM LINKS — захищаємо посилання поточної команди
+        // 4. TEAM LINKS
         if(db.teamLinks && me){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.teamLinks[myTeamId]){
             if(!freshDb.teamLinks) freshDb.teamLinks = {};
-            if(!freshDb.teamLinks[myTeamId] || freshDb.teamLinks[myTeamId].length < db.teamLinks[myTeamId].length){
+            if(!freshDb.teamLinks[myTeamId] || freshDb.teamLinks[myTeamId].length < db.teamLinks[myTeamId].length)
               freshDb.teamLinks[myTeamId] = db.teamLinks[myTeamId];
-            }
           }
         }
 
-        // 5. DAY COLORS — захищаємо кольори дат поточної команди (Ticketing)
+        // 5. DAY COLORS
         if(db.dayColors && me){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.dayColors[myTeamId]){
             if(!freshDb.dayColors) freshDb.dayColors = {};
-            // Завжди зберігаємо поточні кольори своєї команди (безумовно)
             freshDb.dayColors[myTeamId] = db.dayColors[myTeamId];
           }
         }
 
-        // 6. TL SCHEDULE — захищаємо графік TL/Chief
+        // 6. TL SCHEDULE
         if(db.tlSchedule && freshDb.tlSchedule && me){
           Object.keys(db.tlSchedule).forEach(key=>{
             const cur = db.tlSchedule[key];
@@ -5746,33 +5738,30 @@ async function autoRefreshDB(){
           });
         }
 
-        // 7. STAFF ORDER — порядок агентів
+        // 7. STAFF ORDER
         if(db.staffOrder && me){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.staffOrder[myTeamId]){
             if(!freshDb.staffOrder) freshDb.staffOrder = {};
-            // Завжди зберігаємо поточний порядок своєї команди (безумовно)
             freshDb.staffOrder[myTeamId] = db.staffOrder[myTeamId];
           }
         }
 
-        // 8. TL KPI (оцінки від Chief) — захищаємо від перезапису
+        // 8. TL KPI оцінки від Chief
         if(db.tlKpi && me && me.type === 'chief'){
           if(!freshDb.tlKpi) freshDb.tlKpi = {};
           Object.keys(db.tlKpi).forEach(monthKey=>{
             if(!freshDb.tlKpi[monthKey]) freshDb.tlKpi[monthKey] = {};
             Object.keys(db.tlKpi[monthKey]).forEach(tlId=>{
-              // Для кожного TL зберігаємо нашу версію якщо вона повніша
               const cur = db.tlKpi[monthKey][tlId];
               const frsh = freshDb.tlKpi[monthKey][tlId];
-              if(cur && Object.keys(cur).length > 0 && (!frsh || Object.keys(cur).length >= Object.keys(frsh).length)){
+              if(cur && Object.keys(cur).length > 0 && (!frsh || Object.keys(cur).length >= Object.keys(frsh).length))
                 freshDb.tlKpi[monthKey][tlId] = cur;
-              }
             });
           });
         }
 
-        // 9. SCHED RULES — правила авто-генерації графіку (per team)
+        // 9. SCHED RULES
         if(db.schedRules && me){
           const myTidStr = String(me.teamId || (me.data && me.data.teamId) || 1);
           if(db.schedRules[myTidStr]){
@@ -5781,22 +5770,28 @@ async function autoRefreshDB(){
           }
         }
 
-        // 10. REMARKS — зауваження: зберігаємо якщо наших більше (аудитор щойно додав)
+        // 10. TL KPI CHECKS — чеклісти
+        if(db.tlKpiChecks && me){
+          const myTid = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTid){
+            if(!freshDb.tlKpiChecks) freshDb.tlKpiChecks = {};
+            if(db.tlKpiChecks[myTid]) freshDb.tlKpiChecks[myTid] = db.tlKpiChecks[myTid];
+          }
+        }
+
+        // 11. REMARKS
         if(db.remarks && db.remarks.length > 0){
           if(!freshDb.remarks || freshDb.remarks.length < db.remarks.length){
             freshDb.remarks = db.remarks;
           } else {
-            // Мержимо по id — якщо є нові або відповіді — зберігаємо
             const freshIds = new Set(freshDb.remarks.map(r=>r.id));
             db.remarks.forEach(r=>{
               if(!freshIds.has(r.id)){
-                freshDb.remarks.push(r); // нове зауваження
+                freshDb.remarks.push(r);
               } else if(r.replies && r.replies.length > 0){
-                // Оновлюємо відповіді якщо додали
                 const idx = freshDb.remarks.findIndex(fr=>fr.id===r.id);
-                if(idx>=0 && (!freshDb.remarks[idx].replies || freshDb.remarks[idx].replies.length < r.replies.length)){
+                if(idx>=0 && (!freshDb.remarks[idx].replies || freshDb.remarks[idx].replies.length < r.replies.length))
                   freshDb.remarks[idx].replies = r.replies;
-                }
               }
             });
           }
@@ -5805,14 +5800,13 @@ async function autoRefreshDB(){
         _lastDbStr = fresh;
         db = freshDb;
 
-        // Re-render current view — правильний рендер для КОЖНОГО типу юзера
+        // Re-render
         if(me){
           if(me.type==='admin'){
             const btn=document.querySelector('.adm-tab.active');
             const activeAdm2=document.querySelector('.adm-section.active');
             if(activeAdm2&&btn){ const id=activeAdm2.id.replace('adm-',''); admTab(id,btn); }
           } else if(me.type==='auditor'){
-            // Аудитор — рендеримо активну вкладку аудитора
             const activeAudTab = document.querySelector('#auditor-view .nav-tab.active');
             if(activeAudTab){
               const tabFn = activeAudTab.getAttribute('onclick');
@@ -5821,7 +5815,7 @@ async function autoRefreshDB(){
               else if(tabFn && tabFn.includes('company')) renderAuditorCompanyTab && renderAuditorCompanyTab();
             }
           } else if(me.type==='chief'){
-            // Chief — не перерендерюємо автоматично, щоб не перебити редагування
+            // Chief не перерендерюємо автоматично
           } else {
             renderEmployee();
           }
@@ -8424,7 +8418,6 @@ async function submitRemark(){
   document.getElementById('audit-text').value = '';
   document.getElementById('audit-agent-sel').value = '';
 
-  // Перейти в архів і показати збережене
   const histTab = document.querySelector('#auditor-view .nav-tab[onclick*="history"]');
   if(histTab) auditorTab('history', histTab);
   else {
@@ -8436,7 +8429,6 @@ async function submitRemark(){
 function renderAuditorHistory(){
   const el = document.getElementById('audit-history-list');
   if(!el) return;
-  // Всі аудитори бачать всі зауваження, своє виділено
   const remarks = (db.remarks||[]).slice().reverse();
   if(!remarks.length){
     el.innerHTML='<div class="empty-state" style="padding:40px">Зауважень ще немає</div>';
@@ -8444,13 +8436,13 @@ function renderAuditorHistory(){
   }
   const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
   el.innerHTML = remarks.map(r=>{
+    const isMe = r.auditorId === me.data.id;
     const replies = (r.replies||[]);
     const replyHtml = replies.map(rep=>`
       <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 Агент'} · ${formatRemarkDate(rep.createdAt)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 Агент'} · ${formatRemarkDate(rep.createdAt)}</div>
         <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
       </div>`).join('');
-    const isMe = r.auditorId === me.data.id;
     return `
     <div style="background:${isMe?'var(--accent-dim)':'var(--surface)'};border:1px solid ${replies.length?'var(--accent-glow)':isMe?'rgba(181,123,238,.25)':'var(--border)'};border-radius:12px;padding:14px 18px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
@@ -8513,19 +8505,19 @@ function renderAdmRemarks(){
     return `<div style="margin-bottom:20px">
       <div class="sec-title" style="margin-top:0">${agent?agent.name:'Агент'} <span style="color:var(--muted);font-weight:400;font-size:11px">${rems.length} зауваж.</span></div>
       ${rems.map(r=>{
-        const replies = (r.replies||[]);
-        const replyHtml = replies.map(rep=>`
-          <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent-glow)">
-            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 '+rep.authorName.split(' ')[0]} · ${formatRemarkDate(rep.createdAt)}</div>
+        const replies=(r.replies||[]);
+        const replyHtml=replies.map(rep=>`
+          <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 '+rep.authorName.split(' ')[0]} · ${formatRemarkDate(rep.createdAt)}</div>
             <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
           </div>`).join('');
-        const replyFormId = 'adm-reply-'+r.id;
+        const replyFormId='adm-reply-'+r.id;
         return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <span>${TYPE_ICON[r.type]||'📋'}</span>
             <span style="font-size:11px;color:var(--muted2);background:var(--surface2);padding:2px 8px;border-radius:6px">${formatRemarkMonth(r.month)}</span>
-            <span style="font-size:11px;color:var(--accent2);font-weight:600">🎧 ${r.auditorName.split(' ')[0]}</span>
+            <span style="font-size:11px;color:var(--accent2);font-weight:600">🎧 ${r.auditorName?r.auditorName.split(' ')[0]:'?'}</span>
             <span style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkDate(r.createdAt)}</span>
           </div>
           <div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:8px">${r.text}</div>
@@ -8537,7 +8529,7 @@ function renderAdmRemarks(){
               <button onclick="document.getElementById('${replyFormId}').style.display='none'" style="background:var(--surface2);border:var(--glass-border);border-radius:8px;color:var(--muted);padding:7px 12px;font-size:12px;cursor:pointer">Скасувати</button>
             </div>
           </div>
-          <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer;transition:.2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='';this.style.color=''">💬 Відповісти</button>
+          <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer">💬 Відповісти</button>
         </div>`;
       }).join('')}
     </div>`;
@@ -8559,7 +8551,7 @@ function renderEmpRemarks(){
     const replies = (r.replies||[]);
     const replyHtml = replies.map(rep=>`
       <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 Ти'} · ${formatRemarkDate(rep.createdAt)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 Ти'} · ${formatRemarkDate(rep.createdAt)}</div>
         <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
       </div>`).join('');
     const replyFormId = 'emp-reply-'+r.id;
@@ -8580,22 +8572,20 @@ function renderEmpRemarks(){
           <button onclick="document.getElementById('${replyFormId}').style.display='none'" style="background:var(--surface2);border:var(--glass-border);border-radius:8px;color:var(--muted);padding:7px 12px;font-size:12px;cursor:pointer">Скасувати</button>
         </div>
       </div>
-      <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer;transition:.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='';this.style.color=''">💬 Відповісти</button>
+      <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer">💬 Відповісти</button>
     </div>`;
   }).join('');
 }
 
-// ── Відповідь на зауваження (TL або агент) ──
+// ── Відповідь на зауваження ──
 async function saveRemarkReply(remarkId, role){
   const prefix = role==='tl' ? 'adm-reply-text-' : 'emp-reply-text-';
   const inp = document.getElementById(prefix+remarkId);
   if(!inp) return;
   const text = inp.value.trim();
   if(!text){ alert('Введіть текст відповіді'); return; }
-
   const remark = (db.remarks||[]).find(r=>r.id===remarkId);
   if(!remark){ alert('Зауваження не знайдено'); return; }
-
   if(!remark.replies) remark.replies = [];
   remark.replies.push({
     role,
@@ -8603,14 +8593,10 @@ async function saveRemarkReply(remarkId, role){
     text,
     createdAt: new Date().toISOString()
   });
-
   await saveDB();
-
-  // Закрити форму і перерендерити
   const formId = (role==='tl'?'adm-reply-':'emp-reply-')+remarkId;
   const form = document.getElementById(formId);
   if(form) form.style.display='none';
-
   if(role==='tl') renderAdmRemarks();
   else renderEmpRemarks();
 }
@@ -9450,7 +9436,266 @@ const TL_KPI_LEADS = [
   { teamId:1, name:'Zabusyk Anastasiia' },
   { teamId:2, name:'Kobylianskyi Yurii' },
   { teamId:3, name:'Maslii Oleksandra' },
+  { teamId:6, name:'Snihur Viktoriia' },
 ];
+
+
+// ══ TL KPI CHECKLIST DATA ══
+const TL_KPI_ALL_LEADS = [
+  { teamId:1, name:'Zabusyk Anastasiia',    short:'Настя', color:'#4a3bcc' },
+  { teamId:2, name:'Kobylianskyi Yurii',    short:'Юра',   color:'#1a6e50' },
+  { teamId:3, name:'Maslii Oleksandra',     short:'Саша',  color:'#7a3e08' },
+  { teamId:6, name:'Snihur Viktoriia',      short:'Віка',  color:'#1a6e3a' },
+];
+
+const TL_KPI_BLOCKS = [
+  {
+    id: 'discipline', label: '\u0414\u0438\u0441\u0446\u0438\u043f\u043b\u0456\u043d\u0430\u0440\u043d\u0456 \u043f\u043e\u043a\u0430\u0437\u043d\u0438\u043a\u0438', weight: 25, color: '#5b4bcc',
+    items: [
+      { id:'d1', name:'\u041d\u0435\u0432\u0438\u0445\u0456\u0434 \u043d\u0430 \u0437\u043c\u0456\u043d\u0443', norm:'0 \u043d\u0435\u0437\u0430\u043a\u0440\u0438\u0442\u0438\u0445 \u0437\u043c\u0456\u043d / \u043c\u0456\u0441\u044f\u0446\u044c',
+        desc:'\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0438\u0442\u0438 \u043f\u0440\u0438\u0441\u0443\u0442\u043d\u0456\u0441\u0442\u044c \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0430 (\u043f\u0440\u0438\u0432\u0456\u0442\u0430\u043d\u043d\u044f \u0432 \u0447\u0430\u0442\u0456 \u0430\u0431\u043e Yaware). \u041f\u0440\u0438 \u043d\u0435\u0432\u0438\u0445\u043e\u0434\u0456 \u2014 \u0437\u043d\u0430\u0439\u0442\u0438 \u0437\u0430\u043c\u0456\u043d\u0443 \u0434\u043e 2 \u0433\u043e\u0434\u0438\u043d \u0442\u0430 \u043f\u043e\u0432\u0456\u0434\u043e\u043c\u0438\u0442\u0438 \u043a\u0435\u0440\u0456\u0432\u043d\u0438\u043a\u0430. TL \u043d\u0435 \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0430\u0454 \u0437\u0430 \u0441\u0430\u043c \u0444\u0430\u043a\u0442 \u043d\u0435\u0432\u0438\u0445\u043e\u0434\u0443 \u2014 \u0442\u0456\u043b\u044c\u043a\u0438 \u0437\u0430 \u0437\u0430\u043a\u0440\u0438\u0442\u0443 \u0437\u043c\u0456\u043d\u0443.',
+        tlIds:[1,2,3,6] },
+      { id:'d2', name:'\u0417\u0430\u043f\u0456\u0437\u043d\u0435\u043d\u043d\u044f \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0456\u0432', norm:'\u2264 2 \u0435\u043f\u0456\u0437\u043e\u0434\u0438 \u043d\u0430 \u043a\u043e\u043c\u0430\u043d\u0434\u0443 / \u043c\u0456\u0441\u044f\u0446\u044c',
+        desc:'\u0424\u0456\u043a\u0441\u0443\u0432\u0430\u0442\u0438 \u043a\u043e\u0436\u043d\u0435 \u0437\u0430\u043f\u0456\u0437\u043d\u0435\u043d\u043d\u044f \u0432 \u043a\u0430\u0440\u0442\u0456 \u044f\u043a\u043e\u0441\u0442\u0456 (\u0449\u043e\u0442\u0438\u0436\u043d\u044f \u0430\u0431\u043e 2 \u0440\u0430\u0437\u0438 \u043d\u0430 \u043c\u0456\u0441\u044f\u0446\u044c): \u0445\u0442\u043e, \u043a\u043e\u043b\u0438, \u0441\u043a\u0456\u043b\u044c\u043a\u0438 \u0445\u0432\u0438\u043b\u0438\u043d. \u041f\u0440\u0438 3+ \u0437\u0430\u043f\u0456\u0437\u043d\u0435\u043d\u043d\u044f\u0445 \u043e\u0434\u043d\u043e\u0433\u043e \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0430 \u2014 \u043e\u0431\u043e\u0432\u2019\u044f\u0437\u043a\u043e\u0432\u0430 1:1.',
+        tlIds:[1,2,3] },
+      { id:'d3', name:'Active Time \u0443 Yaware', norm:'\u2265 85% \u0432\u0456\u0434 \u0442\u0440\u0438\u0432\u0430\u043b\u043e\u0441\u0442\u0456 \u0437\u043c\u0456\u043d\u0438',
+        desc:'\u0429\u043e\u0434\u043d\u044f \u043f\u0435\u0440\u0435\u0433\u043b\u044f\u0434\u0430\u0442\u0438 Active Time \u043f\u043e \u0432\u0441\u0456\u0439 \u0433\u0440\u0443\u043f\u0456. \u041f\u0440\u0438 \u043f\u043e\u043a\u0430\u0437\u043d\u0438\u043a\u0443 \u043d\u0438\u0436\u0447\u0435 85% \u2014 \u0437\u2019\u044f\u0441\u0443\u0432\u0430\u0442\u0438 \u043f\u0440\u0438\u0447\u0438\u043d\u0443. \u041e\u043a\u0440\u0435\u043c\u043e \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u043d\u0430 "\u0437\u0430\u0442\u0438\u0441\u043a\u0430\u043d\u043d\u044f" \u2014 \u0448\u0442\u0443\u0447\u043d\u0443 \u0430\u043a\u0442\u0438\u0432\u043d\u0456\u0441\u0442\u044c \u0431\u0435\u0437 \u0440\u0435\u0430\u043b\u044c\u043d\u043e\u0457 \u0440\u043e\u0431\u043e\u0442\u0438.',
+        tlIds:[1,2,3,6] },
+      { id:'d4', name:'\u041b\u043e\u0433\u0456\u043d \u0443 \u0441\u0438\u0441\u0442\u0435\u043c\u0456 \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0456\u0457', norm:'100% \u043b\u043e\u0433\u0456\u043d\u0456\u0432 \u0434\u043e \u043f\u043e\u0447\u0430\u0442\u043a\u0443 \u0437\u043c\u0456\u043d\u0438',
+        desc:'\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u043b\u043e\u0433\u0456\u043d\u0438 \u0432 \u0430\u0434\u043c\u0456\u043d-\u043f\u0430\u043d\u0435\u043b\u0456 \u043d\u0430 \u043f\u043e\u0447\u0430\u0442\u043a\u0443 \u043a\u043e\u0436\u043d\u043e\u0457 \u0437\u043c\u0456\u043d\u0438. \u0412\u0456\u0434\u0441\u0443\u0442\u043d\u0456\u0441\u0442\u044c = \u0432\u0442\u0440\u0430\u0447\u0435\u043d\u0438\u0439 \u0447\u0430\u0441 \u043d\u0430 \u043b\u0456\u043d\u0456\u0457. \u0424\u0456\u043a\u0441\u0443\u0432\u0430\u0442\u0438. \u041f\u0440\u0438 \u043f\u0435\u0440\u0448\u043e\u043c\u0443 \u043f\u043e\u0440\u0443\u0448\u0435\u043d\u043d\u0456 \u2014 \u043d\u0430\u0433\u0430\u0434\u0430\u0442\u0438 \u043e\u0441\u043e\u0431\u0438\u0441\u0442\u043e.',
+        tlIds:[1,2,3] },
+    ]
+  },
+  {
+    id: 'quality', label: '\u042f\u043a\u0456\u0441\u0442\u044c \u0440\u043e\u0431\u043e\u0442\u0438', weight: 30, color: '#2d8a6e',
+    items: [
+      { id:'q1', name:'CSAT', norm:'\u2265 4.0 \u0441\u0435\u0440\u0435\u0434\u043d\u0454',
+        desc:'\u0429\u043e\u0442\u0438\u0436\u043d\u044f \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u0441\u0435\u0440\u0435\u0434\u043d\u0456\u0439 CSAT. \u041f\u0440\u0438 \u043d\u0438\u0436\u0447\u0435 4.0 \u2014 \u0437\u043d\u0430\u0439\u0442\u0438 \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u0456 \u043d\u0435\u0433\u0430\u0442\u0438\u0432\u043d\u0456 \u0432\u0438\u043f\u0430\u0434\u043a\u0438 \u0442\u0430 \u0440\u043e\u0437\u0456\u0431\u0440\u0430\u0442\u0438 \u043e\u0441\u043e\u0431\u0438\u0441\u0442\u043e.',
+        tlIds:[1,2,3,6] },
+      { id:'q2', name:'\u041e\u043f\u0440\u0430\u0446\u044e\u0432\u0430\u043d\u043d\u044f \u0447\u0435\u043a\u0456\u043d\u0456\u0432 \u0442\u0430 \u0444\u0456\u043a\u0441\u0430\u0446\u0456\u044f \u0443 Zamad', norm:'100% \u0432\u043f\u0440\u043e\u0434\u043e\u0432\u0436 \u0437\u043c\u0456\u043d\u0438',
+        desc:'\u042e\u0440\u0430: \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0430\u0454 \u0437\u0430 \u0434\u0435\u043d\u043d\u0456 \u0437\u043c\u0456\u043d\u0438. \u0421\u0430\u0448\u0430: \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0430\u0454 \u0437\u0430 \u043d\u0456\u0447\u043d\u0456 \u0442\u0430 \u0432\u0438\u0445\u0456\u0434\u043d\u0456. \u041d\u0430\u0441\u0442\u044f: \u0437\u0430\u0433\u0430\u043b\u044c\u043d\u0438\u0439 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044c. \u0429\u043e\u0434\u043d\u044f \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u0436\u0443\u0440\u043d\u0430\u043b Zamad \u043d\u0430 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0438.',
+        tlIds:[1,2,3] },
+      { id:'q3', name:'\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0430 5 \u043a\u0435\u0439\u0441\u0456\u0432 \u2014 \u043a\u043e\u0440\u0435\u043a\u0442\u043d\u0456\u0441\u0442\u044c', norm:'5 \u043a\u0435\u0439\u0441\u0456\u0432 / \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0430',
+        desc:'\u0429\u043e\u0442\u0438\u0436\u043d\u044f \u0430\u0431\u043e 2 \u0440\u0430\u0437\u0438 \u043d\u0430 \u043c\u0456\u0441\u044f\u0446\u044c \u2014 5 \u0440\u0430\u043d\u0434\u043e\u043c\u043d\u0438\u0445 \u043a\u0435\u0439\u0441\u0456\u0432 \u0437 Jira. \u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0438\u0442\u0438 \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u0456\u0441\u0442\u044c \u0440\u0456\u0448\u0435\u043d\u043d\u044f. \u041f\u043e\u043c\u0438\u043b\u043a\u0438 \u0440\u043e\u0437\u0456\u0431\u0440\u0430\u0442\u0438 \u0437 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u043e\u043c.',
+        tlIds:[6] },
+      { id:'q4', name:'\u041a\u043e\u0440\u0435\u043a\u0442\u043d\u0456\u0441\u0442\u044c \u0444\u0456\u043a\u0441\u0430\u0446\u0456\u0457 \u0432 Jira', norm:'0 \u0433\u0440\u0443\u0431\u0438\u0445 \u043f\u043e\u043c\u0438\u043b\u043e\u043a',
+        desc:'\u0420\u0430\u043d\u0434\u043e\u043c\u043d\u0430 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0430 \u043f\u043e\u043b\u0456\u0432: \u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0456\u044f, \u0441\u0442\u0430\u0442\u0443\u0441, \u043e\u043f\u0438\u0441, \u0434\u0435\u0434\u043b\u0430\u0439\u043d. \u041e\u043a\u0440\u0435\u043c\u043e \u0432\u0456\u0434 \u0441\u0443\u0442\u0456 \u043e\u043f\u0440\u0430\u0446\u044e\u0432\u0430\u043d\u043d\u044f.',
+        tlIds:[6] },
+      { id:'q5', name:'\u0417\u0432\u0456\u0442 \u043f\u043e \u043a\u0456\u043b\u044c\u043a\u043e\u0441\u0442\u0456 \u0441\u043a\u0430\u0440\u0433', norm:'\u0417\u0432\u0456\u0442 \u0434\u043e 5-\u0433\u043e \u0447\u0438\u0441\u043b\u0430',
+        desc:'\u041a\u0456\u043b\u044c\u043a\u0456\u0441\u0442\u044c \u0441\u043a\u0430\u0440\u0433 + \u043f\u0440\u0435\u0441\u043a\u0430\u0440\u0433, \u0434\u0438\u043d\u0430\u043c\u0456\u043a\u0430 vs \u043f\u043e\u043f\u0435\u0440\u0435\u0434\u043d\u0456\u0439 \u043c\u0456\u0441\u044f\u0446\u044c, \u0440\u043e\u0437\u0431\u0438\u0432\u043a\u0430 \u043f\u043e \u0442\u0438\u043f\u0430\u0445. \u041d\u0430\u0434\u0456\u0441\u043b\u0430\u0442\u0438 \u043a\u0435\u0440\u0456\u0432\u043d\u0438\u043a\u0443.',
+        tlIds:[6] },
+    ]
+  },
+  {
+    id: 'development', label: '\u0420\u043e\u0437\u0432\u0438\u0442\u043e\u043a \u0442\u0430 \u0456\u043d\u0456\u0446\u0456\u0430\u0442\u0438\u0432\u0430', weight: 20, color: '#b85e1a',
+    items: [
+      { id:'dev1', name:'\u0414\u0435\u0442\u0430\u043b\u044c\u043d\u0438\u0439 \u0430\u0443\u0434\u0438\u0442 \u0434\u0432\u043e\u0445 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0456\u0432', norm:'2 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0438 / \u043c\u0456\u0441\u044f\u0446\u044c',
+        desc:'\u041e\u0431\u0440\u0430\u0442\u0438 2 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0456\u0432 \u0434\u043b\u044f \u043f\u043e\u0432\u043d\u043e\u0433\u043e \u0441\u0443\u043f\u0440\u043e\u0432\u043e\u0434\u0443: \u0434\u0437\u0432\u0456\u043d\u043a\u0438, \u0447\u0430\u0442\u0438, \u0444\u0456\u043a\u0441\u0430\u0446\u0456\u044f. \u041c\u0435\u0442\u0430 \u2014 \u0440\u043e\u0437\u0432\u0438\u0442\u043e\u043a. \u0421\u0444\u043e\u0440\u043c\u0443\u0432\u0430\u0442\u0438 \u0437\u0432\u0456\u0442 + \u043f\u043b\u0430\u043d \u0440\u043e\u0437\u0432\u0438\u0442\u043a\u0443.',
+        tlIds:[1,2,3] },
+      { id:'dev2', name:'\u0412\u0435\u0434\u0435\u043d\u043d\u044f \u043d\u043e\u0432\u0435\u043d\u044c\u043a\u0438\u0445 \u0430\u0433\u0435\u043d\u0442\u0456\u0432', norm:'\u041f\u043e\u0432\u043d\u0438\u0439 \u0441\u0443\u043f\u0440\u043e\u0432\u0456\u0434 \u043f\u0435\u0440\u0448\u0456 2 \u043c\u0456\u0441\u044f\u0446\u0456',
+        desc:'\u0417\u0430\u043a\u0440\u0456\u043f\u0438\u0442\u0438 \u043c\u0435\u043d\u0442\u043e\u0440\u0430, \u043f\u0440\u043e\u0432\u043e\u0434\u0438\u0442\u0438 1:1 \u0449\u043e\u0442\u0438\u0436\u043d\u044f, \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u0447\u0430\u0442\u0438 \u0442\u0430 \u0437\u043d\u0430\u043d\u043d\u044f \u0442\u0435\u043c. \u0429\u043e\u043c\u0456\u0441\u044f\u0446\u044f \u2014 \u0437\u0432\u0456\u0442 \u043a\u0435\u0440\u0456\u0432\u043d\u0438\u043a\u0443.',
+        tlIds:[1,2,3] },
+      { id:'dev3', name:'\u0410\u043d\u0430\u043b\u0456\u0437 \u0442\u043e\u043f \u043f\u0438\u0442\u0430\u043d\u044c \u0432\u0456\u0434 \u043a\u043b\u0456\u0454\u043d\u0442\u0456\u0432', norm:'\u0410\u043d\u0430\u043b\u0456\u0437 \u0434\u043e 25-\u0433\u043e \u0447\u0438\u0441\u043b\u0430',
+        desc:'\u042e\u043b\u044f \u0442\u0430 \u0425\u0440\u0438\u0441\u0442\u044f \u0437\u0431\u0438\u0440\u0430\u044e\u0442\u044c \u043f\u0438\u0442\u0430\u043d\u043d\u044f. \u0410\u043d\u0430\u043b\u0456\u0437\u0443\u0432\u0430\u0442\u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u044e\u0432\u0430\u043d\u0456, \u0432\u0438\u0437\u043d\u0430\u0447\u0430\u0442\u0438 \u043f\u0435\u0440\u0448\u043e\u043f\u0440\u0438\u0447\u0438\u043d\u0443. \u0412\u0438\u0441\u043d\u043e\u0432\u043a\u0438 \u2014 \u043a\u0435\u0440\u0456\u0432\u043d\u0438\u043a\u0443.',
+        tlIds:[6] },
+      { id:'dev4', name:'\u0420\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0430\u0446\u0456\u0457 \u0449\u043e\u0434\u043e \u043d\u0430\u0432\u0447\u0430\u043d\u044c', norm:'\u2265 1 \u0440\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0430\u0446\u0456\u044f / \u043c\u0456\u0441\u044f\u0446\u044c',
+        desc:'\u0425\u0442\u043e + \u0442\u0435\u043c\u0430 + \u043f\u0440\u0438\u0447\u0438\u043d\u0430. \u041f\u0435\u0440\u0435\u0434\u0430\u0442\u0438 \u043f\u0438\u0441\u044c\u043c\u043e\u0432\u043e.',
+        tlIds:[6] },
+    ]
+  },
+  {
+    id: 'management', label: '\u0423\u043f\u0440\u0430\u0432\u043b\u0456\u043d\u043d\u044f \u043a\u043e\u043c\u0430\u043d\u0434\u043e\u044e', weight: 25, color: '#9e3a6e',
+    items: [
+      { id:'m1', name:'\u041f\u0440\u043e\u0432\u0435\u0441\u0442\u0438 1:1 \u0437 \u043a\u043e\u0436\u043d\u0438\u043c \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u043e\u043c', norm:'1 \u0437\u0443\u0441\u0442\u0440\u0456\u0447 \u00d7 N / \u043c\u0456\u0441\u044f\u0446\u044c',
+        desc:'10\u201315 \u0445\u0432, \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u0438\u0439 \u0437\u0432\u043e\u0440\u043e\u0442\u043d\u0438\u0439 \u0437\u0432\u2019\u044f\u0437\u043e\u043a, \u043f\u0438\u0442\u0430\u0442\u0438 \u0449\u043e \u0437\u0430\u0432\u0430\u0436\u0430\u0454. \u0424\u0456\u043a\u0441\u0443\u0432\u0430\u0442\u0438 \u043f\u0456\u0434\u0441\u0443\u043c\u043e\u043a.',
+        tlIds:[1,2,3,6] },
+      { id:'m2', name:'\u041f\u0440\u043e\u0432\u0435\u0441\u0442\u0438 \u043a\u043e\u043c\u0430\u043d\u0434\u043d\u0438\u0439 \u043c\u0456\u0442\u0438\u043d\u0433', norm:'1 \u0440\u0430\u0437 \u043d\u0430 \u043c\u0456\u0441\u044f\u0446\u044c, \u0434\u043e 20-\u0433\u043e',
+        desc:'\u041f\u043e\u0440\u044f\u0434\u043e\u043a \u0434\u0435\u043d\u043d\u0438\u0439 \u0437\u0430\u0437\u0434\u0430\u043b\u0435\u0433\u0456\u0434\u044c. \u041f\u0456\u0434\u0441\u0443\u043c\u043a\u0438 \u043d\u0430\u0434\u0456\u0441\u043b\u0430\u0442\u0438 \u0432 \u0447\u0430\u0442.',
+        tlIds:[1,2,3,6] },
+      { id:'m3', name:'\u0414\u043e\u043d\u0435\u0441\u0442\u0438 \u0432\u0441\u0456 \u0456\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0456\u0457 \u043a\u043e\u043c\u0430\u043d\u0434\u0456', norm:'100% \u0434\u043e 4 \u0433\u043e\u0434 \u043f\u0456\u0441\u043b\u044f \u043e\u0442\u0440\u0438\u043c\u0430\u043d\u043d\u044f',
+        desc:'\u0424\u0456\u043a\u0441\u0430\u0446\u0456\u044f \u0432 \u0447\u0430\u0442\u0456 \u0430\u0431\u043e \u0441\u0438\u0441\u0442\u0435\u043c\u0456 \u043e\u0431\u043e\u0432\u2019\u044f\u0437\u043a\u043e\u0432\u0430. \u041f\u0435\u0440\u0435\u043a\u043e\u043d\u0430\u0442\u0438\u0441\u044c \u0449\u043e \u043a\u043e\u0436\u0435\u043d \u043f\u0456\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0432.',
+        tlIds:[1,2,3,6] },
+      { id:'m4', name:'\u0421\u043a\u043b\u0430\u0441\u0442\u0438 \u0442\u0430 \u043f\u043e\u0433\u043e\u0434\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a', norm:'\u0411\u0435\u0437 \u043f\u0440\u043e\u0433\u0430\u043b\u0438\u043d \u0443 \u043f\u043e\u043a\u0440\u0438\u0442\u0442\u0456',
+        desc:'\u0412\u0440\u0430\u0445\u0443\u0432\u0430\u0442\u0438 \u0432\u0456\u0434\u043f\u0443\u0441\u0442\u043a\u0438 \u0442\u0430 \u043b\u0456\u043a\u0430\u0440\u043d\u044f\u043d\u0456. \u041f\u043e\u0433\u043e\u0434\u0438\u0442\u0438 \u0437 \u043a\u0435\u0440\u0456\u0432\u043d\u0438\u043a\u043e\u043c \u0434\u043e \u043f\u0443\u0431\u043b\u0456\u043a\u0430\u0446\u0456\u0457.',
+        tlIds:[1,2,3] },
+    ]
+  },
+];
+
+function tlTeamCount(teamId){
+  return db.staff ? db.staff.filter(s=>(s.teamId||1)===teamId).length : 0;
+}
+
+function kpiCheckKey(){
+  const now = new Date();
+  return now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0'));
+}
+
+function getKpiChecks(tlTeamId, monthKey){
+  if(!db.tlKpiChecks) db.tlKpiChecks = {};
+  if(!db.tlKpiChecks[tlTeamId]) db.tlKpiChecks[tlTeamId] = {};
+  if(!db.tlKpiChecks[tlTeamId][monthKey]) db.tlKpiChecks[tlTeamId][monthKey] = {};
+  return db.tlKpiChecks[tlTeamId][monthKey];
+}
+
+async function toggleKpiCheck(tlTeamId, monthKey, itemId){
+  if(!db.tlKpiChecks) db.tlKpiChecks = {};
+  if(!db.tlKpiChecks[tlTeamId]) db.tlKpiChecks[tlTeamId] = {};
+  if(!db.tlKpiChecks[tlTeamId][monthKey]) db.tlKpiChecks[tlTeamId][monthKey] = {};
+  db.tlKpiChecks[tlTeamId][monthKey][itemId] = !db.tlKpiChecks[tlTeamId][monthKey][itemId];
+  await saveDB();
+  if(me && me.type==='admin') renderAdmMyKpiChecklist();
+}
+
+let _chiefKpiActiveTl = 1;
+
+function renderChiefKpiChecklist(){
+  const el = document.getElementById('chief-kpi-checklist-wrap');
+  if(!el) return;
+  const monthKey = kpiCheckKey();
+  const tl = TL_KPI_ALL_LEADS.find(t=>t.teamId===_chiefKpiActiveTl) || TL_KPI_ALL_LEADS[0];
+  const n = tlTeamCount(tl.teamId);
+  const checks = getKpiChecks(tl.teamId, monthKey);
+  const teamName = TEAMS.find(t=>t.id===tl.teamId)?.name||'';
+
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">';
+  TL_KPI_ALL_LEADS.forEach(t=>{
+    const cnt = tlTeamCount(t.teamId);
+    const isActive = t.teamId === _chiefKpiActiveTl;
+    html += `<button onclick="_chiefKpiActiveTl=${t.teamId};renderChiefKpiChecklist()"
+      style="border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid;transition:.2s;
+      background:${isActive?'#fff':'#4a4a5a'};border-color:${isActive?t.color:'#7a7a9a'};color:${isActive?t.color:'#fff'}">${t.short} \u00b7 ${cnt}</button>`;
+  });
+  html += '</div>';
+
+  html += `<div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin-bottom:20px">
+    <span style="width:10px;height:10px;border-radius:50%;background:${tl.color};display:inline-block;flex-shrink:0"></span>
+    <span style="font-weight:600;font-size:14px">${tl.name.split(' ')[0]}</span>
+    <span style="color:var(--muted2);font-size:13px">\u00b7 ${teamName} \u00b7</span>
+    <span style="color:var(--accent2);font-size:13px;font-weight:600">${n} \u043e\u0441\u0456\u0431</span>
+  </div>`;
+
+  TL_KPI_BLOCKS.forEach(block=>{
+    const blockItems = block.items.filter(item=>item.tlIds.includes(tl.teamId));
+    if(!blockItems.length) return;
+    const total = blockItems.length;
+    const done = blockItems.filter(item=>checks[item.id]).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const bid = 'chief-kpi-acc-'+block.id+'-'+tl.teamId;
+
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">
+      <div onclick="toggleChiefKpiBlock('${bid}')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none">
+        <span style="width:10px;height:10px;border-radius:50%;background:${block.color};flex-shrink:0"></span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${block.label} <span style="font-size:12px;color:var(--muted);font-weight:400">${block.weight}%</span></div>
+          <div style="margin-top:6px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${block.color};border-radius:2px;transition:.3s"></div>
+          </div>
+        </div>
+        <span style="font-size:12px;color:${done===total&&total>0?'var(--green)':'var(--muted)'};font-weight:600;white-space:nowrap">${done}/${total}</span>
+        <span id="arr-${bid}" style="color:var(--muted);font-size:18px;transition:.2s">\u203a</span>
+      </div>
+      <div id="${bid}" style="display:none;padding:0 18px 16px">`;
+
+    blockItems.forEach(item=>{
+      const checked = !!checks[item.id];
+      const normStr = item.norm.replace(/N/g, String(n));
+      const descStr = item.desc.replace(/N/g, String(n));
+      html += `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--surface2)">
+          <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${checked?block.color:'var(--border)'};background:${checked?block.color:'transparent'};flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center">
+            ${checked?'<span style="color:#fff;font-size:11px;font-weight:700">\u2713</span>':''}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:${checked?400:500};color:${checked?'var(--muted)':'var(--text)'};${checked?'text-decoration:line-through':''}">${item.name}</div>
+            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:500">\u25cf ${normStr}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">${descStr}</div>
+          </div>
+        </div>`;
+    });
+
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function toggleChiefKpiBlock(id){
+  const el = document.getElementById(id);
+  const arr = document.getElementById('arr-'+id);
+  if(!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if(arr) arr.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+function renderAdmMyKpiChecklist(){
+  const el = document.getElementById('adm-my-kpi-checklist');
+  if(!el) return;
+  const teamId = me && me.teamId;
+  const tl = TL_KPI_ALL_LEADS.find(t=>t.teamId===teamId);
+  if(!tl){ el.innerHTML=''; return; }
+  const n = tlTeamCount(teamId);
+  const monthKey = kpiCheckKey();
+  const checks = getKpiChecks(teamId, monthKey);
+  const now = new Date();
+  const monthLabel = MONTHS_UK[now.getMonth()]+' '+now.getFullYear();
+
+  let html = `<div style="font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px">\u0427\u0435\u043a\u043b\u0456\u0441\u0442 \u00b7 ${monthLabel}</div>`;
+
+  TL_KPI_BLOCKS.forEach(block=>{
+    const blockItems = block.items.filter(item=>item.tlIds.includes(teamId));
+    if(!blockItems.length) return;
+    const total = blockItems.length;
+    const done = blockItems.filter(item=>checks[item.id]).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const bid = 'adm-kpi-acc-'+block.id;
+
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">
+      <div onclick="toggleAdmKpiBlock('${bid}')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none">
+        <span style="width:10px;height:10px;border-radius:50%;background:${block.color};flex-shrink:0"></span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${block.label} <span style="font-size:12px;color:var(--muted);font-weight:400">${block.weight}%</span></div>
+          <div style="margin-top:6px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${block.color};border-radius:2px;transition:.3s"></div>
+          </div>
+        </div>
+        <span style="font-size:12px;color:${done===total&&total>0?'var(--green)':'var(--muted)'};font-weight:600;white-space:nowrap">${done}/${total}</span>
+        <span id="arr-${bid}" style="color:var(--muted);font-size:18px;transition:.2s">\u203a</span>
+      </div>
+      <div id="${bid}" style="display:none;padding:0 18px 16px">`;
+
+    blockItems.forEach(item=>{
+      const checked = !!checks[item.id];
+      const normStr = item.norm.replace(/N/g, String(n));
+      const descStr = item.desc.replace(/N/g, String(n));
+      html += `<div onclick="event.stopPropagation();toggleKpiCheck(${teamId},'${monthKey}','${item.id}')"
+          style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--surface2);cursor:pointer"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${checked?block.color:'var(--border)'};background:${checked?block.color:'transparent'};flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:.15s">
+            ${checked?'<span style="color:#fff;font-size:11px;font-weight:700">\u2713</span>':''}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:${checked?400:500};color:${checked?'var(--muted)':'var(--text)'};${checked?'text-decoration:line-through':''}">${item.name}</div>
+            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:500">\u25cf ${normStr}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">${descStr}</div>
+          </div>
+        </div>`;
+    });
+
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function toggleAdmKpiBlock(id){
+  const el = document.getElementById(id);
+  const arr = document.getElementById('arr-'+id);
+  if(!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if(arr) arr.style.transform = open ? '' : 'rotate(90deg)';
+}
 
 function tlKpiKey(year,month){ return year+'-'+(String(month+1).padStart(2,'0')); }
 
@@ -9476,6 +9721,7 @@ function renderChiefTlKpi(){
     </div>
     <div id="tl-kpi-table-wrap"></div>`;
   renderChiefTlKpiTable();
+  renderChiefKpiChecklist();
 }
 
 function renderChiefTlKpiTable(){
@@ -9549,11 +9795,15 @@ function renderAdmMyKpi(){
   if(!tlInfo){el.innerHTML='<div class="empty-state">KPI не призначено для вашої команди</div>';return;}
   const months=Object.keys(db.tlKpi).filter(k=>db.tlKpi[k][teamId]).sort().reverse();
   if(!months.length){
-    el.innerHTML=`<div class="empty-state" style="padding:60px">
-      <div style="font-size:48px;margin-bottom:16px">🏆</div>
-      <div style="font-size:15px;margin-bottom:8px">Оцінок ще немає</div>
-      <div style="font-size:12px;color:var(--muted)">Chief ще не виставив оцінки</div>
+    el.innerHTML=`<div style="padding:28px 0 20px;text-align:center">
+      <div style="font-size:36px;margin-bottom:10px">🏆</div>
+      <div style="font-size:14px;margin-bottom:4px">Оцінок від Chief ще немає</div>
+      <div style="font-size:12px;color:var(--muted)">Але ти вже можеш заповнювати чекліст нижче</div>
     </div>`;
+    const titleEl2 = document.getElementById('adm-my-kpi-checklist-title');
+    const tlCheck2 = TL_KPI_ALL_LEADS.find(t=>t.teamId===teamId);
+    if(titleEl2) titleEl2.textContent = tlCheck2 ? 'МІЙ ЧЕКЛІСТ КПІ' : '';
+    if(tlCheck2) renderAdmMyKpiChecklist();
     return;
   }
   // Latest month summary cards
@@ -9604,6 +9854,10 @@ function renderAdmMyKpi(){
     html+='</tbody></table></div>';
   }
   el.innerHTML=html;
+  const titleEl = document.getElementById('adm-my-kpi-checklist-title');
+  const tlCheck = TL_KPI_ALL_LEADS.find(t=>t.teamId===teamId);
+  if(titleEl) titleEl.textContent = tlCheck ? 'МІЙ ЧЕКЛІСТ КПІ' : '';
+  if(tlCheck) renderAdmMyKpiChecklist();
 }
 
 // ══ TL/CHIEF EXCHANGE ══
