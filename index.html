@@ -1851,9 +1851,9 @@ const DEFAULT_SHIFT_TYPES = [
 function getTeamShifts(teamId){
   const tid = teamId || (me && (me.teamId || (me.data && (me.data.teamId||1)))) || 1;
   if(!db.shiftTypes) db.shiftTypes = {};
-  if(!db.shiftTypes[tid]){
-    // Create defaults
-    db.shiftTypes[tid] = DEFAULT_SHIFT_TYPES.map((s,i)=>({
+  if(!db.shiftTypes[tid] || db.shiftTypes[tid].length === 0){
+    // Повертаємо дефолти БЕЗ запису в db — щоб не перетерти збережені типи змін команди
+    return DEFAULT_SHIFT_TYPES.map((s,i)=>({
       id: 'ts_'+tid+'_'+i, label:s.label, time:s.time, color:s.color
     }));
   }
@@ -5695,12 +5695,16 @@ async function autoRefreshDB(){
         // 3. SHIFT TYPES — захищаємо типи змін поточної команди
         if(db.shiftTypes && Object.keys(db.shiftTypes).length > 0){
           if(!freshDb.shiftTypes) freshDb.shiftTypes = {};
+          const myTid = me ? String(me.teamId || (me.data && me.data.teamId) || 1) : null;
           Object.keys(db.shiftTypes).forEach(tid=>{
             const cur = db.shiftTypes[tid];
             const frsh = freshDb.shiftTypes[tid];
-            // Захищаємо якщо наша версія є, а свіжа або порожня, або менша
-            if(cur && cur.length > 0 && (!frsh || frsh.length < cur.length)){
-              freshDb.shiftTypes[tid] = cur;
+            // Для своєї команди — завжди зберігаємо поточну версію (безумовно)
+            // Для чужих команд — тільки якщо свіжа порожня/менша
+            if(cur && cur.length > 0){
+              if(tid === myTid || !frsh || frsh.length < cur.length){
+                freshDb.shiftTypes[tid] = cur;
+              }
             }
           });
         }
@@ -5721,9 +5725,8 @@ async function autoRefreshDB(){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.dayColors[myTeamId]){
             if(!freshDb.dayColors) freshDb.dayColors = {};
-            if(!freshDb.dayColors[myTeamId]){
-              freshDb.dayColors[myTeamId] = db.dayColors[myTeamId];
-            }
+            // Завжди зберігаємо поточні кольори своєї команди (безумовно)
+            freshDb.dayColors[myTeamId] = db.dayColors[myTeamId];
           }
         }
 
@@ -5748,9 +5751,33 @@ async function autoRefreshDB(){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.staffOrder[myTeamId]){
             if(!freshDb.staffOrder) freshDb.staffOrder = {};
-            if(!freshDb.staffOrder[myTeamId]){
-              freshDb.staffOrder[myTeamId] = db.staffOrder[myTeamId];
-            }
+            // Завжди зберігаємо поточний порядок своєї команди (безумовно)
+            freshDb.staffOrder[myTeamId] = db.staffOrder[myTeamId];
+          }
+        }
+
+        // 8. TL KPI (оцінки від Chief) — захищаємо від перезапису
+        if(db.tlKpi && me && me.type === 'chief'){
+          if(!freshDb.tlKpi) freshDb.tlKpi = {};
+          Object.keys(db.tlKpi).forEach(monthKey=>{
+            if(!freshDb.tlKpi[monthKey]) freshDb.tlKpi[monthKey] = {};
+            Object.keys(db.tlKpi[monthKey]).forEach(tlId=>{
+              // Для кожного TL зберігаємо нашу версію якщо вона повніша
+              const cur = db.tlKpi[monthKey][tlId];
+              const frsh = freshDb.tlKpi[monthKey][tlId];
+              if(cur && Object.keys(cur).length > 0 && (!frsh || Object.keys(cur).length >= Object.keys(frsh).length)){
+                freshDb.tlKpi[monthKey][tlId] = cur;
+              }
+            });
+          });
+        }
+
+        // 9. SCHED RULES — правила авто-генерації графіку (per team)
+        if(db.schedRules && me){
+          const myTidStr = String(me.teamId || (me.data && me.data.teamId) || 1);
+          if(db.schedRules[myTidStr]){
+            if(!freshDb.schedRules) freshDb.schedRules = {};
+            freshDb.schedRules[myTidStr] = db.schedRules[myTidStr];
           }
         }
 
