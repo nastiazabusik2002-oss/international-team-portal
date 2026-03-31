@@ -5637,7 +5637,7 @@ async function autoRefreshDB(){
   }
 
   // Не оновлювати якщо відкрите будь-яке модальне вікно (редагування агента, добавлення тощо)
-  if(document.querySelector('.modal.open, .modal-overlay.open')) return;
+  if(document.querySelector('.modal-ov.open')) return;
 
   // Не оновлювати якщо фокус на будь-якому input/textarea
   const focused = document.activeElement;
@@ -5778,6 +5778,27 @@ async function autoRefreshDB(){
           if(db.schedRules[myTidStr]){
             if(!freshDb.schedRules) freshDb.schedRules = {};
             freshDb.schedRules[myTidStr] = db.schedRules[myTidStr];
+          }
+        }
+
+        // 10. REMARKS — зауваження: зберігаємо якщо наших більше (аудитор щойно додав)
+        if(db.remarks && db.remarks.length > 0){
+          if(!freshDb.remarks || freshDb.remarks.length < db.remarks.length){
+            freshDb.remarks = db.remarks;
+          } else {
+            // Мержимо по id — якщо є нові або відповіді — зберігаємо
+            const freshIds = new Set(freshDb.remarks.map(r=>r.id));
+            db.remarks.forEach(r=>{
+              if(!freshIds.has(r.id)){
+                freshDb.remarks.push(r); // нове зауваження
+              } else if(r.replies && r.replies.length > 0){
+                // Оновлюємо відповіді якщо додали
+                const idx = freshDb.remarks.findIndex(fr=>fr.id===r.id);
+                if(idx>=0 && (!freshDb.remarks[idx].replies || freshDb.remarks[idx].replies.length < r.replies.length)){
+                  freshDb.remarks[idx].replies = r.replies;
+                }
+              }
+            });
           }
         }
 
@@ -8403,32 +8424,48 @@ async function submitRemark(){
   document.getElementById('audit-text').value = '';
   document.getElementById('audit-agent-sel').value = '';
 
-  // Show confirmation
-  const btn = document.querySelector('#atab-remarks .btn-save');
-  const orig = btn.textContent;
-  btn.textContent = '✅ Зауваження додано!';
-  setTimeout(()=>btn.textContent=orig, 2500);
+  // Перейти в архів і показати збережене
+  const histTab = document.querySelector('#auditor-view .nav-tab[onclick*="history"]');
+  if(histTab) auditorTab('history', histTab);
+  else {
+    const btn = document.querySelector('#atab-remarks .btn-save');
+    if(btn){ const orig=btn.textContent; btn.textContent='✅ Зауваження додано!'; setTimeout(()=>btn.textContent=orig,2500); }
+  }
 }
 
 function renderAuditorHistory(){
   const el = document.getElementById('audit-history-list');
   if(!el) return;
-  const remarks = (db.remarks||[]).filter(r=>r.auditorId===me.data.id).slice().reverse();
+  // Всі аудитори бачать всі зауваження, своє виділено
+  const remarks = (db.remarks||[]).slice().reverse();
   if(!remarks.length){
-    el.innerHTML='<div class="empty-state" style="padding:40px">Ви ще не внесли жодного зауваження</div>';
+    el.innerHTML='<div class="empty-state" style="padding:40px">Зауважень ще немає</div>';
     return;
   }
   const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
-  el.innerHTML = remarks.map(r=>`
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px">
+  el.innerHTML = remarks.map(r=>{
+    const replies = (r.replies||[]);
+    const replyHtml = replies.map(rep=>`
+      <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 Агент'} · ${formatRemarkDate(rep.createdAt)}</div>
+        <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
+      </div>`).join('');
+    const isMe = r.auditorId === me.data.id;
+    return `
+    <div style="background:${isMe?'var(--accent-dim)':'var(--surface)'};border:1px solid ${replies.length?'var(--accent-glow)':isMe?'rgba(181,123,238,.25)':'var(--border)'};border-radius:12px;padding:14px 18px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
         <span style="font-size:18px">${TYPE_ICON[r.type]||'📋'}</span>
         <div style="font-weight:600;font-size:14px">${r.agentName}</div>
         <div style="font-size:11px;color:var(--muted);background:var(--surface2);border-radius:6px;padding:2px 8px">${teamNameById(r.teamId)}</div>
+        <div style="font-size:11px;color:var(--accent2);font-weight:${isMe?700:400}">🎧 ${r.auditorName?r.auditorName.split(' ')[0]:'?'}</div>
+        ${isMe?'<span style="font-size:10px;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:4px;padding:1px 6px">Моє</span>':''}
         <div style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkMonth(r.month)} · ${formatRemarkDate(r.createdAt)}</div>
       </div>
       <div style="font-size:13px;color:var(--muted2);line-height:1.5">${r.text}</div>
-    </div>`).join('');
+      ${replyHtml}
+      ${replies.length?`<div style="font-size:11px;color:var(--accent2);margin-top:8px">✅ ${replies.length} відповід${replies.length===1?'ь':'і'}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // ── Admin remarks view (for TLs of audited teams) ──
@@ -8475,16 +8512,34 @@ function renderAdmRemarks(){
     const agent = db.staff.find(s=>s.id==agId);
     return `<div style="margin-bottom:20px">
       <div class="sec-title" style="margin-top:0">${agent?agent.name:'Агент'} <span style="color:var(--muted);font-weight:400;font-size:11px">${rems.length} зауваж.</span></div>
-      ${rems.map(r=>`
+      ${rems.map(r=>{
+        const replies = (r.replies||[]);
+        const replyHtml = replies.map(rep=>`
+          <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent-glow)">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 '+rep.authorName.split(' ')[0]} · ${formatRemarkDate(rep.createdAt)}</div>
+            <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
+          </div>`).join('');
+        const replyFormId = 'adm-reply-'+r.id;
+        return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <span>${TYPE_ICON[r.type]||'📋'}</span>
             <span style="font-size:11px;color:var(--muted2);background:var(--surface2);padding:2px 8px;border-radius:6px">${formatRemarkMonth(r.month)}</span>
-            <span style="font-size:11px;color:var(--muted)">від ${r.auditorName.split(' ')[0]}</span>
+            <span style="font-size:11px;color:var(--accent2);font-weight:600">🎧 ${r.auditorName.split(' ')[0]}</span>
             <span style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkDate(r.createdAt)}</span>
           </div>
-          <div style="font-size:13px;color:var(--text);line-height:1.5">${r.text}</div>
-        </div>`).join('')}
+          <div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:8px">${r.text}</div>
+          ${replyHtml}
+          <div id="${replyFormId}" style="display:none;margin-top:10px">
+            <textarea id="adm-reply-text-${r.id}" rows="2" placeholder="Написати відповідь..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''"></textarea>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button onclick="saveRemarkReply(${r.id},'tl')" style="background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Відправити</button>
+              <button onclick="document.getElementById('${replyFormId}').style.display='none'" style="background:var(--surface2);border:var(--glass-border);border-radius:8px;color:var(--muted);padding:7px 12px;font-size:12px;cursor:pointer">Скасувати</button>
+            </div>
+          </div>
+          <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer;transition:.2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='';this.style.color=''">💬 Відповісти</button>
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
 }
@@ -8500,16 +8555,64 @@ function renderEmpRemarks(){
     return;
   }
   const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
-  el.innerHTML = remarks.map(r=>`
+  el.innerHTML = remarks.map(r=>{
+    const replies = (r.replies||[]);
+    const replyHtml = replies.map(rep=>`
+      <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">${rep.role==='tl'?'👑 Тім лід':'👤 Ти'} · ${formatRemarkDate(rep.createdAt)}</div>
+        <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
+      </div>`).join('');
+    const replyFormId = 'emp-reply-'+r.id;
+    return `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <span style="font-size:18px">${TYPE_ICON[r.type]||'📋'}</span>
         <span style="font-size:12px;color:var(--muted2);background:var(--surface2);padding:2px 8px;border-radius:6px">${formatRemarkMonth(r.month)}</span>
-        <span style="font-size:11px;color:var(--muted)">від аудитора</span>
+        <span style="font-size:11px;color:var(--accent2);font-weight:600">🎧 ${r.auditorName?r.auditorName.split(' ')[0]:'Аудитор'}</span>
         <span style="font-size:11px;color:var(--muted);margin-left:auto">${formatRemarkDate(r.createdAt)}</span>
       </div>
-      <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.text}</div>
-    </div>`).join('');
+      <div style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:8px">${r.text}</div>
+      ${replyHtml}
+      <div id="${replyFormId}" style="display:none;margin-top:10px">
+        <textarea id="emp-reply-text-${r.id}" rows="2" placeholder="Написати відповідь..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''"></textarea>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button onclick="saveRemarkReply(${r.id},'emp')" style="background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Відправити</button>
+          <button onclick="document.getElementById('${replyFormId}').style.display='none'" style="background:var(--surface2);border:var(--glass-border);border-radius:8px;color:var(--muted);padding:7px 12px;font-size:12px;cursor:pointer">Скасувати</button>
+        </div>
+      </div>
+      <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:6px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer;transition:.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='';this.style.color=''">💬 Відповісти</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Відповідь на зауваження (TL або агент) ──
+async function saveRemarkReply(remarkId, role){
+  const prefix = role==='tl' ? 'adm-reply-text-' : 'emp-reply-text-';
+  const inp = document.getElementById(prefix+remarkId);
+  if(!inp) return;
+  const text = inp.value.trim();
+  if(!text){ alert('Введіть текст відповіді'); return; }
+
+  const remark = (db.remarks||[]).find(r=>r.id===remarkId);
+  if(!remark){ alert('Зауваження не знайдено'); return; }
+
+  if(!remark.replies) remark.replies = [];
+  remark.replies.push({
+    role,
+    authorName: me.type==='admin' ? me.leadName : (me.data ? me.data.name : '?'),
+    text,
+    createdAt: new Date().toISOString()
+  });
+
+  await saveDB();
+
+  // Закрити форму і перерендерити
+  const formId = (role==='tl'?'adm-reply-':'emp-reply-')+remarkId;
+  const form = document.getElementById(formId);
+  if(form) form.style.display='none';
+
+  if(role==='tl') renderAdmRemarks();
+  else renderEmpRemarks();
 }
 
 // ── Helpers ──
