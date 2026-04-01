@@ -1157,13 +1157,36 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div id="adm-comments-content-old"></div>
       </div>
       <div class="adm-section" id="adm-monthly">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
           <button class="cal-nav" onclick="monthlyNav(-1)">‹</button>
           <div class="cal-month-title" id="monthly-title"></div>
           <button class="cal-nav" onclick="monthlyNav(1)">›</button>
+          <button class="btn-save" onclick="saveMonthly()" style="margin-left:8px">💾 Зберегти</button>
+          <button onclick="exportSalaryExcel()" style="background:linear-gradient(135deg,#1a7a4a,#2d9e60);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px">📥 Вигрузити Excel</button>
         </div>
-        <div class="month-grid" id="monthly-grid"></div>
-        <div style="margin-top:18px"><button class="btn-save" onclick="saveMonthly()">💾 Зберегти виплати</button></div>
+        <div class="tbl-wrap" style="overflow-x:auto">
+          <table class="tbl" id="monthly-table" style="min-width:900px;font-size:13px">
+            <thead>
+              <tr style="font-size:11px;letter-spacing:.5px">
+                <th style="text-align:left;min-width:30px">№</th>
+                <th style="text-align:left;min-width:160px">Оператор</th>
+                <th style="color:var(--blue);min-width:70px">Денних</th>
+                <th style="color:var(--purple);min-width:70px">🌙 Нічних</th>
+                <th style="color:var(--muted2);min-width:60px">Всього</th>
+                <th style="min-width:70px">Ставка</th>
+                <th style="color:var(--blue);min-width:60px">КРІ</th>
+                <th style="color:var(--purple);min-width:80px">Рейтинг/д</th>
+                <th style="color:var(--teal);min-width:90px">Варт.зміни</th>
+                <th style="color:var(--green);min-width:90px">Ставка+КПІ</th>
+                <th style="color:var(--purple);min-width:90px">Рейтинг ₴</th>
+                <th style="color:var(--accent);min-width:90px">Бонуси</th>
+                <th style="color:var(--orange);min-width:80px">Штрафи</th>
+                <th style="color:var(--accent2);font-weight:700;min-width:100px">ТОТАЛ</th>
+              </tr>
+            </thead>
+            <tbody id="monthly-grid"></tbody>
+          </table>
+        </div>
       </div>
       <div class="adm-section" id="adm-analytics">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
@@ -3859,6 +3882,7 @@ function renderAdmPerf(){
           <th style="color:var(--blue)">Ср.чатів/зміну</th>
           <th style="color:var(--teal)">Ср.закрито загалом</th>
           <th style="color:var(--accent2)">Total</th>
+          <th style="color:var(--purple)">Рейтинг ₴</th>
         </tr></thead>
         <tbody id="perf-input-body"></tbody>
       </table>
@@ -3887,6 +3911,10 @@ function renderPerfInputTable(week){
     const total    = l + ch;
     const avgChat  = sc>0 ? (ch/sc).toFixed(1) : '—';
     const avgTotal = st>0 ? (total/st).toFixed(1) : '—';
+    const _selEl2 = document.getElementById('perf-week-sel');
+    const _sw2 = (_selEl2 && _selEl2.value) || selWeek || '';
+    const monthKey2 = _sw2 ? _sw2.slice(0,7) : (new Date().getFullYear()+'-'+(String(new Date().getMonth()+1).padStart(2,'0')));
+    const rating = (db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][monthKey2]) || 0;
     return `<tr id="pr-${emp.id}">
       <td style="font-weight:500;white-space:nowrap">${emp.name}</td>
       <td><input type="number" min="0" class="esc-input" id="pl-${emp.id}"  value="${l}"  oninput="recalcPerfRow(${emp.id})" style="width:75px"></td>
@@ -3896,6 +3924,7 @@ function renderPerfInputTable(week){
       <td id="pavg-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--blue);text-align:center;font-weight:600">${avgChat}</td>
       <td id="pavgt-${emp.id}" style="font-family:'DM Mono',monospace;color:var(--teal);text-align:center;font-weight:600">${avgTotal}</td>
       <td id="ptot-${emp.id}"  style="font-family:'DM Mono',monospace;color:var(--accent2);text-align:center;font-weight:700">${total.toLocaleString('uk')}</td>
+      <td><input type="number" min="0" class="esc-input" id="prat-${emp.id}" value="${rating}" style="width:90px;border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.05)" placeholder="0"></td>
     </tr>`;
   }).join('');
 }
@@ -3919,11 +3948,16 @@ async function savePerfWeek(){
   const selWeek = selEl.value;
   if(!db.perf) db.perf={};
 
+  // Місячний ключ для рейтингу
+  const perfMonthKey = selWeek.slice(0,7);
+  if(!db.perfRating) db.perfRating = {};
+
   myStaff().forEach(emp=>{
     const l  = +document.getElementById(`pl-${emp.id}`)?.value||0;
     const ch = +document.getElementById(`pc-${emp.id}`)?.value||0;
     const sc = +document.getElementById(`psc-${emp.id}`)?.value||0;
     const st = +document.getElementById(`pst-${emp.id}`)?.value||0;
+    const rat = +document.getElementById(`prat-${emp.id}`)?.value||0;
     const total    = l + ch;
     const avgChat  = sc>0 ? Math.round((ch/sc)*10)/10 : 0;
     const avgTotal = st>0 ? Math.round((total/st)*10)/10 : 0;
@@ -3940,6 +3974,10 @@ async function savePerfWeek(){
     };
     if(idx>=0) db.perf[emp.id][idx]=entry;
     else db.perf[emp.id].push(entry);
+
+    // Зберігаємо рейтинг за місяць
+    if(!db.perfRating[emp.id]) db.perfRating[emp.id] = {};
+    db.perfRating[emp.id][perfMonthKey] = rat;
   });
 
   await saveDB();
@@ -4858,7 +4896,8 @@ function renderAnalytics(){
       }
     });
     // perf: latest week in this month
-    const perfData=(db.perf&&db.perf[emp.id]||[]).filter(w=>w.week&&w.week.startsWith(analyticsY+'-'));
+    const perfMonthKey2=mkey(analyticsY,analyticsM);
+    const perfData=(db.perf&&db.perf[emp.id]||[]).filter(w=>w.monthKey===perfMonthKey2||(w.week&&w.week.startsWith(perfMonthKey2)));
     const latestPerf=perfData[perfData.length-1]||null;
     return {emp,total,nights,offDays,vacation,overtimeMins,lateMins,lateCount,latestPerf};
   });
@@ -4933,24 +4972,26 @@ function renderAdmComments(){
   if(!el) return;
   const comments = db.dayComments || {};
 
-  // Collect all entries
+  // Фільтруємо ТІЛЬКИ поточний місяць графіку
+  const curMk = mkey(admSchedY, admSchedM);
+  const curMonthLabel = MONTHS_UK[admSchedM] + ' ' + admSchedY;
+
+  // Collect entries тільки за поточний місяць
   let rows = [];
   myStaff().forEach(emp => {
-    // dayComments keys are stored as strings (JSON serialization)
     const empC = comments[emp.id] || comments[String(emp.id)] || {};
-    Object.entries(empC).forEach(([mk, days]) => {
-      Object.entries(days).forEach(([day, data]) => {
-        if(!data) return;
-        const obj = typeof data==='object' ? data : {overtime:'',late:''};
-        if(!obj.overtime && !obj.late) return;
-        const [y,m] = mk.split('-').map(Number);
-        rows.push({ emp, mk, year:y, month:m, day:+day, obj });
-      });
+    const days = empC[curMk] || {};
+    Object.entries(days).forEach(([day, data]) => {
+      if(!data) return;
+      const obj = typeof data==='object' ? data : {overtime:'',late:''};
+      if(!obj.overtime && !obj.late) return;
+      const [y,m] = curMk.split('-').map(Number);
+      rows.push({ emp, mk:curMk, year:y, month:m, day:+day, obj });
     });
   });
-  rows.sort((a,b) => b.year-a.year || b.month-a.month || b.day-a.day);
+  rows.sort((a,b) => a.day-b.day);
 
-  // Build per-agent summary (all time)
+  // Build per-agent summary тільки за поточний місяць
   const summary = {};
   myStaff().forEach(emp => { summary[emp.id]={overtimeMins:0, lateMins:0, lateCount:0}; });
   rows.forEach(r => {
@@ -4990,32 +5031,23 @@ function renderAdmComments(){
     </div>`;
 
   if(!rows.length){
-    el.innerHTML=summaryHtml+'<div class="empty-state" style="padding:30px">Детальних записів ще немає</div>';
+    el.innerHTML=summaryHtml+'<div class="empty-state" style="padding:30px">Записів за '+curMonthLabel+' ще немає</div>';
     return;
   }
 
-  // Group by month
-  const grouped = {};
-  rows.forEach(r => { if(!grouped[r.mk]) grouped[r.mk]=[]; grouped[r.mk].push(r); });
+  const detailHtml = `<div class="sec-title">ДЕТАЛІ ПО ДНЯХ — ${curMonthLabel}</div>` +
+    rows.map(r=>{
+      const parts=[];
+      if(r.obj.overtime) parts.push(`<span style="background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.25);border-radius:6px;padding:2px 8px;font-size:12px">⏱ +${r.obj.overtime}</span>`);
+      if(r.obj.late)     parts.push(`<span style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);border-radius:6px;padding:2px 8px;font-size:12px">🕐 -${r.obj.late}</span>`);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap">
+        <div style="font-weight:500;font-size:13px;min-width:140px">${r.emp.name}</div>
+        <div style="font-size:12px;color:var(--muted2);min-width:80px">${r.day} ${MONTHS_UK[r.month-1]}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${parts.join('')}</div>
+      </div>`;
+    }).join('');
 
-  const detailHtml = Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([mk, rs]) => {
-    const [y,m] = mk.split('-').map(Number);
-    return `<div style="margin-bottom:20px">
-      <div class="sec-title">${MONTHS_UK[m-1]} ${y}</div>
-      ${rs.map(r=>{
-        const parts=[];
-        if(r.obj.overtime) parts.push(`<span style="background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.25);border-radius:6px;padding:2px 8px;font-size:12px">⏱ +${r.obj.overtime}</span>`);
-        if(r.obj.late)     parts.push(`<span style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);border-radius:6px;padding:2px 8px;font-size:12px">🕐 -${r.obj.late}</span>`);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap">
-          <div style="font-weight:500;font-size:13px;min-width:140px">${r.emp.name}</div>
-          <div style="font-size:12px;color:var(--muted2);min-width:80px">${r.day} ${MONTHS_UK[r.month-1]}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">${parts.join('')}</div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }).join('');
-
-  el.innerHTML = summaryHtml + '<div class="sec-title">ДЕТАЛІ ПО ДНЯХ</div>' + detailHtml;
+  el.innerHTML = summaryHtml + detailHtml;
 }
 
 // ══ REVIEWS ══
@@ -5635,7 +5667,7 @@ async function autoRefreshDB(){
   const activeAdm = document.querySelector('.adm-section.active');
   if(activeAdm){
     const id = activeAdm.id;
-    if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly'].includes(id)) return;
+    if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly','adm-reviews'].includes(id)) return;
   }
 
   // Не оновлювати якщо відкрите будь-яке модальне вікно
@@ -5770,13 +5802,171 @@ async function autoRefreshDB(){
           }
         }
 
-        // 10. TL KPI CHECKS — чеклісти
+        // 10. PERF RATING — рейтинг продуктивності по місяцях
+        if(db.perfRating && me){
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          if(myTeamId){
+            const myIds = db.staff ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id)) : [];
+            if(!freshDb.perfRating) freshDb.perfRating = {};
+            myIds.forEach(id=>{
+              if(db.perfRating[id]) freshDb.perfRating[id] = db.perfRating[id];
+            });
+          }
+        }
+
+        // 11. TL KPI CHECKS — чеклісти
         if(db.tlKpiChecks && me){
           const myTid = me.teamId || (me.data && me.data.teamId) || null;
           if(myTid){
             if(!freshDb.tlKpiChecks) freshDb.tlKpiChecks = {};
             if(db.tlKpiChecks[myTid]) freshDb.tlKpiChecks[myTid] = db.tlKpiChecks[myTid];
           }
+        }
+
+        // 12. REVIEWS — відгуки (по місяцях, зберігаємо поточні дані)
+        if(db.reviews && me){
+          if(!freshDb.reviews) freshDb.reviews = {};
+          // Зберігаємо всі місяці з поточного db якщо вони новіші або відсутні у свіжих
+          Object.keys(db.reviews).forEach(mKey=>{
+            const cur = db.reviews[mKey];
+            const frsh = freshDb.reviews[mKey];
+            if(cur && cur.data){
+              if(!frsh || !frsh.data || Object.keys(cur.data).length >= Object.keys(frsh.data||{}).length){
+                freshDb.reviews[mKey] = cur;
+              }
+            }
+          });
+          // Зберігаємо глобальні сайти якщо наших більше
+          if(db.reviewSites && db.reviewSites.length > 0){
+            if(!freshDb.reviewSites || freshDb.reviewSites.length < db.reviewSites.length){
+              freshDb.reviewSites = db.reviewSites;
+            }
+          }
+        }
+
+        // 13. PERF — продуктивність агентів (зберігаємо дані своєї команди)
+        if(db.perf && me){
+          if(!freshDb.perf) freshDb.perf = {};
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          const myIds = myTeamId
+            ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id))
+            : [];
+          myIds.forEach(id=>{
+            if(!db.perf[id]) return;
+            const cur = db.perf[id];
+            const frsh = freshDb.perf[id];
+            // Якщо наших записів більше або однаково — зберігаємо наші
+            if(!frsh || cur.length >= frsh.length){
+              freshDb.perf[id] = cur;
+            } else {
+              // Мержимо: свіжі є основою, але додаємо тижні яких немає
+              const frshWeeks = new Set(frsh.map(r=>r.week));
+              cur.forEach(r=>{ if(!frshWeeks.has(r.week)) frsh.push(r); });
+            }
+          });
+        }
+
+        // 14. WISHES — побажання агентів на графік
+        if(db.wishes && me){
+          if(!freshDb.wishes) freshDb.wishes = {};
+          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
+          const myIds = myTeamId
+            ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id))
+            : [];
+          myIds.forEach(id=>{
+            if(!db.wishes[id]) return;
+            if(!freshDb.wishes[id] || Object.keys(db.wishes[id]).length >= Object.keys(freshDb.wishes[id]).length){
+              freshDb.wishes[id] = db.wishes[id];
+            }
+          });
+        }
+
+        // 15. ANNOUNCEMENTS — оголошення
+        if(db.announcements && db.announcements.length > 0){
+          if(!freshDb.announcements || freshDb.announcements.length < db.announcements.length){
+            freshDb.announcements = db.announcements;
+          } else {
+            const freshAnnIds = new Set(freshDb.announcements.map(a=>a.id));
+            db.announcements.forEach(a=>{
+              if(!freshAnnIds.has(a.id)) freshDb.announcements.push(a);
+            });
+          }
+        }
+
+        // 16. EXCHANGES — обміни змін
+        if(db.exchanges && db.exchanges.length > 0){
+          if(!freshDb.exchanges || freshDb.exchanges.length < db.exchanges.length){
+            freshDb.exchanges = db.exchanges;
+          } else {
+            const freshExIds = new Set(freshDb.exchanges.map(e=>e.id));
+            db.exchanges.forEach(e=>{
+              if(!freshExIds.has(e.id)) freshDb.exchanges.push(e);
+              else {
+                // Оновлюємо статус якщо змінився
+                const idx = freshDb.exchanges.findIndex(fe=>fe.id===e.id);
+                if(idx>=0 && e.status !== 'open' && freshDb.exchanges[idx].status === 'open'){
+                  freshDb.exchanges[idx] = e;
+                }
+              }
+            });
+          }
+        }
+
+        // 17. DAY META — офісні дні / емодзі
+        if(db.dayMeta && me){
+          const myTeamId2 = me.teamId || null;
+          if(myTeamId2){
+            if(!freshDb.dayMeta) freshDb.dayMeta = {};
+            Object.keys(db.dayMeta).forEach(mKey=>{
+              if(!freshDb.dayMeta[mKey]) freshDb.dayMeta[mKey] = {};
+              // Мержимо по днях — наші дані пріоритетні
+              Object.keys(db.dayMeta[mKey]).forEach(day=>{
+                if(!freshDb.dayMeta[mKey][day]) freshDb.dayMeta[mKey][day] = db.dayMeta[mKey][day];
+              });
+            });
+          }
+        }
+
+        // 18. DAY COMMENTS — коментарі до днів графіку
+        if(db.dayComments && me){
+          if(!freshDb.dayComments) freshDb.dayComments = {};
+          const myTeamId3 = me.teamId || null;
+          if(myTeamId3){
+            Object.keys(db.dayComments).forEach(empId=>{
+              const myEmpIds = db.staff ? db.staff.filter(s=>(s.teamId||1)===myTeamId3).map(s=>String(s.id)) : [];
+              if(myEmpIds.includes(String(empId))){
+                if(!freshDb.dayComments[empId] || Object.keys(db.dayComments[empId]).length >= Object.keys(freshDb.dayComments[empId]||{}).length){
+                  freshDb.dayComments[empId] = db.dayComments[empId];
+                }
+              }
+            });
+          }
+        }
+
+        // 19. TEAM3 DIVIDERS — підгрупи команди 3
+        if(db.team3Dividers && me && me.teamId===3){
+          freshDb.team3Dividers = db.team3Dividers;
+        }
+
+        // 20. KUDOS — подяки (зберігаємо якщо наших більше)
+        if(db.kudos && db.kudos.length > 0){
+          if(!freshDb.kudos || freshDb.kudos.length < db.kudos.length){
+            freshDb.kudos = db.kudos;
+          }
+        }
+
+        // 21. MOODS — настрій (особисті дані, зберігаємо свої)
+        if(db.moods && me && me.data){
+          const myEmpId = String(me.data.id);
+          if(!freshDb.moods) freshDb.moods = {};
+          if(db.moods[myEmpId]) freshDb.moods[myEmpId] = db.moods[myEmpId];
+        }
+
+        // 22. PERSONAL NOTES — нотатки (особисті)
+        if(db.personalNotes && me && me.data){
+          const myEmpId2 = String(me.data.id);
+          if(!freshDb.personalNotes) freshDb.personalNotes = {};
+          if(db.personalNotes[myEmpId2]) freshDb.personalNotes[myEmpId2] = db.personalNotes[myEmpId2];
         }
 
         // 11. REMARKS
@@ -6324,6 +6514,9 @@ function admSchedNav(d){admSchedM+=d;if(admSchedM<0){admSchedM=11;admSchedY--;}i
   const thumb=document.getElementById('future-toggle-thumb');
   if(track){track.style.background='var(--surface2)';thumb.style.background='var(--muted)';thumb.style.left='3px';}
   renderAdmSched();
+  // Якщо акордеон нотаток відкритий — оновлюємо по новому місяцю
+  const commAcc = document.getElementById('comments-accordion');
+  if(commAcc && commAcc.style.display !== 'none') renderAdmComments();
 }
 let _schedViewMode = 'compact'; // default compact
 
@@ -6772,10 +6965,12 @@ function monthlyNav(d){monthlyM+=d;if(monthlyM<0){monthlyM=11;monthlyY--;}if(mon
 function renderMonthly(){
   document.getElementById('monthly-title').textContent=MONTHS_UK[monthlyM]+' '+monthlyY;
   const key=mkey(monthlyY,monthlyM);
-  const sched=db.schedule[key]||{};
-  document.getElementById('monthly-grid').innerHTML=myStaff().map(emp=>{
+  const sched=(db.schedule&&db.schedule[key])||{};
+  const tbody=document.getElementById('monthly-grid');
+  if(!tbody) return;
+
+  tbody.innerHTML=myStaff().map((emp,rowIdx)=>{
     const empSched=sched[emp.id]||{};
-    // Auto-count: нічна = label "нічн" або time "00:xx"
     const allShifts=Object.values(empSched).filter(v=>v&&v!=='off'&&v!=='vacation');
     const autoNights=allShifts.filter(v=>isNightShift(v)).length;
     const autoDays=allShifts.length-autoNights;
@@ -6783,55 +6978,132 @@ function renderMonthly(){
     const dv=existing.days!==undefined?existing.days:autoDays;
     const nv=existing.nights!==undefined?existing.nights:autoNights;
     const bv=existing.bonus||0;
-    const rating=emp.rating||0;
-    const ratingType=emp.ratingType||'standard';
-    const base=(emp.rate||402)+(emp.kpi||402)+rating;
-    const nightBase=Math.round(base*1.5);
-    const total=Math.round(base*dv + nightBase*nv + bv);
-    const ratingBadge=ratingType==='high'?'<span style="font-size:10px;background:rgba(245,200,66,.2);border:1px solid var(--accent);border-radius:4px;padding:1px 6px;color:var(--accent);margin-left:6px">⭐ Високий</span>':'<span style="font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted);margin-left:6px">Стандартний</span>';
-    return `<div class="emp-sal-card">
-      <div class="esc-name">${emp.name}</div>
-      <div class="esc-role">${emp.role}</div>
-      <div class="esc-row"><span>Ставка за день</span><span style="font-family:'DM Mono',monospace">${emp.rate||402} ₴</span></div>
-      <div class="esc-row"><span>KPI за день</span><span style="font-family:'DM Mono',monospace;color:var(--blue)">${emp.kpi||402} ₴</span></div>
-      <div class="esc-row"><span>Рейтинг за день ${ratingBadge}</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${rating} ₴</span></div>
-      <div class="esc-row" style="background:var(--surface2);border-radius:8px;padding:8px 10px;margin:4px 0"><span style="font-weight:600">База за зміну</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${base} ₴</span></div>
-      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічна (×1.5)</span><span style="font-family:'DM Mono',monospace;color:var(--purple)">${nightBase} ₴</span></div>
-      <div class="esc-row"><span>Авто з графіку (ден/ніч)</span><span style="color:var(--muted);font-size:12px">${autoDays}д / ${autoNights}н</span></div>
-      <div class="esc-row"><span>Денних змін</span><input class="esc-input" type="number" id="days-${emp.id}" value="${dv}" oninput="recalcCard(${emp.id})"></div>
-      <div class="esc-row"><span style="color:var(--purple)">🌙 Нічних змін</span><input class="esc-input" type="number" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="border-color:rgba(167,139,250,.4)"></div>
-      <div class="esc-row"><span>Бонус</span><input class="esc-input" type="number" id="bonus-${emp.id}" value="${bv}" oninput="recalcCard(${emp.id})"></div>
-      <div class="esc-row" style="padding-top:10px;margin-top:4px;border-top:1px solid var(--border)"><span>РАЗОМ</span><span class="esc-total" id="total-${emp.id}">${total.toLocaleString('uk')} ₴</span></div>
-    </div>`;
+    const penaltyv=existing.penalty||0;
+    const ratingPerDay=emp.rating||0;
+    const monthRating=(db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][key])||existing.monthRating||0;
+    const stav=emp.rate||402;
+    const kpi=emp.kpi||402;
+    const shiftCost=stav+kpi+ratingPerDay;
+    const stavKpi=Math.round((stav+kpi)*dv + Math.round((stav+kpi)*1.5)*nv);
+    const ratingSum=monthRating;
+    const total=stavKpi+ratingSum+bv-penaltyv;
+    const inp=`background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;width:65px`;
+    const mono=`font-family:'DM Mono',monospace;text-align:right;padding:8px 10px`;
+    const rowBg=rowIdx%2===0?'':'background:rgba(255,255,255,.02)';
+    return `<tr style="${rowBg}">
+      <td style="color:var(--muted);font-size:12px;text-align:center;padding:8px 6px">${rowIdx+1}</td>
+      <td style="font-weight:600;white-space:nowrap;padding:8px 12px">${emp.name}</td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="days-${emp.id}" value="${dv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(126,184,247,.35)" title="Авто з графіку: ${autoDays}"></td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(167,139,250,.35)" title="Авто з графіку: ${autoNights}"></td>
+      <td id="mshifts-${emp.id}" style="${mono};color:var(--muted2)">${dv+nv}</td>
+      <td style="${mono}">${stav}</td>
+      <td style="${mono};color:var(--blue)">${kpi}</td>
+      <td style="${mono};color:var(--purple)">${ratingPerDay}</td>
+      <td style="${mono};color:var(--teal)">${shiftCost}</td>
+      <td id="mstavkpi-${emp.id}" style="${mono};color:var(--green);font-weight:600">${stavKpi.toLocaleString('uk')}</td>
+      <td style="text-align:center;padding:4px 8px"><input type="number" min="0" id="monthrating-${emp.id}" value="${monthRating}" oninput="recalcCard(${emp.id})" style="${inp};width:85px;border-color:rgba(192,132,252,.35)"></td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="bonus-${emp.id}" value="${bv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(251,146,60,.35)"></td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="penalty-${emp.id}" value="${penaltyv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(248,113,113,.35)"></td>
+      <td id="total-${emp.id}" style="${mono};color:var(--accent2);font-weight:700;font-size:14px">${total.toLocaleString('uk')} ₴</td>
+    </tr>`;
   }).join('');
 }
 
 function recalcCard(id){
   const emp=myStaff().find(s=>s.id===id);
+  if(!emp) return;
   const days=+document.getElementById(`days-${id}`)?.value||0;
   const nights=+document.getElementById(`nights-${id}`)?.value||0;
   const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
-  const base=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0);
-  const total=Math.round(base*days + Math.round(base*1.5)*nights + bonus);
+  const penalty=+document.getElementById(`penalty-${id}`)?.value||0;
+  const monthRating=+document.getElementById(`monthrating-${id}`)?.value||0;
+  const stav=emp.rate||402;
+  const kpi=emp.kpi||402;
+  const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
+  const total=stavKpi+monthRating+bonus-penalty;
+  const shifts=days+nights;
+  const shiftsEl=document.getElementById(`mshifts-${id}`);
+  const stavkpiEl=document.getElementById(`mstavkpi-${id}`);
+  if(shiftsEl) shiftsEl.textContent=shifts;
+  if(stavkpiEl) stavkpiEl.textContent=stavKpi.toLocaleString('uk');
   document.getElementById(`total-${id}`).textContent=total.toLocaleString('uk')+' ₴';
 }
 
 async function saveMonthly(){
   const key=mkey(monthlyY,monthlyM);
   const label=MONTHS_UK[monthlyM]+' '+monthlyY;
+  if(!db.perfRating) db.perfRating={};
   myStaff().forEach(emp=>{
     const days=+document.getElementById(`days-${emp.id}`)?.value||0;
     const nights=+document.getElementById(`nights-${emp.id}`)?.value||0;
     const bonus=+document.getElementById(`bonus-${emp.id}`)?.value||0;
+    const penalty=+document.getElementById(`penalty-${emp.id}`)?.value||0;
+    const monthRating=+document.getElementById(`monthrating-${emp.id}`)?.value||0;
     if(!emp.payments) emp.payments=[];
+    const stav=emp.rate||402;
+    const kpi=emp.kpi||402;
+    const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
+    const total=stavKpi+monthRating+bonus-penalty;
+    const entry={monthKey:key,month:label,days,nights,bonus,penalty,monthRating,
+      rate:stav,kpi:kpi,rating:emp.rating||0,ratingType:emp.ratingType||'standard',
+      stavKpi,total,status:'paid'};
     const idx=emp.payments.findIndex(p=>p.monthKey===key);
-    const base=(emp.rate||402)+(emp.kpi||402)+(emp.rating||0);
-    const total=Math.round(base*days + Math.round(base*1.5)*nights + bonus);
-    const entry={monthKey:key,month:label,days,nights,bonus,rate:emp.rate||402,kpi:emp.kpi||402,rating:emp.rating||0,ratingType:emp.ratingType||'standard',base,total,status:'paid'};
     if(idx>=0) emp.payments[idx]=entry; else emp.payments.push(entry);
+    // Синхронізуємо з perfRating
+    if(!db.perfRating[emp.id]) db.perfRating[emp.id]={};
+    db.perfRating[emp.id][key]=monthRating;
   });
   await saveDB();
-  alert('✅ Виплати збережено!');
+  const btn=document.querySelector('[onclick="saveMonthly()"]');
+  if(btn){const o=btn.textContent;btn.textContent='✅ Збережено!';setTimeout(()=>btn.textContent=o,1500);}
+}
+
+// ── SALARY EXCEL EXPORT ──
+function exportSalaryExcel(){
+  const key=mkey(monthlyY,monthlyM);
+  const label=MONTHS_UK[monthlyM]+' '+monthlyY;
+  const sched=(db.schedule&&db.schedule[key])||{};
+  const headers=['\u2116','\u041e\u043f\u0435\u0440\u0430\u0442\u043e\u0440',
+    '\u0414\u0435\u043d\u043d\u0438\u0445 \u0437\u043c\u0456\u043d',
+    '\u041d\u0456\u0447\u043d\u0438\u0445 \u0437\u043c\u0456\u043d',
+    '\u0412\u0441\u044c\u043e\u0433\u043e \u0437\u043c\u0456\u043d',
+    '\u0421\u0442\u0430\u0432\u043a\u0430',
+    '\u041a\u0420\u0406',
+    '\u0420\u0435\u0439\u0442\u0438\u043d\u0433/\u0434',
+    '\u0412\u0430\u0440\u0442\u0456\u0441\u0442\u044c \u0437\u043c\u0456\u043d\u0438',
+    '\u0421\u0442\u0430\u0432\u043a\u0430+\u041a\u041f\u0406',
+    '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u20b4',
+    '\u0411\u043e\u043d\u0443\u0441\u0438',
+    '\u0428\u0442\u0440\u0430\u0444\u0438',
+    '\u0422\u043e\u0442\u0430\u043b \u0432\u0441\u0435'];
+  const rows=[headers.join(';')];
+  myStaff().forEach((emp,i)=>{
+    const empSched=sched[emp.id]||{};
+    const allShifts=Object.values(empSched).filter(v=>v&&v!=='off'&&v!=='vacation');
+    const autoNights=allShifts.filter(v=>isNightShift(v)).length;
+    const autoDays=allShifts.length-autoNights;
+    const existing=(emp.payments||[]).find(p=>p.monthKey===key)||{};
+    const days=+document.getElementById(`days-${emp.id}`)?.value ?? (existing.days!==undefined?existing.days:autoDays);
+    const nights=+document.getElementById(`nights-${emp.id}`)?.value ?? (existing.nights!==undefined?existing.nights:autoNights);
+    const bonus=+document.getElementById(`bonus-${emp.id}`)?.value ?? (existing.bonus||0);
+    const penalty=+document.getElementById(`penalty-${emp.id}`)?.value ?? (existing.penalty||0);
+    const monthRating=+document.getElementById(`monthrating-${emp.id}`)?.value ?? ((db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][key])||existing.monthRating||0);
+    const stav=emp.rate||402;
+    const kpi=emp.kpi||402;
+    const ratingPerDay=emp.rating||0;
+    const shiftCost=stav+kpi+ratingPerDay;
+    const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
+    const total=stavKpi+monthRating+bonus-penalty;
+    rows.push([i+1,emp.name,days,nights,days+nights,stav,kpi,ratingPerDay,shiftCost,stavKpi,monthRating,bonus,penalty,total].join(';'));
+  });
+  const BOM='\uFEFF';
+  const blob=new Blob([BOM+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`\u0417\u041f_${label.replace(/ /g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── AGENT CRUD ──
