@@ -8032,6 +8032,13 @@ function renderPermLinks(){
 }
 function renderShiftTypesManager(){
   const teamId = me && me.teamId ? me.teamId : 1;
+  // Якщо типів ще немає в db — записуємо дефолти щоб їх можна було редагувати/видаляти
+  if(!db.shiftTypes) db.shiftTypes = {};
+  if(!db.shiftTypes[teamId] || db.shiftTypes[teamId].length === 0){
+    db.shiftTypes[teamId] = DEFAULT_SHIFT_TYPES.map((s,i)=>({
+      id: 'ts_'+teamId+'_'+i, label:s.label, time:s.time, color:s.color
+    }));
+  }
   const shifts = getTeamShifts(teamId);
   const el = document.getElementById('adm-shift-types-content');
   if(!el) return;
