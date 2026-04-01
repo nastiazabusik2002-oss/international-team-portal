@@ -1961,6 +1961,8 @@ async function loadDB(){
       const rows = await res.json();
       if(rows.length && rows[0].value){
         db=JSON.parse(rows[0].value);
+        // Зберігаємо резервну копію в localStorage
+        try{ localStorage.setItem('ttn_db_backup', rows[0].value); }catch(e){}
         // ── MIGRATION v1: assign teamId=1 to existing Chat staff ──
         if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
         // Skip all further migrations if already done
@@ -1976,13 +1978,27 @@ async function loadDB(){
       const rows3 = await res3.json();
       if(rows3.length && rows3[0].value){
         db=JSON.parse(rows3[0].value);
+        try{ localStorage.setItem('ttn_db_backup', rows3[0].value); }catch(e){}
         if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
         await runMigrations();
         return;
       }
     }
   }catch(e){ console.warn('Supabase load error:',e); }
-  db=buildDefault();
+  // Якщо Supabase недоступний — відновлюємо з localStorage резервної копії
+  try{
+    const backup = localStorage.getItem('ttn_db_backup');
+    if(backup){
+      db = JSON.parse(backup);
+      console.warn('[loadDB] Відновлено з localStorage резервної копії');
+      if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
+      return;
+    }
+  }catch(e2){ console.warn('localStorage backup failed:',e2); }
+  // Тільки якщо взагалі нічого немає — будуємо дефолт
+  if(!db || !db.staff || !db.staff.length){
+    db = buildDefault();
+  }
 }
 
 async function runMigrations(){
