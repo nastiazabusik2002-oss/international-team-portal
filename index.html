@@ -1174,11 +1174,11 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
                 <th style="color:var(--purple);min-width:70px">🌙 Нічних</th>
                 <th style="color:var(--muted2);min-width:60px">Всього</th>
                 <th style="min-width:70px">Ставка</th>
-                <th style="color:var(--blue);min-width:60px">КРІ</th>
+                <th style="color:var(--blue);min-width:75px">КРІ</th>
                 <th style="color:var(--purple);min-width:80px">Рейтинг/д</th>
                 <th style="color:var(--teal);min-width:90px">Варт.зміни</th>
                 <th style="color:var(--green);min-width:90px">Ставка+КПІ</th>
-                <th style="color:var(--purple);min-width:90px">Рейтинг ₴</th>
+                <th style="color:var(--purple);min-width:90px">РЕЙТИНГ</th>
                 <th style="color:var(--accent);min-width:90px">Бонуси</th>
                 <th style="color:var(--orange);min-width:80px">Штрафи</th>
                 <th style="color:var(--accent2);font-weight:700;min-width:100px">ТОТАЛ</th>
@@ -1734,25 +1734,10 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="field"><label>Посада</label><input type="text" id="m-role"></div>
       <div class="field"><label>Ставка за день (₴)</label><input type="number" id="m-rate" value="402"></div>
       <div class="field"><label>KPI за день (₴)</label><input type="number" id="m-kpi" value="402"></div>
-      <div class="field" style="grid-column:1/-1">
-        <label>Рейтинг за день (₴)</label>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <input type="number" id="m-rating" value="0" style="flex:1;min-width:100px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-            <input type="checkbox" id="m-rating-high" style="accent-color:var(--accent);width:15px;height:15px">
-            ⭐ Високий рейтинг
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-            <input type="radio" name="m-rating-type" id="m-rating-std" value="standard" checked style="accent-color:var(--accent);width:15px;height:15px">
-            Стандартний
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-            <input type="radio" name="m-rating-type" id="m-rating-hi" value="high" style="accent-color:var(--accent);width:15px;height:15px">
-            ⭐ Високий
-          </label>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">Рейтинг множиться на кількість змін у місяці</div>
-      </div>
+      <!-- rating field removed — рейтинг вноситься як місячна сума в Продуктивності -->
+      <input type="hidden" id="m-rating" value="0">
+      <input type="hidden" id="m-rating-hi" value="high">
+      <input type="hidden" id="m-rating-std" value="standard">
       <div class="field"><label>Пароль</label><input type="text" id="m-pass"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="m-bday" placeholder="напр. 09-03"></div>
       <div class="field" id="m-subteam-wrap" style="display:none">
@@ -1799,20 +1784,9 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="field"><label>Посада</label><input type="text" id="new-role" value="Агент"></div>
       <div class="field"><label>Ставка за день (₴)</label><input type="number" id="new-rate" value="402"></div>
       <div class="field"><label>KPI за день (₴)</label><input type="number" id="new-kpi" value="402"></div>
-      <div class="field" style="grid-column:1/-1">
-        <label>Рейтинг за день (₴)</label>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <input type="number" id="new-rating" value="0" style="flex:1;min-width:100px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-            <input type="radio" name="new-rating-type" id="new-rating-std" value="standard" checked style="accent-color:var(--accent);width:15px;height:15px">
-            Стандартний
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-            <input type="radio" name="new-rating-type" id="new-rating-hi" value="high" style="accent-color:var(--accent);width:15px;height:15px">
-            ⭐ Високий
-          </label>
-        </div>
-      </div>
+      <!-- rating field removed -->
+      <input type="hidden" id="new-rating" value="0">
+      <input type="hidden" id="new-rating-hi" value="high">
       <div class="field"><label>Пароль</label><input type="text" id="new-pass" value="1234"></div>
       <div class="field"><label>🎂 День народження (ММ-ДД)</label><input type="text" id="new-bday" placeholder="напр. 09-03"></div>
       <div class="field" id="new-subteam-wrap" style="display:none">
@@ -2889,15 +2863,14 @@ function renderEmployee(){
   if(perfCardsWrap) perfCardsWrap.style.display = hidePayCards ? 'none' : '';
 
   if(!hidePayCards){
-    const dayPay=(e.rate||402)+(e.kpi||402)+(e.rating||0);
+    const dayPay=(e.rate||402)+(e.kpi||402);
     document.getElementById('emp-cards').innerHTML=`
       <div class="kard"><div class="kard-label">Ставка за день</div><div class="kard-val y">${(e.rate||402)} ₴</div></div>
       <div class="kard"><div class="kard-label">KPI за день</div><div class="kard-val b">${(e.kpi||402)} ₴</div></div>
-      <div class="kard"><div class="kard-label">Рейтинг місяця</div><div class="kard-val p">${(e.rating||0)} ₴</div></div>
-      <div class="kard"><div class="kard-label">Оплата за день</div><div class="kard-val g">${dayPay} ₴</div><div class="kard-sub">${e.rate}+${e.kpi}+${e.rating}</div></div>`;
+      <div class="kard"><div class="kard-label">База за день</div><div class="kard-val g">${dayPay} ₴</div><div class="kard-sub">${e.rate}+${e.kpi}</div></div>`;
     document.getElementById('calc-rate').value=e.rate||402;
     document.getElementById('calc-kpi').value=e.kpi||402;
-    document.getElementById('calc-rating').value=e.rating||0;
+    document.getElementById('calc-rating').value=0;
     recalc();
     renderPayments();
   }
@@ -3451,11 +3424,30 @@ function renderPayments(){
   const tbody=document.getElementById('emp-payments');
   if(!pmts.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Виплат ще немає</td></tr>';return;}
   tbody.innerHTML=pmts.map(p=>{
-    const base=(p.rate||402)+(p.kpi||402);
-    const pBase=p.base||(( p.rate||402)+(p.kpi||402)+(p.rating||0));
-    const total=p.total||Math.round(pBase*(p.days||0) + Math.round(pBase*1.5)*(p.nights||0) + (p.bonus||0));
-    const rtBadge=p.ratingType==='high'?'⭐':'';
-    return `<tr><td>${p.month}</td><td>${p.days||0}</td><td style="color:var(--purple)">${p.nights||0}</td><td>${p.rate||402} ₴</td><td>${p.kpi||402} ₴</td><td>${rtBadge}${p.rating||0} ₴</td><td>${p.bonus||0} ₴</td><td><b>${total.toLocaleString('uk')} ₴</b></td><td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td></tr>`;
+    // Підтримка старої і нової структури
+    let total = p.total;
+    if(!total){
+      if(p.stavKpi !== undefined){
+        // Нова структура
+        total = (p.stavKpi||0) + (p.ratingSum||0) + (p.bonus||0) - (p.penalty||0);
+      } else {
+        // Стара структура
+        const pBase=(p.rate||402)+(p.kpi||402)+(p.rating||0);
+        total = Math.round(pBase*(p.days||0) + Math.round(pBase*1.5)*(p.nights||0) + (p.bonus||0));
+      }
+    }
+    const ratingVal = p.ratingD !== undefined ? p.ratingD : (p.rating||0);
+    return `<tr>
+      <td>${p.month}</td>
+      <td>${p.days||0}</td>
+      <td style="color:var(--purple)">${p.nights||0}</td>
+      <td>${p.rate||402} ₴</td>
+      <td>${p.kpi||402} ₴</td>
+      <td style="color:var(--purple)">${ratingVal} ₴</td>
+      <td>${p.bonus||0} ₴</td>
+      <td><b>${total.toLocaleString('uk')} ₴</b></td>
+      <td><span class="pill ${p.status==='paid'?'pill-paid':'pill-pending'}">${p.status==='paid'?'Виплачено':'Очікується'}</span></td>
+    </tr>`;
   }).join('');
 }
 
@@ -5439,8 +5431,15 @@ function renderChiefSalary(){
     const rows = staff.map(emp => {
       const p = (emp.payments||[]).find(x=>x.monthKey===key);
       if(!p) return null;
-      const base = p.base || ((p.rate||402)+(p.kpi||402)+(p.rating||0));
-      const total = p.total || Math.round(base*(p.days||0) + Math.round(base*1.5)*(p.nights||0) + (p.bonus||0));
+      let total = p.total;
+      if(!total){
+        if(p.stavKpi !== undefined){
+          total = (p.stavKpi||0) + (p.ratingSum||0) + (p.bonus||0) - (p.penalty||0);
+        } else {
+          const base=(p.rate||402)+(p.kpi||402)+(p.rating||0);
+          total = Math.round(base*(p.days||0) + Math.round(base*1.5)*(p.nights||0) + (p.bonus||0));
+        }
+      }
       teamTotal += total;
       return {emp, p, total};
     }).filter(Boolean);
@@ -5463,14 +5462,14 @@ function renderChiefSalary(){
         </tr></thead>
         <tbody>`;
     rows.forEach(({emp, p, total}) => {
-      const rtBadge = p.ratingType==='high' ? '⭐' : '';
+      // rtBadge deprecated
       html += `<tr>
         <td style="white-space:nowrap">${emp.name}</td>
         <td style="text-align:center;font-family:'DM Mono',monospace">${p.days||0}</td>
         <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--purple)">${p.nights||0}</td>
         <td style="text-align:center;font-family:'DM Mono',monospace">${p.rate||402} ₴</td>
         <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--blue)">${p.kpi||402} ₴</td>
-        <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--purple)">${rtBadge}${p.rating||0} ₴</td>
+        <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--purple)">${p.ratingD !== undefined ? p.ratingD : (p.rating||0)} ₴</td>
         <td style="text-align:center;font-family:'DM Mono',monospace">${p.bonus||0} ₴</td>
         <td style="text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${total.toLocaleString('uk')} ₴</td>
       </tr>`;
@@ -5695,13 +5694,20 @@ async function autoRefreshDB(){
 
         // 1. SCHEDULE
         if(db.schedule && freshDb.schedule){
+          const myTeamIdSched = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
+          const myEmpIdsSched = myTeamIdSched && db.staff
+            ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamIdSched).map(s=>String(s.id)))
+            : new Set();
           Object.keys(db.schedule).forEach(key=>{
             const cur = db.schedule[key];
             const frsh = freshDb.schedule[key] || {};
             Object.keys(cur).forEach(empId=>{
               const curData = cur[empId] || {};
               const frshData = frsh[empId] || {};
-              if(Object.keys(curData).length > Object.keys(frshData).length){
+              // Для своєї команди — завжди зберігаємо (навіть якщо 0 днів — агент міг бути щойно доданий)
+              // Для чужих — тільки якщо наших більше
+              const isMyEmp = myEmpIdsSched.has(String(empId));
+              if(isMyEmp || Object.keys(curData).length > Object.keys(frshData).length){
                 if(!freshDb.schedule[key]) freshDb.schedule[key]={};
                 freshDb.schedule[key][empId] = curData;
               }
@@ -6979,13 +6985,17 @@ function renderMonthly(){
     const nv=existing.nights!==undefined?existing.nights:autoNights;
     const bv=existing.bonus||0;
     const penaltyv=existing.penalty||0;
-    const ratingPerDay=emp.rating||0;
-    const monthRating=(db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][key])||existing.monthRating||0;
     const stav=emp.rate||402;
-    const kpi=emp.kpi||402;
-    const shiftCost=stav+kpi+ratingPerDay;
+    // КРІ — змінне (збережене або з профілю)
+    const kpi=existing.kpi!==undefined?existing.kpi:(emp.kpi||402);
+    // Рейтинг/д — змінне (збережене або з perfRating або з профілю)
+    const ratingD=existing.ratingD!==undefined?existing.ratingD:((db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][key])||emp.rating||0);
+    // Формула: Варт.зміни = Ставка+КПІ+Рейтинг/д
+    const shiftCost=stav+kpi+ratingD;
+    // Ставка+КПІ (без рейтингу, окрема колонка)
     const stavKpi=Math.round((stav+kpi)*dv + Math.round((stav+kpi)*1.5)*nv);
-    const ratingSum=monthRating;
+    // РЕЙТИНГ = Рейтинг/д × зміни (авто)
+    const ratingSum=Math.round(ratingD*dv + Math.round(ratingD*1.5)*nv);
     const total=stavKpi+ratingSum+bv-penaltyv;
     const inp=`background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;width:65px`;
     const mono=`font-family:'DM Mono',monospace;text-align:right;padding:8px 10px`;
@@ -6997,11 +7007,11 @@ function renderMonthly(){
       <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="nights-${emp.id}" value="${nv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(167,139,250,.35)" title="Авто з графіку: ${autoNights}"></td>
       <td id="mshifts-${emp.id}" style="${mono};color:var(--muted2)">${dv+nv}</td>
       <td style="${mono}">${stav}</td>
-      <td style="${mono};color:var(--blue)">${kpi}</td>
-      <td style="${mono};color:var(--purple)">${ratingPerDay}</td>
-      <td style="${mono};color:var(--teal)">${shiftCost}</td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="mkpi-${emp.id}" value="${kpi}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(126,184,247,.35)"></td>
+      <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="mratingd-${emp.id}" value="${ratingD}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(192,132,252,.35)"></td>
+      <td id="mshiftcost-${emp.id}" style="${mono};color:var(--teal)">${shiftCost}</td>
       <td id="mstavkpi-${emp.id}" style="${mono};color:var(--green);font-weight:600">${stavKpi.toLocaleString('uk')}</td>
-      <td style="text-align:center;padding:4px 8px"><input type="number" min="0" id="monthrating-${emp.id}" value="${monthRating}" oninput="recalcCard(${emp.id})" style="${inp};width:85px;border-color:rgba(192,132,252,.35)"></td>
+      <td id="mratingsum-${emp.id}" style="${mono};color:var(--purple);font-weight:600">${ratingSum.toLocaleString('uk')}</td>
       <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="bonus-${emp.id}" value="${bv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(251,146,60,.35)"></td>
       <td style="text-align:center;padding:4px 6px"><input type="number" min="0" id="penalty-${emp.id}" value="${penaltyv}" oninput="recalcCard(${emp.id})" style="${inp};border-color:rgba(248,113,113,.35)"></td>
       <td id="total-${emp.id}" style="${mono};color:var(--accent2);font-weight:700;font-size:14px">${total.toLocaleString('uk')} ₴</td>
@@ -7016,16 +7026,22 @@ function recalcCard(id){
   const nights=+document.getElementById(`nights-${id}`)?.value||0;
   const bonus=+document.getElementById(`bonus-${id}`)?.value||0;
   const penalty=+document.getElementById(`penalty-${id}`)?.value||0;
-  const monthRating=+document.getElementById(`monthrating-${id}`)?.value||0;
+  const kpi=+document.getElementById(`mkpi-${id}`)?.value||(emp.kpi||402);
+  const ratingD=+document.getElementById(`mratingd-${id}`)?.value||0;
   const stav=emp.rate||402;
-  const kpi=emp.kpi||402;
+  const shiftCost=stav+kpi+ratingD;
   const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
-  const total=stavKpi+monthRating+bonus-penalty;
+  const ratingSum=Math.round(ratingD*days + Math.round(ratingD*1.5)*nights);
+  const total=stavKpi+ratingSum+bonus-penalty;
   const shifts=days+nights;
   const shiftsEl=document.getElementById(`mshifts-${id}`);
   const stavkpiEl=document.getElementById(`mstavkpi-${id}`);
+  const shiftcostEl=document.getElementById(`mshiftcost-${id}`);
+  const ratingsumEl=document.getElementById(`mratingsum-${id}`);
   if(shiftsEl) shiftsEl.textContent=shifts;
   if(stavkpiEl) stavkpiEl.textContent=stavKpi.toLocaleString('uk');
+  if(shiftcostEl) shiftcostEl.textContent=shiftCost;
+  if(ratingsumEl) ratingsumEl.textContent=ratingSum.toLocaleString('uk');
   document.getElementById(`total-${id}`).textContent=total.toLocaleString('uk')+' ₴';
 }
 
@@ -7038,20 +7054,21 @@ async function saveMonthly(){
     const nights=+document.getElementById(`nights-${emp.id}`)?.value||0;
     const bonus=+document.getElementById(`bonus-${emp.id}`)?.value||0;
     const penalty=+document.getElementById(`penalty-${emp.id}`)?.value||0;
-    const monthRating=+document.getElementById(`monthrating-${emp.id}`)?.value||0;
+    const kpi=+document.getElementById(`mkpi-${emp.id}`)?.value||(emp.kpi||402);
+    const ratingD=+document.getElementById(`mratingd-${emp.id}`)?.value||0;
     if(!emp.payments) emp.payments=[];
     const stav=emp.rate||402;
-    const kpi=emp.kpi||402;
     const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
-    const total=stavKpi+monthRating+bonus-penalty;
-    const entry={monthKey:key,month:label,days,nights,bonus,penalty,monthRating,
-      rate:stav,kpi:kpi,rating:emp.rating||0,ratingType:emp.ratingType||'standard',
-      stavKpi,total,status:'paid'};
+    const ratingSum=Math.round(ratingD*days + Math.round(ratingD*1.5)*nights);
+    const total=stavKpi+ratingSum+bonus-penalty;
+    const entry={monthKey:key,month:label,days,nights,bonus,penalty,
+      kpi,ratingD,rate:stav,
+      stavKpi,ratingSum,total,status:'paid'};
     const idx=emp.payments.findIndex(p=>p.monthKey===key);
     if(idx>=0) emp.payments[idx]=entry; else emp.payments.push(entry);
-    // Синхронізуємо з perfRating
+    // Синхронізуємо ratingD з perfRating
     if(!db.perfRating[emp.id]) db.perfRating[emp.id]={};
-    db.perfRating[emp.id][key]=monthRating;
+    db.perfRating[emp.id][key]=ratingD;
   });
   await saveDB();
   const btn=document.querySelector('[onclick="saveMonthly()"]');
@@ -7072,7 +7089,7 @@ function exportSalaryExcel(){
     '\u0420\u0435\u0439\u0442\u0438\u043d\u0433/\u0434',
     '\u0412\u0430\u0440\u0442\u0456\u0441\u0442\u044c \u0437\u043c\u0456\u043d\u0438',
     '\u0421\u0442\u0430\u0432\u043a\u0430+\u041a\u041f\u0406',
-    '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u20b4',
+    '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u20b4 (\u0430\u0432\u0442\u043e)',
     '\u0411\u043e\u043d\u0443\u0441\u0438',
     '\u0428\u0442\u0440\u0430\u0444\u0438',
     '\u0422\u043e\u0442\u0430\u043b \u0432\u0441\u0435'];
@@ -7087,14 +7104,14 @@ function exportSalaryExcel(){
     const nights=+document.getElementById(`nights-${emp.id}`)?.value ?? (existing.nights!==undefined?existing.nights:autoNights);
     const bonus=+document.getElementById(`bonus-${emp.id}`)?.value ?? (existing.bonus||0);
     const penalty=+document.getElementById(`penalty-${emp.id}`)?.value ?? (existing.penalty||0);
-    const monthRating=+document.getElementById(`monthrating-${emp.id}`)?.value ?? ((db.perfRating&&db.perfRating[emp.id]&&db.perfRating[emp.id][key])||existing.monthRating||0);
     const stav=emp.rate||402;
-    const kpi=emp.kpi||402;
-    const ratingPerDay=emp.rating||0;
-    const shiftCost=stav+kpi+ratingPerDay;
+    const kpi=+document.getElementById(`mkpi-${emp.id}`)?.value||(existing.kpi||emp.kpi||402);
+    const ratingD=+document.getElementById(`mratingd-${emp.id}`)?.value||(existing.ratingD||0);
+    const shiftCost=stav+kpi+ratingD;
     const stavKpi=Math.round((stav+kpi)*days + Math.round((stav+kpi)*1.5)*nights);
-    const total=stavKpi+monthRating+bonus-penalty;
-    rows.push([i+1,emp.name,days,nights,days+nights,stav,kpi,ratingPerDay,shiftCost,stavKpi,monthRating,bonus,penalty,total].join(';'));
+    const ratingSum=Math.round(ratingD*days + Math.round(ratingD*1.5)*nights);
+    const total=stavKpi+ratingSum+bonus-penalty;
+    rows.push([i+1,emp.name,days,nights,days+nights,stav,kpi,ratingD,shiftCost,stavKpi,ratingSum,bonus,penalty,total].join(';'));
   });
   const BOM='\uFEFF';
   const blob=new Blob([BOM+rows.join('\n')],{type:'text/csv;charset=utf-8'});
