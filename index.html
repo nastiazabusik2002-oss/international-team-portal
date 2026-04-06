@@ -5686,6 +5686,11 @@ async function autoRefreshDB(){
     const id = activeAdm.id;
     if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly','adm-reviews'].includes(id)) return;
   }
+  // Блокуємо autoRefresh для аудитора якщо заповнює форму зауваження
+  if(me && me.type==='auditor'){
+    const auditText = document.getElementById('audit-text');
+    if(auditText && auditText.value && auditText.value.trim().length > 0) return;
+  }
 
   // Не оновлювати якщо відкрите будь-яке модальне вікно
   if(document.querySelector('.modal-ov.open')) return;
@@ -5993,22 +5998,29 @@ async function autoRefreshDB(){
           if(db.personalNotes[myEmpId2]) freshDb.personalNotes[myEmpId2] = db.personalNotes[myEmpId2];
         }
 
-        // 11. REMARKS
+        // 11. REMARKS — завжди мержимо, не замінюємо
         if(db.remarks && db.remarks.length > 0){
-          if(!freshDb.remarks || freshDb.remarks.length < db.remarks.length){
-            freshDb.remarks = db.remarks;
-          } else {
-            const freshIds = new Set(freshDb.remarks.map(r=>r.id));
-            db.remarks.forEach(r=>{
-              if(!freshIds.has(r.id)){
-                freshDb.remarks.push(r);
-              } else if(r.replies && r.replies.length > 0){
-                const idx = freshDb.remarks.findIndex(fr=>fr.id===r.id);
-                if(idx>=0 && (!freshDb.remarks[idx].replies || freshDb.remarks[idx].replies.length < r.replies.length))
+          if(!freshDb.remarks) freshDb.remarks = [];
+          const freshIds = new Set(freshDb.remarks.map(r=>r.id));
+          db.remarks.forEach(r=>{
+            if(!freshIds.has(r.id)){
+              // Нове зауваження якого немає у свіжих — додаємо
+              freshDb.remarks.push(r);
+            } else {
+              // Є в обох — мержимо replies і текст
+              const idx = freshDb.remarks.findIndex(fr=>fr.id===r.id);
+              if(idx>=0){
+                // Зберігаємо більше replies
+                if(r.replies && r.replies.length > (freshDb.remarks[idx].replies||[]).length){
                   freshDb.remarks[idx].replies = r.replies;
+                }
+                // Якщо текст був змінений — берємо локальну версію
+                if(r.text && r.text !== freshDb.remarks[idx].text && r.updatedAt > (freshDb.remarks[idx].updatedAt||0)){
+                  freshDb.remarks[idx].text = r.text;
+                }
               }
-            });
-          }
+            }
+          });
         }
 
         _lastDbStr = fresh;
