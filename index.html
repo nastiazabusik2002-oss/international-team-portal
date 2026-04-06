@@ -2048,6 +2048,8 @@ async function saveDB(){
       throw new Error('Save failed: '+res.status+' '+errBody);
     }
     _lastDbStr=val;
+    // Оновлюємо localStorage backup після кожного успішного збереження
+    try{ localStorage.setItem('ttn_db_backup', val); }catch(e){}
     sbOnline();
     console.log('[saveDB] success!');
   }catch(e){
@@ -5731,7 +5733,7 @@ async function autoRefreshDB(){
           });
         }
 
-        // 2. STAFF
+        // 2. STAFF — захищаємо агентів своєї команди
         if(db.staff && freshDb.staff && me){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId){
