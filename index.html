@@ -724,7 +724,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="nav-tab" onclick="empTab('schedule',this)">📅 Мій графік</div>
       <div class="nav-tab" onclick="empTab('salary',this)">💰 Зарплата</div>
       <div class="nav-tab" onclick="empTab('team',this)">👥 Команда</div>
-      <div class="nav-tab" onclick="empTab('exchange',this)">🔄 Обмін змін</div>
+      <div class="nav-tab" onclick="empTab('exchange',this)" id="emp-exchange-tab" style="position:relative">🔄 Обмін змін<span id="emp-exchange-badge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#f87171;box-shadow:0 0 0 2px var(--bg)"></span></div>
       <div class="nav-tab" onclick="empTab('reviews',this)">⭐ Відгуки</div>
       <div class="nav-tab" onclick="empTab('perf',this)">📊 Продуктивність</div>
       <div class="nav-tab" onclick="empTab('announce',this)">📢 Оголошення</div>
@@ -732,7 +732,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
       <div class="nav-tab" onclick="empTab('notes',this)">📝 Нотатки</div>
       <div class="nav-tab" onclick="empTab('kudos',this)">🙏 Подяки</div>
       <div class="nav-tab" onclick="empTab('company',this)">🏢 Компанія</div>
-      <div class="nav-tab" onclick="empTab('remarks',this)" id="emp-remarks-tab" style="display:none">📋 Зауваження</div>
+      <div class="nav-tab" onclick="empTab('remarks',this)" id="emp-remarks-tab" style="display:none;position:relative">📋 Зауваження<span id="emp-remarks-badge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#f87171;box-shadow:0 0 0 2px var(--bg)"></span></div>
       <!-- Вкладки з правами — показуються динамічно -->
       <div class="nav-tab" id="perm-tab-schedule" style="display:none" onclick="empPermTab('schedule',this)">📅 Графік команди</div>
       <div class="nav-tab" id="perm-tab-perf" style="display:none" onclick="empPermTab('perf',this)">📊 Продуктивність</div>
@@ -755,6 +755,8 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div class="shift-today-row" id="emp-today-row"></div>
         <div id="emp-home-announce"></div>
         <div id="emp-bday-banner" style="margin-bottom:4px"></div>
+        <div id="emp-home-exchange-alert"></div>
+        <div id="emp-home-remarks-alert"></div>
         <div id="emp-home-reviews"></div>
 
         <!-- Швидкі посилання -->
@@ -949,7 +951,19 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         <div id="emp-remarks-list"></div>
       </div>
 
-      <!-- COMPANY TAB -->
+      <!-- MY NOTES TAB — переробки і запізнення для аудитора -->
+    <div id="atab-mynotes" class="etab" style="display:none">
+      <div class="page-h">МОЇ НОТАТКИ</div>
+      <div class="page-sub">Переробки та запізнення по змінах</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="cal-nav" onclick="auditorNotesNav(-1)">‹</button>
+        <span class="cal-month-title" id="auditor-notes-title"></span>
+        <button class="cal-nav" onclick="auditorNotesNav(1)">›</button>
+      </div>
+      <div id="auditor-notes-content"></div>
+    </div>
+
+    <!-- COMPANY TAB -->
       <div id="etab-company" class="etab" style="display:none">
         <div class="page-h">КОМПАНІЯ</div>
         <div class="page-sub">Загальний графік всіх команд та настрій</div>
@@ -1381,6 +1395,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
     <div class="nav-tab" onclick="auditorTab('history',this)">📁 Архів</div>
     <div class="nav-tab" onclick="auditorTab('schedule',this)">📅 Графік команди</div>
     <div class="nav-tab" onclick="auditorTab('company',this)">🏢 Компанія</div>
+    <div class="nav-tab" onclick="auditorTab('mynotes',this)">📝 Мої нотатки</div>
   </div>
   <div class="content">
 
@@ -2032,11 +2047,67 @@ async function runMigrations(){
 async function saveDB(){
   sbSaving();
   _isSaving=true;
-  _lastSaveTime=Date.now(); // блокуємо autoRefresh на 30 секунд після збереження
+  _lastSaveTime=Date.now();
   try{
+    // Перед збереженням — підтягуємо свіжі дані і мержимо schedule та shiftTypes
+    // щоб не затерти зміни інших TL які зберегли одночасно
+    try{
+      const freshRes = await fetch(SB_URL+'/rest/v1/portal_data?key=eq.portal_v6&select=value',{headers:SB_HDR});
+      if(freshRes.ok){
+        const freshRows = await freshRes.json();
+        if(freshRows.length && freshRows[0].value && freshRows[0].value !== _lastDbStr){
+          const freshDb = JSON.parse(freshRows[0].value);
+          // Мержимо schedule: для чужих команд беремо свіжі дані як основу
+          if(freshDb.schedule && db.schedule){
+            const myTeamId = me ? (me.teamId || (me.data&&me.data.teamId) || null) : null;
+            const myEmpIds = myTeamId && db.staff
+              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id)))
+              : new Set();
+            Object.keys(freshDb.schedule).forEach(mk=>{
+              if(!db.schedule[mk]) db.schedule[mk] = {};
+              Object.keys(freshDb.schedule[mk]).forEach(empId=>{
+                if(!myEmpIds.has(String(empId))){
+                  // Чужий агент — беремо свіжі дані (їх TL щойно зберіг)
+                  // але якщо у нас є дні яких немає у свіжих — додаємо
+                  const frshData = freshDb.schedule[mk][empId] || {};
+                  const curData = db.schedule[mk][empId] || {};
+                  const merged = Object.assign({}, frshData);
+                  Object.keys(curData).forEach(day=>{
+                    if(curData[day] && curData[day]!=='off' && !frshData[day])
+                      merged[day] = curData[day];
+                  });
+                  db.schedule[mk][empId] = merged;
+                }
+              });
+            });
+          }
+          // Мержимо shiftTypes: deep merge по id — щоб не губити типи змін
+          if(freshDb.shiftTypes && db.shiftTypes){
+            const myTid = me ? String(me.teamId||(me.data&&me.data.teamId)||1) : null;
+            Object.keys(freshDb.shiftTypes).forEach(tid=>{
+              if(tid !== myTid){
+                const frsh = freshDb.shiftTypes[tid] || [];
+                const cur = db.shiftTypes[tid] || [];
+                if(!frsh.length && !cur.length) return;
+                // Deep merge по id: починаємо зі свіжих, додаємо/оновлюємо локальними
+                const mergedMap = {};
+                frsh.forEach(s=>{ if(s.id) mergedMap[s.id] = s; });
+                cur.forEach(s=>{ if(s.id && !mergedMap[s.id]) mergedMap[s.id] = s; });
+                // Зберігаємо порядок: спочатку свіжі (їхній TL визначає порядок),
+                // потім ті локальні яких не було у свіжих
+                const merged = frsh.filter(s=>s.id);
+                cur.forEach(s=>{ if(s.id && !frsh.find(f=>f.id===s.id)) merged.push(s); });
+                db.shiftTypes[tid] = merged.length ? merged : (frsh.length ? frsh : cur);
+              }
+            });
+          }
+          _lastDbStr = freshRows[0].value;
+        }
+      }
+    }catch(mergeErr){ console.warn('[saveDB] pre-merge failed:', mergeErr); }
+
     const val=JSON.stringify(db);
     console.log('[saveDB] saving, size:', val.length);
-    // Use upsert so it works even if key doesn't exist yet
     const res=await fetch(SB_URL+'/rest/v1/portal_data', {
       method:'POST',
       headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
@@ -2217,6 +2288,11 @@ function doLogin(){
   }
   err.style.display='none';
   document.getElementById('login-pass').value='';
+  // Зберігаємо сесію в localStorage
+  try{
+    const session = {sel, pass, ts: Date.now()};
+    localStorage.setItem('ttn_session', JSON.stringify(session));
+  }catch(e){}
   const now=new Date();
   applyTheme();
   empCalY=teamCalY=admSchedY=monthlyY=reviewsY=now.getFullYear(); wishesAdmY=undefined; analyticsY=undefined;
@@ -2227,6 +2303,8 @@ function doLogin(){
 function logout(){
   document.body.classList.remove('theme-horyn');
   me=null;
+  // Очищаємо збережену сесію
+  try{ localStorage.removeItem('ttn_session'); }catch(e){}
   // Ховаємо всі view — незалежно від того хто був залогінений
   document.getElementById('app').style.display='none';
   document.getElementById('emp-view').style.display='none';
@@ -2898,6 +2976,8 @@ function renderEmployee(){
   if(!isTicketing) renderHomePerfCards();
   renderKpiLinkBlock();
   renderHomeReviewsBadge();
+  renderExchangeBadge();
+  renderRemarksBadge();
   renderShiftTimer();
   renderMoodBlock();
   renderQuickLinks();
@@ -5280,6 +5360,76 @@ function renderEmpReviews(){
 }
 
 // Show reviews badge on home if current month has data
+function renderExchangeBadge(){
+  if(!me || me.type!=='employee') return;
+  const myTeamId = me.data.teamId || 1;
+  // Відкриті пропозиції обміну в моїй команді (не від мене)
+  const openExchanges = (db.exchanges||[]).filter(ex=>
+    ex.status==='open' &&
+    ex.fromId !== me.data.id &&
+    (ex.teamId === myTeamId || !ex.teamId)
+  );
+  const count = openExchanges.length;
+
+  // Бейдж на таб
+  const badge = document.getElementById('emp-exchange-badge');
+  if(badge) badge.style.display = count > 0 ? 'block' : 'none';
+
+  // Сповіщення на головній
+  const el = document.getElementById('emp-home-exchange-alert');
+  if(!el) return;
+  if(count === 0){ el.innerHTML=''; return; }
+
+  el.innerHTML = `
+    <div onclick="empTab('exchange', document.querySelector('.nav-tab[onclick*=\'exchange\']'))"
+      style="cursor:pointer;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">🔄</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--text)">
+          ${count === 1 ? '1 пропозиція обміну зміни' : count + ' пропозиції обміну змін'}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Натисни щоб переглянути і відповісти</div>
+      </div>
+      <span style="margin-left:auto;font-size:18px;color:var(--muted)">›</span>
+    </div>`;
+}
+
+function renderRemarksBadge(){
+  if(!me || me.type!=='employee') return;
+  const empId = me.data.id;
+  const teamId = me.data.teamId || 1;
+  // Перевіряємо чи є зауваження для цього агента
+  const myRemarks = (db.remarks||[]).filter(r => r.agentId === empId);
+  // Нові = без відповіді від агента
+  const newRemarks = myRemarks.filter(r => {
+    const hasMyReply = (r.replies||[]).some(rep => rep.role === 'emp');
+    return !hasMyReply;
+  });
+  const count = newRemarks.length;
+
+  // Бейдж на таб (тільки якщо таб видимий)
+  const badge = document.getElementById('emp-remarks-badge');
+  if(badge) badge.style.display = count > 0 ? 'block' : 'none';
+
+  // Alert на головній
+  const el = document.getElementById('emp-home-remarks-alert');
+  if(!el) return;
+  if(count === 0 || !AUDITED_TEAM_IDS.includes(teamId)){ el.innerHTML=''; return; }
+
+  el.innerHTML = `
+    <div onclick="empTab('remarks', document.getElementById('emp-remarks-tab'))"
+      style="cursor:pointer;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">📋</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--text)">
+          ${count === 1 ? '1 нове зауваження від аудитора' : count + ' нових зауваження від аудитора'}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Натисни щоб переглянути</div>
+      </div>
+      <span style="margin-left:auto;font-size:18px;color:var(--muted)">›</span>
+    </div>`;
+}
+
 function renderHomeReviewsBadge(){
   const el=document.getElementById('emp-home-reviews');
   if(!el) return;
@@ -5685,6 +5835,11 @@ async function autoRefreshDB(){
   if(activeAdm){
     const id = activeAdm.id;
     if(['adm-schedule','adm-perf','adm-staff','adm-shifttypes','adm-links','adm-monthly','adm-reviews'].includes(id)) return;
+    // Також блокуємо якщо в таблиці продуктивності є введені дані
+    if(id === 'adm-perf'){
+      const perfBody = document.getElementById('perf-input-body');
+      if(perfBody && perfBody.querySelector('input[type="number"]')) return;
+    }
   }
   // Блокуємо autoRefresh для аудитора якщо заповнює форму зауваження
   if(me && me.type==='auditor'){
@@ -5715,24 +5870,34 @@ async function autoRefreshDB(){
 
         // MERGE STRATEGY: захищаємо всі критичні дані від перезапису при autoRefresh
 
-        // 1. SCHEDULE
+        // 1. SCHEDULE — мержимо по клітинках, не замінюємо цілі рядки
         if(db.schedule && freshDb.schedule){
           const myTeamIdSched = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
           const myEmpIdsSched = myTeamIdSched && db.staff
             ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamIdSched).map(s=>String(s.id)))
             : new Set();
-          Object.keys(db.schedule).forEach(key=>{
-            const cur = db.schedule[key];
-            const frsh = freshDb.schedule[key] || {};
+          Object.keys(db.schedule).forEach(mk=>{
+            const cur = db.schedule[mk];
+            if(!freshDb.schedule[mk]) freshDb.schedule[mk] = {};
+            const frsh = freshDb.schedule[mk];
             Object.keys(cur).forEach(empId=>{
               const curData = cur[empId] || {};
               const frshData = frsh[empId] || {};
-              // Для своєї команди — завжди зберігаємо (навіть якщо 0 днів — агент міг бути щойно доданий)
-              // Для чужих — тільки якщо наших більше
               const isMyEmp = myEmpIdsSched.has(String(empId));
-              if(isMyEmp || Object.keys(curData).length > Object.keys(frshData).length){
-                if(!freshDb.schedule[key]) freshDb.schedule[key]={};
-                freshDb.schedule[key][empId] = curData;
+              if(isMyEmp){
+                // Своя команда — завжди зберігаємо повністю
+                frsh[empId] = curData;
+              } else {
+                // Чужа команда — мержимо по днях: беремо свіжі як основу,
+                // але якщо в локальному є день якого немає у свіжих — додаємо
+                // (це захищає від race condition між різними TL)
+                const merged = Object.assign({}, frshData);
+                Object.keys(curData).forEach(day=>{
+                  if(curData[day] && curData[day]!=='off' && !frshData[day]){
+                    merged[day] = curData[day];
+                  }
+                });
+                frsh[empId] = merged;
               }
             });
           });
@@ -5749,17 +5914,23 @@ async function autoRefreshDB(){
           }
         }
 
-        // 3. SHIFT TYPES
+        // 3. SHIFT TYPES — захищаємо свою команду, чужі мержимо по id
         if(db.shiftTypes && Object.keys(db.shiftTypes).length > 0){
           if(!freshDb.shiftTypes) freshDb.shiftTypes = {};
           const myTid = me ? String(me.teamId || (me.data && me.data.teamId) || 1) : null;
           Object.keys(db.shiftTypes).forEach(tid=>{
             const cur = db.shiftTypes[tid];
             const frsh = freshDb.shiftTypes[tid];
-            if(cur && cur.length > 0){
-              if(tid === myTid || !frsh || frsh.length < cur.length){
-                freshDb.shiftTypes[tid] = cur;
-              }
+            if(!cur || cur.length === 0) return;
+            if(tid === myTid){
+              // Своя команда — завжди зберігаємо
+              freshDb.shiftTypes[tid] = cur;
+            } else {
+              // Чужа команда — deep merge по id (не губимо типи ні з локальних ні зі свіжих)
+              const frshArr = frsh || [];
+              const mergedArr = [...frshArr];
+              cur.forEach(s=>{ if(s.id && !frshArr.find(f=>f.id===s.id)) mergedArr.push(s); });
+              freshDb.shiftTypes[tid] = mergedArr.length ? mergedArr : cur;
             }
           });
         }
@@ -5769,8 +5940,8 @@ async function autoRefreshDB(){
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId && db.teamLinks[myTeamId]){
             if(!freshDb.teamLinks) freshDb.teamLinks = {};
-            if(!freshDb.teamLinks[myTeamId] || freshDb.teamLinks[myTeamId].length < db.teamLinks[myTeamId].length)
-              freshDb.teamLinks[myTeamId] = db.teamLinks[myTeamId];
+            // Завжди зберігаємо свої посилання — TL сам керує ними
+            freshDb.teamLinks[myTeamId] = db.teamLinks[myTeamId];
           }
         }
 
@@ -5784,17 +5955,23 @@ async function autoRefreshDB(){
         }
 
         // 6. TL SCHEDULE
-        if(db.tlSchedule && freshDb.tlSchedule && me){
+        if(db.tlSchedule){
+          if(!freshDb.tlSchedule) freshDb.tlSchedule = {};
           Object.keys(db.tlSchedule).forEach(key=>{
             const cur = db.tlSchedule[key];
-            const frsh = freshDb.tlSchedule[key] || {};
+            if(!freshDb.tlSchedule[key]) freshDb.tlSchedule[key] = {};
+            const frsh = freshDb.tlSchedule[key];
             Object.keys(cur).forEach(personId=>{
               const curData = cur[personId] || {};
               const frshData = frsh[personId] || {};
-              if(Object.keys(curData).length > Object.keys(frshData).length){
-                if(!freshDb.tlSchedule[key]) freshDb.tlSchedule[key]={};
-                freshDb.tlSchedule[key][personId] = curData;
-              }
+              // Мержимо по днях: локальні дані пріоритетні (щойно збережені TL/Chief)
+              const merged = Object.assign({}, frshData);
+              Object.keys(curData).forEach(day=>{
+                if(curData[day] && curData[day] !== 'off'){
+                  merged[day] = curData[day]; // локальний день завжди пріоритетніший
+                }
+              });
+              frsh[personId] = merged;
             });
           });
         }
@@ -5873,7 +6050,7 @@ async function autoRefreshDB(){
           }
         }
 
-        // 13. PERF — продуктивність агентів (зберігаємо дані своєї команди)
+        // 13. PERF — продуктивність агентів (завжди мержимо по week-ключу)
         if(db.perf && me){
           if(!freshDb.perf) freshDb.perf = {};
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
@@ -5883,15 +6060,22 @@ async function autoRefreshDB(){
           myIds.forEach(id=>{
             if(!db.perf[id]) return;
             const cur = db.perf[id];
+            if(!freshDb.perf[id]){ freshDb.perf[id] = cur; return; }
             const frsh = freshDb.perf[id];
-            // Якщо наших записів більше або однаково — зберігаємо наші
-            if(!frsh || cur.length >= frsh.length){
-              freshDb.perf[id] = cur;
-            } else {
-              // Мержимо: свіжі є основою, але додаємо тижні яких немає
-              const frshWeeks = new Set(frsh.map(r=>r.week));
-              cur.forEach(r=>{ if(!frshWeeks.has(r.week)) frsh.push(r); });
-            }
+            // Мержимо по week: локальні дані пріоритетні (містять щойно введені)
+            const frshMap = {};
+            frsh.forEach(r=>{ frshMap[r.week]=r; });
+            cur.forEach(r=>{
+              // Завжди берємо локальну версію якщо є дані (letters+chats > 0)
+              // або якщо запису немає у свіжих взагалі
+              if(!frshMap[r.week]){
+                frsh.push(r); // новий запис — додаємо
+              } else if((r.letters||0)+(r.chats||0) > (frshMap[r.week].letters||0)+(frshMap[r.week].chats||0)){
+                // Локальні дані більші — берємо локальні
+                const idx = frsh.findIndex(x=>x.week===r.week);
+                if(idx>=0) frsh[idx] = r;
+              }
+            });
           });
         }
 
@@ -7375,7 +7559,9 @@ function toggleLinkFeatured(i){
   db.teamLinks[_tid]=links;
   renderLinksEditor();
   // відновлюємо стан зірок
-  db.globalLinks.forEach((l,idx)=>{
+  // Оновлюємо стан зірок через teamLinks (globalLinks може бути undefined)
+  const _curLinks = getTeamLinks(me&&me.teamId?me.teamId:1);
+  _curLinks.forEach((l,idx)=>{
     const btn=document.getElementById('gl-feat-'+idx);
     if(btn){
       btn.style.background=l.featured?'rgba(245,200,66,.2)':'var(--surface2)';
@@ -7395,7 +7581,52 @@ function closeModal(id){document.getElementById(id).classList.remove('open');edi
 document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 
 // ═══ INIT ═══
-(async()=>{await loadDB();buildLoginSel();})();
+(async()=>{
+  await loadDB();
+  buildLoginSel();
+  // Автологін з localStorage якщо є збережена сесія
+  try{
+    const raw = localStorage.getItem('ttn_session');
+    if(raw){
+      const session = JSON.parse(raw);
+      // Сесія дійсна 7 днів
+      if(session && session.sel && session.pass && (Date.now() - session.ts) < 7*24*60*60*1000){
+        // Перевіряємо пароль по поточному db
+        const sel = session.sel;
+        const pass = session.pass;
+        let valid = false;
+        if(sel.startsWith('chief_')){
+          const chief = CHIEFS.find(c=>c.id===sel);
+          if(chief && pass===CHIEF_PASS){ me={type:'chief', data:chief}; valid=true; }
+        } else if(sel.startsWith('tl_')){
+          const teamId = parseInt(sel.replace('tl_',''));
+          const team = TEAMS.find(t=>t.id===teamId);
+          if(team && pass===team.pass){ me={type:'admin', teamId:team.id, teamName:team.name, leadName:team.lead}; valid=true; }
+        } else {
+          const emp = db.staff.find(s=>s.id==sel);
+          if(emp && pass===emp.pass){
+            if(isAuditor(emp)) me={type:'auditor', data:emp};
+            else me={type:'employee', data:emp};
+            valid=true;
+          }
+        }
+        if(valid){
+          const now=new Date();
+          applyTheme();
+          empCalY=teamCalY=admSchedY=monthlyY=reviewsY=now.getFullYear(); wishesAdmY=undefined; analyticsY=undefined;
+          empCalM=teamCalM=admSchedM=monthlyM=reviewsM=now.getMonth();
+          showApp();
+        } else {
+          // Пароль змінився — очищаємо сесію
+          localStorage.removeItem('ttn_session');
+        }
+      } else {
+        // Сесія застаріла
+        localStorage.removeItem('ttn_session');
+      }
+    }
+  }catch(e){ console.warn('Auto-login error:', e); }
+})();
 </script>
 <!-- SEASONAL ANIMATION -->
 <canvas id="season-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0;transition:opacity 1s"></canvas>
@@ -8241,6 +8472,83 @@ function auditorTab(tab, el){
   if(tab==='schedule') renderAuditorCal();
   if(tab==='company')  renderAuditorCompanyTab();
   if(tab==='exchange') renderAuditorExchange();
+  if(tab==='mynotes')  renderAuditorNotes();
+}
+
+let _auditorNotesY, _auditorNotesM;
+
+function auditorNotesNav(d){
+  if(_auditorNotesY===undefined){ const n=new Date(); _auditorNotesY=n.getFullYear(); _auditorNotesM=n.getMonth(); }
+  _auditorNotesM+=d;
+  if(_auditorNotesM<0){_auditorNotesM=11;_auditorNotesY--;}
+  if(_auditorNotesM>11){_auditorNotesM=0;_auditorNotesY++;}
+  renderAuditorNotes();
+}
+
+function renderAuditorNotes(){
+  if(!me || me.type!=='auditor') return;
+  const now = new Date();
+  if(_auditorNotesY===undefined){ _auditorNotesY=now.getFullYear(); _auditorNotesM=now.getMonth(); }
+  const el = document.getElementById('auditor-notes-content');
+  const title = document.getElementById('auditor-notes-title');
+  if(!el || !title) return;
+
+  title.textContent = MONTHS_UK[_auditorNotesM] + ' ' + _auditorNotesY;
+  const key = mkey(_auditorNotesY, _auditorNotesM);
+  const empId = me.data.id;
+  const mySched = (db.schedule&&db.schedule[key]&&(db.schedule[key][empId]||db.schedule[key][String(empId)]))||{};
+  const myComments = ((db.dayComments||{})[empId]||(db.dayComments||{})[String(empId)]||{})[key]||{};
+  const lastDay = new Date(_auditorNotesY, _auditorNotesM+1, 0).getDate();
+
+  // Рахуємо підсумок
+  let totalOvertimeMins = 0, totalLateMins = 0, lateCount = 0;
+  Object.values(myComments).forEach(c=>{
+    if(typeof c==='object'){
+      if(c.overtime){ const m=parseInt(c.overtime); if(!isNaN(m)) totalOvertimeMins+=m*60; else if(c.overtime.includes('год')) totalOvertimeMins+=parseInt(c.overtime)*60; else if(c.overtime.includes('хв')) totalOvertimeMins+=parseInt(c.overtime); }
+      if(c.late){ const m=parseInt(c.late)||0; totalLateMins+=m; lateCount++; }
+    }
+  });
+  function fmtM(m){ if(!m) return '—'; const h=Math.floor(m/60),mn=m%60; return h?`${h}г${mn?` ${mn}хв`:''}`:mn+'хв'; }
+
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.25);border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Переробка</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--orange)">${fmtM(totalOvertimeMins)}</div>
+      </div>
+      <div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Запізнень</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">${lateCount} раз · ${fmtM(totalLateMins)}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">`;
+
+  for(let d=1; d<=lastDay; d++){
+    const shiftId = mySched[d];
+    if(!shiftId || shiftId==='off' || shiftId==='vacation') continue;
+    const sh = getShift(shiftId);
+    const c = myComments[d]||{};
+    const hasOt = c.overtime;
+    const hasLate = c.late;
+    const dayName = ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(_auditorNotesY,_auditorNotesM,d).getDay()];
+
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
+      <div style="min-width:40px;font-size:13px;font-weight:600">${d} <span style="font-size:11px;color:var(--muted)">${dayName}</span></div>
+      <div style="flex:1;min-width:80px">
+        <span style="font-size:11px;padding:2px 8px;border-radius:5px;background:${sh.color}22;color:${sh.color}">${sh.label||sh.time||'?'} ${sh.time||''}</span>
+      </div>
+      ${hasOt?`<span style="font-size:12px;background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.25);border-radius:6px;padding:2px 8px">⏱ +${c.overtime}</span>`:''}
+      ${hasLate?`<span style="font-size:12px;background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);border-radius:6px;padding:2px 8px">🕐 -${c.late} хв</span>`:''}
+      <button onclick="editDayComment(${d},'${key}')" style="margin-left:auto;background:${hasOt||hasLate?'var(--accent-dim)':'var(--surface2)'};border:1px solid ${hasOt||hasLate?'rgba(245,200,66,.3)':'var(--border)'};color:${hasOt||hasLate?'var(--accent)':'var(--muted)'};border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">${hasOt||hasLate?'✏️ Редагувати':'✏️ Додати'}</button>
+    </div>`;
+  }
+
+  if(!Object.values(mySched).some(v=>v&&v!=='off'&&v!=='vacation')){
+    html += `<div class="empty-state" style="padding:30px">У цьому місяці немає змін у графіку</div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function renderAuditorExchange(){
