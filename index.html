@@ -4448,23 +4448,19 @@ function renderAdmWishes(){
   const teamShiftsForWishes = getTeamShifts(me&&me.teamId||1);
 
   // Body — one row per agent with wish display + clickable schedule cell
-  let tbody='<tbody>';
-  teamStaffOnly.forEach(emp=>{
+  // Helper: рендерить один рядок агента
+  function renderWishRow(emp){
     const empWishes=(wishes[emp.id]||wishes[String(emp.id)]||{})[key]||{};
     const empSched=existSched[emp.id]||{};
     const shortName=formatName(emp.name);
-
-    tbody+=`<tr>`;
-    tbody+=`<td style="font-size:11px;font-weight:600;padding:4px 8px;position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">${shortName}</td>`;
-
+    let row=`<tr>`;
+    row+=`<td style="font-size:11px;font-weight:600;padding:4px 8px;position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">${shortName}</td>`;
     days.forEach(d=>{
       const wknd=isWeekend(d);
       const cellBg=wknd?'rgba(167,139,250,.06)':'';
       const w=empWishes[d];
       const curSched=empSched[d]||'off';
       const sh=getShift(curSched);
-
-      // Wish badge
       let wishBadge='';
       if(w){
         const wLabel = getWishLabel(w.shift);
@@ -4480,22 +4476,33 @@ function renderAdmWishes(){
         const tooltip = tooltipParts.length ? ` title="${tooltipParts.join(' · ')}"` : '';
         wishBadge=`<div${tooltip} style="font-size:9px;color:${badgeColor};background:${badgeBg};border:1px dashed ${badgeBorder};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}${tsStr?'<span style="opacity:.55;font-size:8px;margin-left:2px">'+tsStr+'</span>':''}</div>`;
       }
-
-      // Clickable shift cell
       const cellHtml = curSched==='off'
         ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')" style="min-height:28px;min-width:44px">—</div>`
         : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};min-height:28px;min-width:44px" onclick="openShiftPicker(event,${emp.id},${d},'${key}')"><div class="shift-cell-time" style="font-size:10px">${sh.time||sh.label||'?'}</div></div>`;
-
-      tbody+=`<td style="background:${cellBg};padding:2px;text-align:center;vertical-align:middle">
-        ${wishBadge}
-        ${cellHtml}
-      </td>`;
+      row+=`<td style="background:${cellBg};padding:2px;text-align:center;vertical-align:middle">${wishBadge}${cellHtml}</td>`;
     });
-    tbody+='</tr>';
-  });
+    row+='</tr>';
+    return row;
+  }
+
+  let tbody='<tbody>';
+  const isTeam3wishes = myTeamId === 3;
+  if(isTeam3wishes){
+    TEAM3_SUBGROUPS.forEach((sg,gi)=>{
+      const sgStaff = teamStaffOnly.filter(e=>(e.subteam||0)===gi);
+      if(!sgStaff.length) return;
+      tbody+=`<tr><td colspan="${days.length+1}" style="padding:5px 8px;background:${sg.color}12;border-top:1px solid ${sg.color}44;position:sticky;left:0">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
+      </td></tr>`;
+      sgStaff.forEach(emp=>{ tbody+=renderWishRow(emp); });
+    });
+  } else {
+    teamStaffOnly.forEach(emp=>{ tbody+=renderWishRow(emp); });
+  }
   tbody+='</tbody>';
   table.innerHTML=thead+tbody;
 }
+
 
 function onWishSchedChange(sel){} // legacy stub
 
@@ -5954,6 +5961,9 @@ async function autoRefreshDB(){
                 frsh[empId] = merged;
               }
             });
+            // Підхоплюємо нових агентів чужих команд яких ще нема в локальному db
+            // Їхні дані вже є у frsh (freshDb) — переконуємось що місяць-ключ є і в db.schedule
+            if(!db.schedule[mk]) db.schedule[mk] = {};
           });
         }
 
@@ -6108,7 +6118,7 @@ async function autoRefreshDB(){
         if(db.perf && me){
           if(!freshDb.perf) freshDb.perf = {};
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
-          const myIds = myTeamId
+          const myIds = myTeamId && db.staff
             ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id))
             : [];
           myIds.forEach(id=>{
@@ -6137,7 +6147,7 @@ async function autoRefreshDB(){
         if(db.wishes && me){
           if(!freshDb.wishes) freshDb.wishes = {};
           const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
-          const myIds = myTeamId
+          const myIds = myTeamId && db.staff
             ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id))
             : [];
           myIds.forEach(id=>{
@@ -6236,7 +6246,7 @@ async function autoRefreshDB(){
           if(db.personalNotes[myEmpId2]) freshDb.personalNotes[myEmpId2] = db.personalNotes[myEmpId2];
         }
 
-        // 11. REMARKS — завжди мержимо, не замінюємо
+        // 23. REMARKS — завжди мержимо, не замінюємо
         if(db.remarks && db.remarks.length > 0){
           if(!freshDb.remarks) freshDb.remarks = [];
           const freshIds = new Set(freshDb.remarks.map(r=>r.id));
