@@ -3152,9 +3152,15 @@ function renderEmpCal(){
         :'';
       if(wish){
         const wishLabel = getWishLabel(wish.shift);
-        const wishComment=wish.comment||'';
-        const label=wishLabel+(wishComment?' 💬':'');
-        wishHtml=`<div class="wish-pill${isMyOff&&isLimit?' limit-warn':''}" onclick="openWishModal(${d},'${key}')" title="${wishLabel}${wishComment?' · '+wishComment:''}">${label||'💌'}</div>${counterHtml}`;
+        const wishComment = wish.comment||'';
+        // Визначаємо колір і іконку по preset
+        const preset = getWishPreset(wish.shift);
+        const isOff = wish.shift==='off';
+        const dotColor = preset ? preset.color : (isOff ? '#a78bfa' : 'var(--accent)');
+        const bgColor = dotColor+'22';
+        const borderColor = dotColor+'66';
+        const fullLabel = wishLabel + (wishComment ? ' 💬' : '');
+        wishHtml=`<div style="margin-top:3px;background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:3px 6px;font-size:10px;font-weight:700;color:${dotColor};text-align:center;line-height:1.3;user-select:none${isMyOff&&isLimit?';border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12);color:var(--red)':''}" title="${wishLabel}${wishComment?' · '+wishComment:''}">✅ ${fullLabel}</div>${counterHtml}`;
       } else {
         wishHtml=`<div class="wish-empty" onclick="openWishModal(${d},'${key}')">💌 Побажання</div>${counterHtml}`;
       }
@@ -3234,7 +3240,7 @@ async function saveWish(clear){
   } else {
     // keep existing month comment if any
     const prev=db.wishes[empId][_wishKey][_wishDay]||{};
-    db.wishes[empId][_wishKey][_wishDay]={shift, comment:prev.comment||'', submittedAt: prev.submittedAt||Date.now()};
+    db.wishes[empId][_wishKey][_wishDay]={shift, comment:prev.comment||'', submittedAt: Date.now()};
   }
   await saveDB();
   closeModal('wish-modal');
@@ -4418,13 +4424,17 @@ function renderAdmWishes(){
       let wishBadge='';
       if(w){
         const wLabel = getWishLabel(w.shift);
-        const wComment=w.comment?` title="${w.comment}"`:'';
         const offOver=w.shift==='off'&&(admOffCount[d]||0)>=4;
         const preset = w.shift && w.shift!=='off' ? getWishPreset(w.shift) : null;
         const badgeColor = preset ? preset.color : (offOver?'var(--red)':'var(--accent)');
         const badgeBg = preset ? preset.color+'18' : (offOver?'rgba(248,113,113,.1)':'rgba(245,200,66,.1)');
         const badgeBorder = preset ? preset.color+'44' : (offOver?'rgba(248,113,113,.4)':'rgba(245,200,66,.35)');
-        wishBadge=`<div${wComment} style="font-size:9px;color:${badgeColor};background:${badgeBg};border:1px dashed ${badgeBorder};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}</div>`;
+        const tsStr = w.submittedAt ? new Date(w.submittedAt).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        const tooltipParts = [];
+        if(tsStr) tooltipParts.push('🕐 '+tsStr);
+        if(w.comment) tooltipParts.push('💬 '+w.comment);
+        const tooltip = tooltipParts.length ? ` title="${tooltipParts.join(' · ')}"` : '';
+        wishBadge=`<div${tooltip} style="font-size:9px;color:${badgeColor};background:${badgeBg};border:1px dashed ${badgeBorder};border-radius:3px;padding:1px 3px;margin-bottom:2px;cursor:default;white-space:nowrap">${wLabel||'💬'}${w.comment?'💬':''}${tsStr?'<span style="opacity:.55;font-size:8px;margin-left:2px">'+tsStr+'</span>':''}</div>`;
       }
 
       // Clickable shift cell
