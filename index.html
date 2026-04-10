@@ -53,6 +53,14 @@ body.theme-light{
 }
 body.theme-light{color-scheme:light}
 
+/* wish teammates panel */
+.wish-teammates{margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.wish-teammates-title{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.wish-teammate-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--surface3)}
+.wish-teammate-row:last-child{border-bottom:none;padding-bottom:0}
+.wish-teammate-name{font-size:12px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wish-teammate-shift{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.wish-teammates-empty{font-size:12px;color:var(--muted);font-style:italic;text-align:center;padding:4px 0}
 /* wish pills */
 .wish-pill{font-size:9px;background:var(--accent-dim);color:var(--accent2);border:1px dashed var(--accent-glow);border-radius:4px;padding:2px 5px;margin-top:3px;cursor:pointer;display:block;text-align:center;transition:.15s;user-select:none;font-weight:600}
 .wish-pill:hover{background:rgba(181,123,238,.28)}
@@ -1688,6 +1696,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
 <div class="modal-ov" id="wish-modal">
   <div class="modal" style="max-width:400px">
     <h3 id="wish-modal-title">ПОБАЖАННЯ НА ДЕНЬ</h3>
+    <div id="wish-teammates-panel" class="wish-teammates" style="display:none"></div>
     <div class="field" style="margin-bottom:14px">
       <label>Бажана зміна</label>
       <select id="wm-shift" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none">
@@ -3172,6 +3181,45 @@ function renderEmpCal(){
 
 // ── WISH MODAL ──
 let _wishDay=null,_wishKey=null;
+function renderWishTeammatesPanel(day, key){
+  const panel = document.getElementById('wish-teammates-panel');
+  if(!panel) return;
+  const myId = String(me.data.id);
+  const myTeamId = me.data.teamId||1;
+  // Колеги по команді (без себе)
+  const teammates = (db.staff||[]).filter(s => (s.teamId||1)===myTeamId && String(s.id)!==myId);
+  const wishes = db.wishes||{};
+  // Збираємо тих хто вже поставив побажання на цей день
+  const withWish = teammates.reduce((acc, emp)=>{
+    const w = ((wishes[emp.id]||wishes[String(emp.id)])||{})[key]||{};
+    const dayWish = w[day];
+    if(dayWish && dayWish.shift){
+      acc.push({name: formatName(emp.name, true), shift: dayWish.shift});
+    }
+    return acc;
+  }, []);
+  if(withWish.length === 0){
+    panel.style.display='none';
+    return;
+  }
+  panel.style.display='block';
+  const rows = withWish.map(item=>{
+    let shiftLabel='', shiftColor='var(--muted2)', shiftBg='var(--surface3)';
+    if(item.shift==='off'){
+      shiftLabel='🌙 Вихідний'; shiftColor='#a78bfa'; shiftBg='rgba(167,139,250,.15)';
+    } else {
+      const preset = getWishPreset(item.shift);
+      if(preset){ shiftLabel=preset.icon+' '+preset.label; shiftColor=preset.color; shiftBg=preset.color+'26'; }
+      else { const sh=getShift(item.shift); shiftLabel=sh?(sh.time||sh.label||item.shift):item.shift; }
+    }
+    return `<div class="wish-teammate-row">
+      <span class="wish-teammate-name">${item.name}</span>
+      <span class="wish-teammate-shift" style="color:${shiftColor};background:${shiftBg}">${shiftLabel}</span>
+    </div>`;
+  }).join('');
+  panel.innerHTML = `<div class="wish-teammates-title">👥 Вже обрали (${withWish.length})</div>${rows}`;
+}
+
 function openWishModal(day,key){
   _wishDay=day; _wishKey=key;
   const now=new Date(), today=now.getDate();
@@ -3205,6 +3253,7 @@ function openWishModal(day,key){
     if(saveBtn) saveBtn.style.display='';
     if(lockMsg) lockMsg.style.display='none';
   }
+  renderWishTeammatesPanel(day, key);
   document.getElementById('wish-modal').classList.add('open');
 }
 async function saveWishMonthNote(key){
