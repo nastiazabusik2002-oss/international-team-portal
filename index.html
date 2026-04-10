@@ -3329,7 +3329,50 @@ function renderTeamCal(){
   thead+=`<th style="min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
   thead+='</tr></thead>';
 
+  const isTeam3 = teamId === 3;
   let tbody='<tbody>';
+  if(isTeam3){
+    // Team 3 — рендеримо по підгрупах
+    TEAM3_SUBGROUPS.forEach((sg, gi)=>{
+      const sgStaff = staff.filter(e=>(e.subteam||0)===gi);
+      if(!sgStaff.length) return;
+      // Separator row
+      tbody+=`<tr><td colspan="${days.length+2}" style="padding:5px 8px;background:${sg.color}12;border-top:1px solid ${sg.color}44;border-bottom:1px solid ${sg.color}22">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
+      </td></tr>`;
+      sgStaff.forEach(emp=>{
+        const empSched=sched[emp.id]||{};
+        const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
+        let shiftCount=0;
+        let cells='';
+        days.forEach(d=>{
+          const isToday=isNow&&now.getDate()===d;
+          const wknd=isWeekend(d);
+          const shiftId=empSched[d]||'off';
+          const sh=getShift(shiftId);
+          const hasShift=shiftId&&shiftId!=='off';
+          if(hasShift&&shiftId!=='vacation') shiftCount++;
+          const bg=isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.04)':'';
+          const todayBorder=isToday?'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);':'';
+          const shLabel=sh&&hasShift?(sh.label||''):'';
+          const shTime=sh&&hasShift?(sh.time||''):'';
+          const shColor=sh&&hasShift?(sh.color||''):'';
+          const shDesc=sh&&hasShift?(sh.desc||''):'';
+          const dispTime=hasShift?(sh?(sh.time?sh.time.split(':')[0]:(sh.label||'?')[0]):'?'):'·';
+          const dispColor=hasShift&&sh?sh.color:'var(--muted)';
+          cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}" data-shift="${shiftId}">
+            <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
+              style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
+          </td>`;
+        });
+        tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
+          <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
+          ${cells}
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
+        </tr>`;
+      });
+    });
+  } else {
   staff.forEach(emp=>{
     const empSched=sched[emp.id]||{};
     const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
@@ -3361,6 +3404,7 @@ function renderTeamCal(){
       <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
     </tr>`;
   });
+  } // end else
   tbody+='</tbody>';
 
   // Footer — кількість людей на зміні
@@ -9502,6 +9546,35 @@ function renderCompanySchedules(){
     thead+='</tr></thead>';
 
     let tbody='<tbody>';
+    if(team.id===3){
+      TEAM3_SUBGROUPS.forEach((sg,gi)=>{
+        const sgM = teamMembers.filter(e=>(e.subteam||0)===gi);
+        if(!sgM.length) return;
+        tbody+=`<tr><td colspan="${days.length+1}" style="padding:4px 8px;background:${sg.color}10;border-top:1px solid ${sg.color}33">
+          <span style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
+        </td></tr>`;
+        sgM.forEach(emp=>{
+          const empSched=sched[emp.id]||{};
+          let cells='';
+          days.forEach(d=>{
+            const isToday=isNow&&now.getDate()===d;
+            const wknd=isWeekend(d);
+            const shiftId=empSched[d]||'off';
+            const sh=getShift(shiftId);
+            const bg=isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.04)':'';
+            const todayBorder=isToday?'border-left:1px solid rgba(181,123,238,.3);border-right:1px solid rgba(181,123,238,.3);':'';
+            const shLabel3=sh&&shiftId!=='off'?(sh.label||''):'';
+            const shTime3=sh&&shiftId!=='off'?(sh.time||''):'';
+            const shColor3=sh&&shiftId!=='off'?(sh.color||''):'';
+            const shDesc3=sh&&shiftId!=='off'?(sh.desc||''):'';
+            cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
+              <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
+            </td>`;
+          });
+          tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${formatName(emp.name)}</td>${cells}</tr>`;
+        });
+      });
+    } else {
     teamMembers.forEach(emp=>{
       const empSched=sched[emp.id]||{};
       let cells='';
@@ -9525,6 +9598,7 @@ function renderCompanySchedules(){
       const shortName=formatName(emp.name);
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${shortName}</td>${cells}</tr>`;
     });
+    } // end else
     tbody+='</tbody>';
 
     html+=`<div style="margin-bottom:24px">
