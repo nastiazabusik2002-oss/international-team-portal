@@ -2205,7 +2205,7 @@ let empCalY, empCalM, teamCalY, teamCalM, admSchedY, admSchedM, monthlyY, monthl
 let offerSelectedDay = null;
 
 // ══ GLOBALS ══
-let _lastDbStr='', _isSaving=false;
+let _lastDbStr='', _isSaving=false, _lastSaveTime=0;
 
 // ══ STORAGE — Supabase ══
 const SB_URL = 'https://eyxwtvysqnndubemrrok.supabase.co';
@@ -2313,6 +2313,21 @@ async function saveDB(){
             const myEmpIds = myTeamId && db.staff
               ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id)))
               : new Set();
+
+            // [PATCH FIX] Спочатку захищаємо СВОЇХ агентів — записуємо їх у freshDb
+            // щоб після JSON.stringify(db) не загубити їхні дані
+            // (ітеруємо по db.schedule — локальних місяцях де є наші дані)
+            Object.keys(db.schedule).forEach(mk=>{
+              if(!freshDb.schedule[mk]) freshDb.schedule[mk] = {};
+              myEmpIds.forEach(empId=>{
+                if(db.schedule[mk][empId] && Object.keys(db.schedule[mk][empId]).length > 0){
+                  // Своя команда — локальні дані завжди пріоритетні
+                  freshDb.schedule[mk][empId] = db.schedule[mk][empId];
+                }
+              });
+            });
+
+            // Потім мержимо чужих агентів — беремо свіжі як основу
             Object.keys(freshDb.schedule).forEach(mk=>{
               if(!db.schedule[mk]) db.schedule[mk] = {};
               Object.keys(freshDb.schedule[mk]).forEach(empId=>{
@@ -6495,7 +6510,7 @@ function sbSaving(){
 }
 
 // Auto-refresh DB every 60s (pick up changes from other users)
-let _lastSaveTime = 0; // timestamp of last saveDB call
+// _lastSaveTime declared with other globals above
 
 async function autoRefreshDB(){
   // Не оновлювати під час збереження
