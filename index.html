@@ -51,6 +51,237 @@ body.theme-light{
   --glass-blur:saturate(160%) blur(20px);
   --glass-shadow:0 4px 24px rgba(100,50,200,.12);
 }
+
+/* ══ FULL COLOR THEMES ══ */
+
+/* ── PINK dark ── */
+body.theme-pink{
+  --bg:#1a0812;--surface:rgba(255,200,220,.055);--surface2:rgba(255,200,220,.038);--surface3:rgba(255,200,220,.025);
+  --border:rgba(255,150,190,.1);--border2:rgba(255,150,190,.2);
+  --accent:#f472b6;--accent2:#f9a8d4;--accent-dim:rgba(244,114,182,.16);--accent-glow:rgba(244,114,182,.38);
+  --text:#ffe4f0;--muted:rgba(255,200,220,.4);--muted2:rgba(255,200,220,.65);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.4);
+  background:#1a0812!important;color:#ffe4f0;
+}
+body.theme-pink::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(236,72,153,.22) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(244,114,182,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(190,24,93,.1) 0%,transparent 50%);
+}
+body.theme-pink .topbar,body.theme-pink .nav-tabs{background:rgba(30,5,20,.85);}
+body.theme-pink .login-box{background:rgba(30,5,20,.9);}
+body.theme-pink .btn-primary{background:linear-gradient(135deg,#be185d,#ec4899);}
+body.theme-pink .topbar-logo{background:linear-gradient(135deg,#f9a8d4,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-pink .login-logo{background:linear-gradient(135deg,#f9a8d4,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-pink .nav-tab.active{color:#f472b6;border-bottom-color:#be185d;}
+body.theme-pink ::-webkit-scrollbar-thumb{background:rgba(244,114,182,.35);}
+body.theme-pink .page-h{background:linear-gradient(135deg,var(--text) 60%,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── PINK light ── */
+body.theme-pink.theme-light{
+  --bg:#fff0f6;--surface:rgba(255,255,255,.75);--surface2:rgba(255,240,248,.85);--surface3:rgba(255,225,240,.65);
+  --border:rgba(220,80,150,.14);--border2:rgba(220,80,150,.28);
+  --accent:#db2777;--accent2:#ec4899;--accent-dim:rgba(219,39,119,.1);--accent-glow:rgba(219,39,119,.28);
+  --text:#4a0020;--muted:rgba(150,30,80,.45);--muted2:rgba(150,30,80,.72);
+  --glass-shadow:0 4px 24px rgba(180,30,90,.12);
+  background:#fff0f6!important;color:#4a0020;
+}
+body.theme-pink.theme-light::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(244,114,182,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(219,39,119,.1) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(190,24,93,.06) 0%,transparent 50%);
+}
+body.theme-pink.theme-light .topbar,body.theme-pink.theme-light .nav-tabs{background:rgba(255,235,245,.9);}
+body.theme-pink.theme-light .login-box{background:rgba(255,240,248,.95);}
+body.theme-pink.theme-light .btn-primary{background:linear-gradient(135deg,#be185d,#ec4899);}
+body.theme-pink.theme-light .topbar-logo{background:linear-gradient(135deg,#be185d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-pink.theme-light .login-logo{background:linear-gradient(135deg,#be185d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-pink.theme-light .nav-tab.active{color:#db2777;border-bottom-color:#be185d;}
+
+/* ── YELLOW dark ── */
+body.theme-yellow{
+  --bg:#110d00;--surface:rgba(255,230,100,.055);--surface2:rgba(255,230,100,.038);--surface3:rgba(255,230,100,.025);
+  --border:rgba(234,179,8,.12);--border2:rgba(234,179,8,.22);
+  --accent:#eab308;--accent2:#fde047;--accent-dim:rgba(234,179,8,.16);--accent-glow:rgba(234,179,8,.38);
+  --text:#fff8dc;--muted:rgba(255,230,100,.4);--muted2:rgba(255,230,100,.65);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.42);
+  background:#110d00!important;color:#fff8dc;
+}
+body.theme-yellow::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(202,138,4,.25) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(234,179,8,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(161,98,7,.1) 0%,transparent 50%);
+}
+body.theme-yellow .topbar,body.theme-yellow .nav-tabs{background:rgba(20,14,0,.88);}
+body.theme-yellow .login-box{background:rgba(20,14,0,.92);}
+body.theme-yellow .btn-primary{background:linear-gradient(135deg,#a16207,#ca8a04);}
+body.theme-yellow .topbar-logo{background:linear-gradient(135deg,#fde047,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-yellow .login-logo{background:linear-gradient(135deg,#fde047,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-yellow .nav-tab.active{color:#eab308;border-bottom-color:#a16207;}
+body.theme-yellow ::-webkit-scrollbar-thumb{background:rgba(234,179,8,.35);}
+body.theme-yellow .page-h{background:linear-gradient(135deg,var(--text) 60%,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── YELLOW light ── */
+body.theme-yellow.theme-light{
+  --bg:#fffbeb;--surface:rgba(255,255,255,.78);--surface2:rgba(255,250,220,.88);--surface3:rgba(255,243,190,.65);
+  --border:rgba(180,120,0,.14);--border2:rgba(180,120,0,.28);
+  --accent:#b45309;--accent2:#d97706;--accent-dim:rgba(180,83,9,.1);--accent-glow:rgba(180,83,9,.28);
+  --text:#431407;--muted:rgba(120,60,0,.45);--muted2:rgba(120,60,0,.72);
+  --glass-shadow:0 4px 24px rgba(160,100,0,.12);
+  background:#fffbeb!important;color:#431407;
+}
+body.theme-yellow.theme-light::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(234,179,8,.2) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(202,138,4,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(161,98,7,.07) 0%,transparent 50%);
+}
+body.theme-yellow.theme-light .topbar,body.theme-yellow.theme-light .nav-tabs{background:rgba(255,248,210,.92);}
+body.theme-yellow.theme-light .login-box{background:rgba(255,251,230,.97);}
+body.theme-yellow.theme-light .btn-primary{background:linear-gradient(135deg,#92400e,#b45309);}
+body.theme-yellow.theme-light .topbar-logo{background:linear-gradient(135deg,#92400e,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-yellow.theme-light .login-logo{background:linear-gradient(135deg,#92400e,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-yellow.theme-light .nav-tab.active{color:#b45309;border-bottom-color:#92400e;}
+
+/* ── GREEN dark ── */
+body.theme-green{
+  --bg:#070f0a;--surface:rgba(20,60,30,.7);--surface2:rgba(20,60,30,.5);--surface3:rgba(15,45,22,.4);
+  --border:rgba(45,160,80,.18);--border2:rgba(45,160,80,.32);
+  --accent:#22c55e;--accent2:#4ade80;--accent-dim:rgba(34,197,94,.15);--accent-glow:rgba(34,197,94,.4);
+  --text:#d4f0dc;--muted:rgba(180,230,195,.4);--muted2:rgba(180,230,195,.65);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.4);
+  background:#070f0a!important;color:#d4f0dc;
+}
+body.theme-green::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(20,100,45,.35) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(10,80,30,.25) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(5,60,20,.15) 0%,transparent 50%);
+}
+body.theme-green .topbar,body.theme-green .nav-tabs{background:rgba(10,35,18,.85);}
+body.theme-green .login-box{background:rgba(10,35,18,.9);}
+body.theme-green .btn-primary{background:linear-gradient(135deg,#15803d,#22c55e);}
+body.theme-green .topbar-logo{background:linear-gradient(135deg,#4ade80,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-green .login-logo{background:linear-gradient(135deg,#4ade80,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-green .nav-tab.active{color:#22c55e;border-bottom-color:#15803d;}
+body.theme-green ::-webkit-scrollbar-thumb{background:rgba(34,197,94,.35);}
+body.theme-green .page-h{background:linear-gradient(135deg,var(--text) 60%,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── GREEN light ── */
+body.theme-green.theme-light{
+  --bg:#f0fdf4;--surface:rgba(255,255,255,.78);--surface2:rgba(230,255,235,.88);--surface3:rgba(210,245,218,.65);
+  --border:rgba(20,120,50,.14);--border2:rgba(20,120,50,.28);
+  --accent:#16a34a;--accent2:#15803d;--accent-dim:rgba(22,163,74,.1);--accent-glow:rgba(22,163,74,.28);
+  --text:#052e16;--muted:rgba(20,80,40,.45);--muted2:rgba(20,80,40,.72);
+  --glass-shadow:0 4px 24px rgba(20,100,50,.12);
+  background:#f0fdf4!important;color:#052e16;
+}
+body.theme-green.theme-light::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(34,197,94,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(22,163,74,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(21,128,61,.07) 0%,transparent 50%);
+}
+body.theme-green.theme-light .topbar,body.theme-green.theme-light .nav-tabs{background:rgba(220,255,230,.92);}
+body.theme-green.theme-light .login-box{background:rgba(235,255,240,.97);}
+body.theme-green.theme-light .btn-primary{background:linear-gradient(135deg,#166534,#16a34a);}
+body.theme-green.theme-light .topbar-logo{background:linear-gradient(135deg,#166534,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-green.theme-light .login-logo{background:linear-gradient(135deg,#166534,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-green.theme-light .nav-tab.active{color:#16a34a;border-bottom-color:#166534;}
+
+
+/* ── BLUE dark ── */
+body.theme-blue{
+  --bg:#060d1a;--surface:rgba(100,160,255,.055);--surface2:rgba(100,160,255,.038);--surface3:rgba(80,130,220,.025);
+  --border:rgba(100,160,255,.12);--border2:rgba(100,160,255,.22);
+  --accent:#3b82f6;--accent2:#60a5fa;--accent-dim:rgba(59,130,246,.16);--accent-glow:rgba(59,130,246,.38);
+  --text:#dbeafe;--muted:rgba(190,215,255,.4);--muted2:rgba(190,215,255,.65);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.42);
+  background:#060d1a!important;color:#dbeafe;
+}
+body.theme-blue::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(37,99,235,.28) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(59,130,246,.16) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(29,78,216,.1) 0%,transparent 50%);
+}
+body.theme-blue .topbar,body.theme-blue .nav-tabs{background:rgba(6,12,30,.88);}
+body.theme-blue .login-box{background:rgba(6,12,30,.93);}
+body.theme-blue .btn-primary{background:linear-gradient(135deg,#1d4ed8,#3b82f6);}
+body.theme-blue .topbar-logo{background:linear-gradient(135deg,#93c5fd,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-blue .login-logo{background:linear-gradient(135deg,#93c5fd,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-blue .nav-tab.active{color:#60a5fa;border-bottom-color:#1d4ed8;}
+body.theme-blue ::-webkit-scrollbar-thumb{background:rgba(59,130,246,.35);}
+body.theme-blue .page-h{background:linear-gradient(135deg,var(--text) 60%,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── BLUE light ── */
+body.theme-blue.theme-light{
+  --bg:#eff6ff;--surface:rgba(255,255,255,.78);--surface2:rgba(230,242,255,.88);--surface3:rgba(210,230,255,.65);
+  --border:rgba(30,80,200,.14);--border2:rgba(30,80,200,.28);
+  --accent:#1d4ed8;--accent2:#2563eb;--accent-dim:rgba(29,78,216,.1);--accent-glow:rgba(29,78,216,.28);
+  --text:#0f1e4a;--muted:rgba(20,50,150,.45);--muted2:rgba(20,50,150,.72);
+  --glass-shadow:0 4px 24px rgba(20,60,180,.12);
+  background:#eff6ff!important;color:#0f1e4a;
+}
+body.theme-blue.theme-light::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(59,130,246,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(37,99,235,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(29,78,216,.07) 0%,transparent 50%);
+}
+body.theme-blue.theme-light .topbar,body.theme-blue.theme-light .nav-tabs{background:rgba(220,235,255,.92);}
+body.theme-blue.theme-light .login-box{background:rgba(235,245,255,.97);}
+body.theme-blue.theme-light .btn-primary{background:linear-gradient(135deg,#1e40af,#1d4ed8);}
+body.theme-blue.theme-light .topbar-logo{background:linear-gradient(135deg,#1e40af,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-blue.theme-light .login-logo{background:linear-gradient(135deg,#1e40af,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-blue.theme-light .nav-tab.active{color:#1d4ed8;border-bottom-color:#1e40af;}
+
+/* ── RED dark ── */
+body.theme-red{
+  --bg:#130508;--surface:rgba(255,100,100,.055);--surface2:rgba(255,100,100,.038);--surface3:rgba(220,80,80,.025);
+  --border:rgba(248,113,113,.12);--border2:rgba(248,113,113,.22);
+  --accent:#ef4444;--accent2:#f87171;--accent-dim:rgba(239,68,68,.16);--accent-glow:rgba(239,68,68,.38);
+  --text:#fee2e2;--muted:rgba(255,190,190,.4);--muted2:rgba(255,190,190,.65);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.42);
+  background:#130508!important;color:#fee2e2;
+}
+body.theme-red::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(185,28,28,.3) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(239,68,68,.16) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(153,27,27,.1) 0%,transparent 50%);
+}
+body.theme-red .topbar,body.theme-red .nav-tabs{background:rgba(22,5,8,.88);}
+body.theme-red .login-box{background:rgba(22,5,8,.93);}
+body.theme-red .btn-primary{background:linear-gradient(135deg,#b91c1c,#ef4444);}
+body.theme-red .topbar-logo{background:linear-gradient(135deg,#fca5a5,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-red .login-logo{background:linear-gradient(135deg,#fca5a5,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-red .nav-tab.active{color:#f87171;border-bottom-color:#b91c1c;}
+body.theme-red ::-webkit-scrollbar-thumb{background:rgba(239,68,68,.35);}
+body.theme-red .page-h{background:linear-gradient(135deg,var(--text) 60%,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── RED light ── */
+body.theme-red.theme-light{
+  --bg:#fff5f5;--surface:rgba(255,255,255,.78);--surface2:rgba(255,235,235,.88);--surface3:rgba(255,215,215,.65);
+  --border:rgba(180,30,30,.14);--border2:rgba(180,30,30,.28);
+  --accent:#dc2626;--accent2:#ef4444;--accent-dim:rgba(220,38,38,.1);--accent-glow:rgba(220,38,38,.28);
+  --text:#450a0a;--muted:rgba(140,20,20,.45);--muted2:rgba(140,20,20,.72);
+  --glass-shadow:0 4px 24px rgba(180,20,20,.12);
+  background:#fff5f5!important;color:#450a0a;
+}
+body.theme-red.theme-light::before{
+  background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(239,68,68,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 50% at 85% 100%,rgba(220,38,38,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%,rgba(185,28,28,.07) 0%,transparent 50%);
+}
+body.theme-red.theme-light .topbar,body.theme-red.theme-light .nav-tabs{background:rgba(255,225,225,.92);}
+body.theme-red.theme-light .login-box{background:rgba(255,240,240,.97);}
+body.theme-red.theme-light .btn-primary{background:linear-gradient(135deg,#991b1b,#dc2626);}
+body.theme-red.theme-light .topbar-logo{background:linear-gradient(135deg,#991b1b,#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-red.theme-light .login-logo{background:linear-gradient(135deg,#991b1b,#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+body.theme-red.theme-light .nav-tab.active{color:#dc2626;border-bottom-color:#991b1b;}
+
+/* Color picker dots */
+.accent-picker{display:flex;align-items:center;gap:5px;margin-right:4px}
+.accent-dot{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.18s;flex-shrink:0}
+.accent-dot:hover{transform:scale(1.15)}
+.accent-dot.active{border-color:rgba(255,255,255,.85);box-shadow:0 0 0 2px rgba(255,255,255,.28)}
+body.theme-light .accent-dot.active,.theme-yellow.theme-light .accent-dot.active{border-color:rgba(0,0,0,.5);box-shadow:0 0 0 2px rgba(0,0,0,.14)}
+
 body.theme-light{color-scheme:light}
 
 /* wish teammates panel */
@@ -720,6 +951,14 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
         </div>
       </div>
       <button id="anim-toggle-btn" onclick="toggleAnimation()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 10px;font-size:15px;transition:.2s;line-height:1" title="Увімк/вимк анімацію">🌸</button>
+      <div class="accent-picker" title="Колір акценту">
+        <div class="accent-dot active" id="adot-purple" style="background:#b57bee" onclick="setColorTheme('purple')" title="Фіолетовий"></div>
+        <div class="accent-dot" id="adot-pink"   style="background:#f472b6" onclick="setColorTheme('pink')"   title="Рожевий"></div>
+        <div class="accent-dot" id="adot-yellow" style="background:#eab308" onclick="setColorTheme('yellow')" title="Жовтий"></div>
+        <div class="accent-dot" id="adot-green"  style="background:#22c55e" onclick="setColorTheme('green')"  title="Зелений"></div>
+        <div class="accent-dot" id="adot-blue"   style="background:#3b82f6" onclick="setColorTheme('blue')"   title="Синій"></div>
+        <div class="accent-dot" id="adot-red"    style="background:#ef4444" onclick="setColorTheme('red')"    title="Червоний"></div>
+      </div>
       <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 10px;font-size:15px;transition:.2s;line-height:1" title="Змінити тему">🌙</button>
       <button class="btn-logout" onclick="logout()">Вийти</button>
     </div>
@@ -2098,18 +2337,78 @@ async function saveDB(){
                 const frsh = freshDb.shiftTypes[tid] || [];
                 const cur = db.shiftTypes[tid] || [];
                 if(!frsh.length && !cur.length) return;
-                // Deep merge по id: починаємо зі свіжих, додаємо/оновлюємо локальними
-                const mergedMap = {};
-                frsh.forEach(s=>{ if(s.id) mergedMap[s.id] = s; });
-                cur.forEach(s=>{ if(s.id && !mergedMap[s.id]) mergedMap[s.id] = s; });
-                // Зберігаємо порядок: спочатку свіжі (їхній TL визначає порядок),
-                // потім ті локальні яких не було у свіжих
                 const merged = frsh.filter(s=>s.id);
                 cur.forEach(s=>{ if(s.id && !frsh.find(f=>f.id===s.id)) merged.push(s); });
                 db.shiftTypes[tid] = merged.length ? merged : (frsh.length ? frsh : cur);
               }
             });
           }
+
+          // [PATCH] Захищаємо staff своєї команди — не даємо свіжим даним затерти щойно збережених агентів
+          if(freshDb.staff && db.staff && me){
+            const myTeamIdStaff = me.teamId || (me.data&&me.data.teamId) || null;
+            if(myTeamIdStaff){
+              const curTeamStaff = db.staff.filter(s=>(s.teamId||1)===myTeamIdStaff);
+              db.staff = freshDb.staff.filter(s=>(s.teamId||1)!==myTeamIdStaff);
+              db.staff.push(...curTeamStaff);
+              if((freshDb.nextId||0) > (db.nextId||0)) db.nextId = freshDb.nextId;
+            }
+          }
+
+          // [PATCH] teamLinks — захищаємо свою команду, підхоплюємо чужі зміни
+          if(freshDb.teamLinks && db.teamLinks && me){
+            const myTidLinks = me.teamId || (me.data&&me.data.teamId) || null;
+            Object.keys(freshDb.teamLinks).forEach(tid=>{
+              if(String(tid) !== String(myTidLinks)){
+                db.teamLinks[tid] = freshDb.teamLinks[tid];
+              }
+            });
+          }
+
+          // [PATCH] dayColors — захищаємо свою команду, підхоплюємо чужі зміни
+          if(freshDb.dayColors && me){
+            if(!db.dayColors) db.dayColors = {};
+            const myTidDc = me.teamId || (me.data&&me.data.teamId) || null;
+            Object.keys(freshDb.dayColors).forEach(tid=>{
+              if(String(tid) !== String(myTidDc)){
+                db.dayColors[tid] = freshDb.dayColors[tid];
+              }
+            });
+          }
+
+          // [PATCH] staffOrder — захищаємо свою команду
+          if(freshDb.staffOrder && me){
+            if(!db.staffOrder) db.staffOrder = {};
+            const myTidSo = me.teamId || (me.data&&me.data.teamId) || null;
+            Object.keys(freshDb.staffOrder).forEach(tid=>{
+              if(String(tid) !== String(myTidSo)){
+                db.staffOrder[tid] = freshDb.staffOrder[tid];
+              }
+            });
+          }
+
+          // [PATCH] dayMeta — мержимо по ключах, своя команда пріоритетна
+          if(freshDb.dayMeta){
+            if(!db.dayMeta) db.dayMeta = {};
+            const myTidDm = me ? (me.teamId || (me.data&&me.data.teamId) || null) : null;
+            Object.keys(freshDb.dayMeta).forEach(mKey=>{
+              if(!db.dayMeta[mKey]){ db.dayMeta[mKey] = freshDb.dayMeta[mKey]; return; }
+              // Підхоплюємо нові дні зі свіжих яких нема локально (від інших TL)
+              Object.keys(freshDb.dayMeta[mKey]).forEach(day=>{
+                if(!db.dayMeta[mKey][day]) db.dayMeta[mKey][day] = freshDb.dayMeta[mKey][day];
+              });
+            });
+          }
+
+          // [PATCH] schedRules — підхоплюємо чужі
+          if(freshDb.schedRules){
+            if(!db.schedRules) db.schedRules = {};
+            const myTidSr = me ? String(me.teamId||(me.data&&me.data.teamId)||1) : null;
+            Object.keys(freshDb.schedRules).forEach(tid=>{
+              if(tid !== myTidSr) db.schedRules[tid] = freshDb.schedRules[tid];
+            });
+          }
+
           _lastDbStr = freshRows[0].value;
         }
       }
@@ -5874,11 +6173,41 @@ function renderChiefMood(){
 }
 
 // ══ THEME ══
+const COLOR_THEMES = ['purple','pink','yellow','green','blue','red'];
+
+function setColorTheme(name){
+  // Remove all color theme classes
+  COLOR_THEMES.forEach(t => { if(t!=='purple') document.body.classList.remove('theme-'+t); });
+  if(name !== 'purple') document.body.classList.add('theme-'+name);
+  // Update dots
+  COLOR_THEMES.forEach(t => {
+    const dot = document.getElementById('adot-'+t);
+    if(dot) dot.classList.toggle('active', t===name);
+  });
+  try{ localStorage.setItem('ttn_accent', name); }catch(e){}
+}
+
+function applyAccent(){
+  try{
+    const saved = localStorage.getItem('ttn_accent') || 'purple';
+    setColorTheme(saved);
+  }catch(e){}
+}
+
 function toggleTheme(){
   const isLight = document.body.classList.toggle('theme-light');
   const btn = document.getElementById('theme-btn');
   if(btn) btn.textContent = isLight ? '☀️' : '🌙';
   try{ localStorage.setItem('itTheme', isLight?'light':'dark'); }catch(e){}
+  // Restore color theme (toggle removes nothing but light, so color stays)
+  // Re-apply dot active state
+  try{
+    const saved = localStorage.getItem('ttn_accent') || 'purple';
+    COLOR_THEMES.forEach(t => {
+      const dot = document.getElementById('adot-'+t);
+      if(dot) dot.classList.toggle('active', t===saved);
+    });
+  }catch(e){}
 }
 function applyTheme(){
   try{
@@ -5893,6 +6222,7 @@ function applyTheme(){
       return;
     }
     document.body.classList.remove('theme-horyn');
+    applyAccent();
     const saved = localStorage.getItem('itTheme');
     if(saved==='light'){
       document.body.classList.add('theme-light');
@@ -6078,10 +6408,11 @@ async function autoRefreshDB(){
               const curData = cur[personId] || {};
               const frshData = frsh[personId] || {};
               // Мержимо по днях: локальні дані пріоритетні (щойно збережені TL/Chief)
+              // [PATCH] Включаємо 'off' — вихідні теж треба зберігати
               const merged = Object.assign({}, frshData);
               Object.keys(curData).forEach(day=>{
-                if(curData[day] && curData[day] !== 'off'){
-                  merged[day] = curData[day]; // локальний день завжди пріоритетніший
+                if(curData[day]){
+                  merged[day] = curData[day]; // локальний день завжди пріоритетніший (включно з 'off')
                 }
               });
               frsh[personId] = merged;
@@ -6143,22 +6474,36 @@ async function autoRefreshDB(){
         }
 
         // 12. REVIEWS — відгуки (по місяцях, зберігаємо поточні дані)
+        // [PATCH] reviews — мержимо по id запису всередині data, не по кількості
         if(db.reviews && me){
           if(!freshDb.reviews) freshDb.reviews = {};
-          // Зберігаємо всі місяці з поточного db якщо вони новіші або відсутні у свіжих
           Object.keys(db.reviews).forEach(mKey=>{
             const cur = db.reviews[mKey];
             const frsh = freshDb.reviews[mKey];
             if(cur && cur.data){
-              if(!frsh || !frsh.data || Object.keys(cur.data).length >= Object.keys(frsh.data||{}).length){
+              if(!frsh || !frsh.data){
                 freshDb.reviews[mKey] = cur;
+              } else {
+                // Мержимо по ключах data: беремо свіжі як основу,
+                // додаємо/оновлюємо локальними (локальний TL щойно вніс свої)
+                const mergedData = Object.assign({}, frsh.data);
+                Object.keys(cur.data).forEach(entryId=>{
+                  // Локальний запис пріоритетний якщо він є
+                  mergedData[entryId] = cur.data[entryId];
+                });
+                freshDb.reviews[mKey] = Object.assign({}, frsh, { data: mergedData });
               }
             }
           });
-          // Зберігаємо глобальні сайти якщо наших більше
+          // Зберігаємо глобальні сайти — мержимо по name, не по count
           if(db.reviewSites && db.reviewSites.length > 0){
-            if(!freshDb.reviewSites || freshDb.reviewSites.length < db.reviewSites.length){
+            if(!freshDb.reviewSites || freshDb.reviewSites.length === 0){
               freshDb.reviewSites = db.reviewSites;
+            } else {
+              const freshSiteNames = new Set(freshDb.reviewSites.map(s=>s.name||s.url));
+              db.reviewSites.forEach(s=>{
+                if(!freshSiteNames.has(s.name||s.url)) freshDb.reviewSites.push(s);
+              });
             }
           }
         }
@@ -6208,39 +6553,51 @@ async function autoRefreshDB(){
         }
 
         // 15. ANNOUNCEMENTS — оголошення
-        if(db.announcements && db.announcements.length > 0){
-          if(!freshDb.announcements || freshDb.announcements.length < db.announcements.length){
-            freshDb.announcements = db.announcements;
-          } else {
-            const freshAnnIds = new Set(freshDb.announcements.map(a=>a.id));
-            db.announcements.forEach(a=>{
-              if(!freshAnnIds.has(a.id)) freshDb.announcements.push(a);
-            });
-          }
+        // [PATCH] Мержимо по id без воскресіння видалених:
+        // якщо оголошення видалено у свіжих — воно справді видалено, не повертаємо
+        // якщо оголошення є локально але немає у свіжих І воно нове (createdAt > _lastDbTimestamp) — додаємо
+        if(db.announcements && db.announcements.length > 0 && freshDb.announcements){
+          const freshAnnMap = new Map(freshDb.announcements.map(a=>[a.id, a]));
+          const freshAnnIds = new Set(freshDb.announcements.map(a=>a.id));
+          // Додаємо тільки ті що були створені після нашого останнього завантаження
+          // (тобто дійсно нові локальні, а не "видалені на сервері")
+          db.announcements.forEach(a=>{
+            if(!freshAnnIds.has(a.id)){
+              // Вважаємо новим тільки якщо createdAt > часу останнього успішного DB-рядка
+              // або якщо _lastDbStr не містив цього id (ми його самі додали)
+              const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(a.id));
+              if(!wasInLastDb) freshDb.announcements.push(a);
+            }
+          });
+        } else if(db.announcements && db.announcements.length > 0 && !freshDb.announcements){
+          freshDb.announcements = db.announcements;
         }
 
         // 16. EXCHANGES — обміни змін
-        if(db.exchanges && db.exchanges.length > 0){
-          if(!freshDb.exchanges || freshDb.exchanges.length < db.exchanges.length){
-            freshDb.exchanges = db.exchanges;
-          } else {
-            const freshExIds = new Set(freshDb.exchanges.map(e=>e.id));
-            db.exchanges.forEach(e=>{
-              if(!freshExIds.has(e.id)) freshDb.exchanges.push(e);
-              else {
-                // Оновлюємо статус якщо змінився
-                const idx = freshDb.exchanges.findIndex(fe=>fe.id===e.id);
-                if(idx>=0 && e.status !== 'open' && freshDb.exchanges[idx].status === 'open'){
-                  freshDb.exchanges[idx] = e;
-                }
+        // [PATCH] Не воскрешаємо видалені: додаємо тільки ті що є новими локально
+        if(db.exchanges && db.exchanges.length > 0 && freshDb.exchanges){
+          const freshExIds = new Set(freshDb.exchanges.map(e=>e.id));
+          db.exchanges.forEach(e=>{
+            if(!freshExIds.has(e.id)){
+              // Додаємо тільки якщо це справді нова локальна пропозиція (не було в останньому DB)
+              const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(e.id));
+              if(!wasInLastDb) freshDb.exchanges.push(e);
+            } else {
+              // Оновлюємо статус якщо локально він змінився на не-open
+              const idx = freshDb.exchanges.findIndex(fe=>fe.id===e.id);
+              if(idx>=0 && e.status !== 'open' && freshDb.exchanges[idx].status === 'open'){
+                freshDb.exchanges[idx] = e;
               }
-            });
-          }
+            }
+          });
+        } else if(db.exchanges && db.exchanges.length > 0 && !freshDb.exchanges){
+          freshDb.exchanges = db.exchanges;
         }
 
         // 17. DAY META — офісні дні / емодзі
+        // [PATCH] Використовуємо me.data.teamId як fallback (для агентів teamId в me.data)
         if(db.dayMeta && me){
-          const myTeamId2 = me.teamId || null;
+          const myTeamId2 = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId2){
             if(!freshDb.dayMeta) freshDb.dayMeta = {};
             Object.keys(db.dayMeta).forEach(mKey=>{
@@ -6254,9 +6611,10 @@ async function autoRefreshDB(){
         }
 
         // 18. DAY COMMENTS — коментарі до днів графіку
+        // [PATCH] Fallback для агентів (me.data.teamId)
         if(db.dayComments && me){
           if(!freshDb.dayComments) freshDb.dayComments = {};
-          const myTeamId3 = me.teamId || null;
+          const myTeamId3 = me.teamId || (me.data && me.data.teamId) || null;
           if(myTeamId3){
             Object.keys(db.dayComments).forEach(empId=>{
               const myEmpIds = db.staff ? db.staff.filter(s=>(s.teamId||1)===myTeamId3).map(s=>String(s.id)) : [];
@@ -6274,11 +6632,14 @@ async function autoRefreshDB(){
           freshDb.team3Dividers = db.team3Dividers;
         }
 
-        // 20. KUDOS — подяки (зберігаємо якщо наших більше)
+        // 20. KUDOS — подяки (мержимо по id, не губимо нові з обох сторін)
         if(db.kudos && db.kudos.length > 0){
-          if(!freshDb.kudos || freshDb.kudos.length < db.kudos.length){
-            freshDb.kudos = db.kudos;
-          }
+          if(!freshDb.kudos) freshDb.kudos = [];
+          const freshKudosIds = new Set(freshDb.kudos.map(k=>k.id||k.createdAt));
+          db.kudos.forEach(k=>{
+            const kKey = k.id||k.createdAt;
+            if(!freshKudosIds.has(kKey)) freshDb.kudos.push(k);
+          });
         }
 
         // 21. MOODS — настрій (особисті дані, зберігаємо свої)
