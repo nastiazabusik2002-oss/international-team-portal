@@ -2224,6 +2224,7 @@ async function loadDB(){
       const rows = await res.json();
       if(rows.length && rows[0].value){
         db=JSON.parse(rows[0].value);
+        _lastDbStr = rows[0].value; // [PATCH] щоб autoRefresh не робив зайвий merge одразу після завантаження
         // Зберігаємо резервну копію в localStorage
         try{ localStorage.setItem('ttn_db_backup', rows[0].value); }catch(e){}
         // ── MIGRATION v1: assign teamId=1 to existing Chat staff ──
@@ -2241,6 +2242,7 @@ async function loadDB(){
       const rows3 = await res3.json();
       if(rows3.length && rows3[0].value){
         db=JSON.parse(rows3[0].value);
+        _lastDbStr = rows3[0].value; // [PATCH]
         try{ localStorage.setItem('ttn_db_backup', rows3[0].value); }catch(e){}
         if(db.staff) db.staff.forEach(s=>{ if(!s.teamId) s.teamId=1; });
         await runMigrations();
@@ -2406,6 +2408,238 @@ async function saveDB(){
             const myTidSr = me ? String(me.teamId||(me.data&&me.data.teamId)||1) : null;
             Object.keys(freshDb.schedRules).forEach(tid=>{
               if(tid !== myTidSr) db.schedRules[tid] = freshDb.schedRules[tid];
+            });
+          }
+
+          // [PATCH CRITICAL] PERF — підхоплюємо дані чужих команд зі свіжих
+          // Без цього: при збереженні будь-яким TL, Supabase отримує db.perf ТІЛЬКИ його команди,
+          // і дані продуктивності інших команд зникають
+          if(freshDb.perf){
+            if(!db.perf) db.perf = {};
+            // Знаходимо ID агентів СВОЄЇ команди — їх не чіпаємо (наш локальний пріоритет)
+            const myTidPerf = me ? (me.teamId || (me.data&&me.data.teamId) || null) : null;
+            const myEmpIdsPerf = myTidPerf && db.staff
+              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTidPerf).map(s=>String(s.id)))
+              : new Set();
+            // Підхоплюємо perf записи всіх чужих агентів зі свіжих
+            Object.keys(freshDb.perf).forEach(empId=>{
+              if(!myEmpIdsPerf.has(String(empId))){
+                // Чужий агент — беремо свіжі дані (їх TL вніс)
+                // Мержимо по week щоб не губити локальні записи якщо є
+                if(!db.perf[empId]){
+                  db.perf[empId] = freshDb.perf[empId];
+                } else {
+                  const localWeeks = new Map(db.perf[empId].map(r=>[r.week, r]));
+                  freshDb.perf[empId].forEach(r=>{
+                    if(!localWeeks.has(r.week)) db.perf[empId].push(r);
+                    // Якщо є в обох — свіжі пріоритетніші (їх TL щойно зберіг)
+                    else {
+                      const idx = db.perf[empId].findIndex(x=>x.week===r.week);
+                      if(idx>=0) db.perf[empId][idx] = r;
+                    }
+                  });
+                }
+              }
+            });
+          }
+
+          // [PATCH CRITICAL] PERF RATING — аналогічно
+          if(freshDb.perfRating){
+            if(!db.perfRating) db.perfRating = {};
+            const myTidPr = me ? (me.teamId || (me.data&&me.data.teamId) || null) : null;
+            const myEmpIdsPr = myTidPr && db.staff
+              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTidPr).map(s=>String(s.id)))
+              : new Set();
+            Object.keys(freshDb.perfRating).forEach(empId=>{
+              if(!myEmpIdsPr.has(String(empId)) && freshDb.perfRating[empId]){
+                db.perfRating[empId] = freshDb.perfRating[empId];
+              }
+            });
+          }
+
+          // [PATCH CRITICAL] REVIEWS — підхоплюємо відгуки інших команд
+          if(freshDb.reviews){
+            if(!db.reviews) db.reviews = {};
+            Object.keys(freshDb.reviews).forEach(mKey=>{
+              const frsh = freshDb.reviews[mKey];
+              const cur = db.reviews[mKey];
+              if(!cur){
+                db.reviews[mKey] = frsh;
+              } else if(frsh && frsh.data && cur.data){
+                // Мержимо по entryId — локальні пріоритетні, але підхоплюємо чужі нові
+                const mergedData = Object.assign({}, frsh.data, cur.data);
+                db.reviews[mKey] = Object.assign({}, frsh, { data: mergedData });
+              }
+            });
+            // reviewSites
+            if(freshDb.reviewSites && freshDb.reviewSites.length > 0 && (!db.reviewSites || db.reviewSites.length === 0)){
+              db.reviewSites = freshDb.reviewSites;
+            } else if(freshDb.reviewSites && db.reviewSites){
+              const localSiteKeys = new Set(db.reviewSites.map(s=>s.name||s.url));
+              freshDb.reviewSites.forEach(s=>{ if(!localSiteKeys.has(s.name||s.url)) db.reviewSites.push(s); });
+            }
+          }
+
+          // [PATCH CRITICAL] REMARKS — підхоплюємо зауваження інших команд
+          if(freshDb.remarks && freshDb.remarks.length > 0){
+            if(!db.remarks) db.remarks = [];
+            const localRemarkIds = new Set(db.remarks.map(r=>r.id));
+            freshDb.remarks.forEach(r=>{
+              if(!localRemarkIds.has(r.id)) db.remarks.push(r);
+            });
+          }
+
+          // [PATCH] TL KPI — підхоплюємо оцінки Chief зі свіжих якщо ми не Chief
+          // (Chief сам захищає свої оцінки в autoRefresh; тут захищаємо від перезапису TL-ом)
+          if(freshDb.tlKpi){
+            if(!db.tlKpi) db.tlKpi = {};
+            if(!(me && me.type === 'chief')){
+              // Ми не Chief — беремо свіжий tlKpi повністю (Chief щойно міг виставити оцінки)
+              db.tlKpi = freshDb.tlKpi;
+            } else {
+              // Ми Chief — мержимо: свої оцінки пріоритетні, чужі місяці підхоплюємо
+              Object.keys(freshDb.tlKpi).forEach(mk=>{
+                if(!db.tlKpi[mk]){ db.tlKpi[mk] = freshDb.tlKpi[mk]; return; }
+                Object.keys(freshDb.tlKpi[mk]).forEach(tlId=>{
+                  const cur = db.tlKpi[mk][tlId];
+                  const frsh = freshDb.tlKpi[mk][tlId];
+                  if(!cur || Object.keys(cur).length === 0) db.tlKpi[mk][tlId] = frsh;
+                  // якщо у нас є — наш пріоритет (Chief щойно виставив)
+                });
+              });
+            }
+          }
+
+          // [PATCH] TL KPI CHECKS — чеклісти TL
+          if(freshDb.tlKpiChecks){
+            if(!db.tlKpiChecks) db.tlKpiChecks = {};
+            const myTidKc = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
+            Object.keys(freshDb.tlKpiChecks).forEach(tid=>{
+              if(String(tid) !== String(myTidKc)){
+                db.tlKpiChecks[tid] = freshDb.tlKpiChecks[tid];
+              }
+            });
+          }
+
+          // [PATCH] KUDOS — підхоплюємо нові подяки зі свіжих
+          if(freshDb.kudos && freshDb.kudos.length > 0){
+            if(!db.kudos) db.kudos = [];
+            const localKudosKeys = new Set(db.kudos.map(k=>k.id||k.createdAt));
+            freshDb.kudos.forEach(k=>{
+              const kKey = k.id||k.createdAt;
+              if(!localKudosKeys.has(kKey)) db.kudos.push(k);
+            });
+          }
+
+          // [PATCH] ANNOUNCEMENTS — підхоплюємо нові оголошення зі свіжих (не воскрешаємо видалені)
+          if(freshDb.announcements && freshDb.announcements.length > 0){
+            if(!db.announcements) db.announcements = [];
+            const localAnnIds = new Set(db.announcements.map(a=>a.id));
+            freshDb.announcements.forEach(a=>{
+              if(!localAnnIds.has(a.id)){
+                // Нове оголошення зі свіжих якого ми не маємо — додаємо
+                const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(a.id));
+                if(wasInLastDb || !_lastDbStr) db.announcements.push(a); // воно вже було в DB, не нами видалено
+              }
+            });
+            // Видалені нами не повертаємо — якщо є у localAnnIds то OK, якщо немає і wasInLastDb → не додаємо
+          } else if(freshDb.announcements && freshDb.announcements.length === 0 && db.announcements){
+            // Свіжі порожні — можливо хтось очистив, але ми могли щойно додати
+            // Залишаємо свої (вони ще не були збережені в Supabase)
+          }
+
+          // [PATCH] EXCHANGES — підхоплюємо нові обміни зі свіжих, оновлюємо статуси
+          if(freshDb.exchanges && freshDb.exchanges.length > 0){
+            if(!db.exchanges) db.exchanges = [];
+            const localExIds = new Map(db.exchanges.map(e=>[e.id, e]));
+            freshDb.exchanges.forEach(e=>{
+              if(!localExIds.has(e.id)){
+                // Нова пропозиція від іншого TL — додаємо
+                db.exchanges.push(e);
+              } else {
+                // Є в обох — якщо статус у свіжих змінився (не-open) і у нас ще open — беремо свіжий
+                const local = localExIds.get(e.id);
+                if(local.status === 'open' && e.status !== 'open'){
+                  const idx = db.exchanges.findIndex(x=>x.id===e.id);
+                  if(idx>=0) db.exchanges[idx] = e;
+                }
+              }
+            });
+          }
+
+          // [PATCH] WISHES — побажання агентів чужих команд
+          if(freshDb.wishes){
+            if(!db.wishes) db.wishes = {};
+            const myTidW = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
+            const myEmpIdsW = myTidW && db.staff
+              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTidW).map(s=>String(s.id)))
+              : new Set();
+            Object.keys(freshDb.wishes).forEach(empId=>{
+              if(!myEmpIdsW.has(String(empId))){
+                db.wishes[empId] = freshDb.wishes[empId];
+              }
+            });
+          }
+
+          // [PATCH] DAY COMMENTS — коментарі агентів чужих команд
+          if(freshDb.dayComments){
+            if(!db.dayComments) db.dayComments = {};
+            const myTidDc2 = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
+            const myEmpIdsDc = myTidDc2 && db.staff
+              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTidDc2).map(s=>String(s.id)))
+              : new Set();
+            Object.keys(freshDb.dayComments).forEach(empId=>{
+              if(!myEmpIdsDc.has(String(empId))){
+                db.dayComments[empId] = freshDb.dayComments[empId];
+              }
+            });
+          }
+
+          // [PATCH] MOODS — особисті дані чужих агентів
+          if(freshDb.moods){
+            if(!db.moods) db.moods = {};
+            const myEmpIdMood = me && me.data ? String(me.data.id) : null;
+            Object.keys(freshDb.moods).forEach(empId=>{
+              if(empId !== myEmpIdMood){
+                db.moods[empId] = freshDb.moods[empId];
+              }
+            });
+          }
+
+          // [PATCH] PERSONAL NOTES — нотатки чужих агентів
+          if(freshDb.personalNotes){
+            if(!db.personalNotes) db.personalNotes = {};
+            const myEmpIdNotes = me && me.data ? String(me.data.id) : null;
+            Object.keys(freshDb.personalNotes).forEach(empId=>{
+              if(empId !== myEmpIdNotes){
+                db.personalNotes[empId] = freshDb.personalNotes[empId];
+              }
+            });
+          }
+
+          // [PATCH] TEAM3 DIVIDERS — підгрупи: зберігаємо свіжі якщо ми не team3
+          if(freshDb.team3Dividers && !(me && me.teamId === 3)){
+            db.team3Dividers = freshDb.team3Dividers;
+          }
+
+          // [PATCH] TL SCHEDULE — підхоплюємо чужі записи зі свіжих
+          if(freshDb.tlSchedule){
+            if(!db.tlSchedule) db.tlSchedule = {};
+            Object.keys(freshDb.tlSchedule).forEach(key=>{
+              if(!db.tlSchedule[key]) db.tlSchedule[key] = {};
+              Object.keys(freshDb.tlSchedule[key]).forEach(personId=>{
+                if(!db.tlSchedule[key][personId]){
+                  db.tlSchedule[key][personId] = freshDb.tlSchedule[key][personId];
+                } else {
+                  // Мержимо по днях: локальні пріоритетні
+                  const frshDays = freshDb.tlSchedule[key][personId] || {};
+                  Object.keys(frshDays).forEach(day=>{
+                    if(!db.tlSchedule[key][personId][day]){
+                      db.tlSchedule[key][personId][day] = frshDays[day];
+                    }
+                  });
+                }
+              });
             });
           }
 
