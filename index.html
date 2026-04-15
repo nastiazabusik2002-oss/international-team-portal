@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" content="patched3-20260415">
+<meta name="app-version" content="patched4-20260415">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2295,7 +2295,9 @@ async function runMigrations(){
     });
   });
   db._migrated_v3 = true;
-  await saveDB();
+  // [FIX] saveDB без me небезпечний — мерж staff не захищений (me.teamId=null → весь staff може перезаписатись)
+  // Зберігаємо тільки якщо me вже визначено (тобто користувач залогінений)
+  if(me) await saveDB();
 }
 
 async function saveDB(){
@@ -2554,14 +2556,15 @@ async function saveDB(){
           if(freshDb.announcements && freshDb.announcements.length > 0){
             if(!db.announcements) db.announcements = [];
             const localAnnIds = new Set(db.announcements.map(a=>a.id));
+            // [FIX] Парсимо _lastDbStr точно (не string.includes — хибні збіги по числах в інших полях)
+            let _lastAnnIds = null;
+            try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); _lastAnnIds=new Set((lp.announcements||[]).map(a=>a.id)); } }catch(e){}
             freshDb.announcements.forEach(a=>{
               if(!localAnnIds.has(a.id)){
-                // Нове оголошення зі свіжих якого ми не маємо — додаємо
-                const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(a.id));
-                if(wasInLastDb || !_lastDbStr) db.announcements.push(a); // воно вже було в DB, не нами видалено
+                const wasInLastDb = _lastAnnIds ? _lastAnnIds.has(a.id) : false;
+                if(wasInLastDb || !_lastDbStr) db.announcements.push(a);
               }
             });
-            // Видалені нами не повертаємо — якщо є у localAnnIds то OK, якщо немає і wasInLastDb → не додаємо
           } else if(freshDb.announcements && freshDb.announcements.length === 0 && db.announcements){
             // Свіжі порожні — можливо хтось очистив, але ми могли щойно додати
             // Залишаємо свої (вони ще не були збережені в Supabase)
@@ -2637,7 +2640,8 @@ async function saveDB(){
           }
 
           // [PATCH] TEAM3 DIVIDERS — підгрупи: зберігаємо свіжі якщо ми не team3
-          if(freshDb.team3Dividers && !(me && me.teamId === 3)){
+          // [FIX] Додаємо fallback me.data.teamId для агентів
+          if(freshDb.team3Dividers && !(me && (me.teamId === 3 || (me.data&&me.data.teamId===3)))){
             db.team3Dividers = freshDb.team3Dividers;
           }
 
@@ -6814,11 +6818,12 @@ async function autoRefreshDB(){
           const freshAnnIds = new Set(freshDb.announcements.map(a=>a.id));
           // Додаємо тільки ті що були створені після нашого останнього завантаження
           // (тобто дійсно нові локальні, а не "видалені на сервері")
+          // [FIX] Парсимо _lastDbStr точно, без хибних string.includes по числових полях
+          let _lastAnnIdsRefresh = null;
+          try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); _lastAnnIdsRefresh=new Set((lp.announcements||[]).map(a=>a.id)); } }catch(e){}
           db.announcements.forEach(a=>{
             if(!freshAnnIds.has(a.id)){
-              // Вважаємо новим тільки якщо createdAt > часу останнього успішного DB-рядка
-              // або якщо _lastDbStr не містив цього id (ми його самі додали)
-              const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(a.id));
+              const wasInLastDb = _lastAnnIdsRefresh ? _lastAnnIdsRefresh.has(a.id) : false;
               if(!wasInLastDb) freshDb.announcements.push(a);
             }
           });
@@ -6830,10 +6835,12 @@ async function autoRefreshDB(){
         // [PATCH] Не воскрешаємо видалені: додаємо тільки ті що є новими локально
         if(db.exchanges && db.exchanges.length > 0 && freshDb.exchanges){
           const freshExIds = new Set(freshDb.exchanges.map(e=>e.id));
+          // [FIX] Парсимо _lastDbStr точно для exchanges теж
+          let _lastExIdsRefresh = null;
+          try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); _lastExIdsRefresh=new Set((lp.exchanges||[]).map(e=>e.id)); } }catch(e){}
           db.exchanges.forEach(e=>{
             if(!freshExIds.has(e.id)){
-              // Додаємо тільки якщо це справді нова локальна пропозиція (не було в останньому DB)
-              const wasInLastDb = _lastDbStr && _lastDbStr.includes('"id":'+JSON.stringify(e.id));
+              const wasInLastDb = _lastExIdsRefresh ? _lastExIdsRefresh.has(e.id) : false;
               if(!wasInLastDb) freshDb.exchanges.push(e);
             } else {
               // Оновлюємо статус якщо локально він змінився на не-open
@@ -6881,7 +6888,8 @@ async function autoRefreshDB(){
         }
 
         // 19. TEAM3 DIVIDERS — підгрупи команди 3
-        if(db.team3Dividers && me && me.teamId===3){
+        // [FIX] Додаємо fallback me.data.teamId для агентів (у них teamId в me.data, не в me)
+        if(db.team3Dividers && me && (me.teamId===3 || (me.data&&me.data.teamId===3))){
           freshDb.team3Dividers = db.team3Dividers;
         }
 
@@ -6936,6 +6944,9 @@ async function autoRefreshDB(){
 
         _lastDbStr = fresh;
         db = freshDb;
+
+        // [FIX] Скидаємо _schedSaveTimer якщо він висить — щоб застаріле збереження не перезаписало свіжі дані
+        if(window._schedSaveTimer){ clearTimeout(window._schedSaveTimer); window._schedSaveTimer = null; }
 
         // Re-render
         if(me){
