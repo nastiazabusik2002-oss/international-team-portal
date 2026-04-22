@@ -1375,7 +1375,6 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button class="btn-save" onclick="saveWishesAsSchedule()">💾 Зберегти як графік</button>
-                <button class="btn-add" onclick="openAutoSchedModal()" style="background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.4);color:#a78bfa">🤖 Авто-генерація</button>
               </div>
             </div>
             <div id="wishes-month-notes"></div>
@@ -1814,127 +1813,6 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
   </div>
 </div>
 
-<!-- AUTO SCHEDULE MODAL -->
-<div class="modal-ov" id="autosched-modal">
-  <div class="modal" style="max-width:620px;max-height:92vh;overflow-y:auto">
-    <h3>🤖 АВТО-ГЕНЕРАЦІЯ ГРАФІКУ</h3>
-
-    <!-- Ліміти змін -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
-      <div class="field">
-        <label>📅 Мін. змін/міс.</label>
-        <input type="number" id="ag-min-shifts" value="15" min="1" max="31" class="esc-input" style="width:100%">
-      </div>
-      <div class="field">
-        <label>📅 Макс. змін/міс.</label>
-        <input type="number" id="ag-max-shifts" value="20" min="1" max="31" class="esc-input" style="width:100%">
-      </div>
-      <div class="field">
-        <label>🔁 Макс. підряд</label>
-        <input type="number" id="ag-max-row" value="4" min="1" max="7" class="esc-input" style="width:100%">
-      </div>
-    </div>
-
-    <!-- Слоти покриття — БУДНІ -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">📋 Слоти покриття — БУДНІ</span>
-        <button onclick="addSlot('weekday')" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted2);padding:3px 10px;cursor:pointer">+ Додати</button>
-      </div>
-      <div id="ag-slots-weekday" style="display:flex;flex-direction:column;gap:6px"></div>
-    </div>
-
-    <!-- Слоти покриття — ВИХІДНІ -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">🌅 Слоти покриття — ВИХІДНІ</span>
-        <button onclick="addSlot('weekend')" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted2);padding:3px 10px;cursor:pointer">+ Додати</button>
-      </div>
-      <div id="ag-slots-weekend" style="display:flex;flex-direction:column;gap:6px"></div>
-    </div>
-
-    <!-- Агенти без нічних -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">🌙 Агенти З нічними змінами</div>
-      <div id="ag-no-night-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-    </div>
-
-    <!-- Обмеження змін для агентів -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">🚫 Дозволені зміни для агента</span>
-        <button onclick="addAgentShiftLimit()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted2);padding:3px 10px;cursor:pointer">+ Додати</button>
-      </div>
-      <div id="ag-shift-limits" style="display:flex;flex-direction:column;gap:6px"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px">Агент отримає тільки зміни зі списку (наприклад: тільки 08:00 та 10:00)</div>
-    </div>
-
-    <!-- Правила -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">⚙️ Правила</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-size:12px;color:var(--muted2)">🌙 Перед нічною — обов'язково вихідний</span>
-          <input type="checkbox" id="ag-rule-night-off" checked style="accent-color:#a78bfa;width:16px;height:16px">
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-size:12px;color:var(--muted2)">⏱ Пріоритет побажань за часом подачі</span>
-          <input type="checkbox" id="ag-rule-priority" checked style="accent-color:#a78bfa;width:16px;height:16px">
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-size:12px;color:var(--muted2)">🗓 Враховувати побажання «вихідний»</span>
-          <input type="checkbox" id="ag-rule-off-wish" checked style="accent-color:#a78bfa;width:16px;height:16px">
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-size:12px;color:var(--muted2)">💬 Враховувати текстові коментарі (ранкові/вечірні)</span>
-          <input type="checkbox" id="ag-rule-text-pref" checked style="accent-color:#a78bfa;width:16px;height:16px">
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-size:12px;color:var(--muted2)">⚖️ Рівномірний розподіл між агентами</span>
-          <input type="checkbox" id="ag-rule-balance" checked style="accent-color:#a78bfa;width:16px;height:16px">
-        </label>
-      </div>
-    </div>
-
-    <!-- Пікові дні -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">📈 Пікові дні тижня <span style="font-size:10px;font-weight:normal;text-transform:none;color:var(--muted)">— +1 людина понад слоти</span></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label id="ag-peak-mon" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="1" style="accent-color:#f59e0b;width:13px;height:13px"> Пн
-        </label>
-        <label id="ag-peak-tue" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="2" style="accent-color:#f59e0b;width:13px;height:13px"> Вт
-        </label>
-        <label id="ag-peak-wed" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="3" style="accent-color:#f59e0b;width:13px;height:13px"> Ср
-        </label>
-        <label id="ag-peak-thu" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="4" style="accent-color:#f59e0b;width:13px;height:13px"> Чт
-        </label>
-        <label id="ag-peak-fri" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="5" style="accent-color:#f59e0b;width:13px;height:13px"> Пт
-        </label>
-        <label id="ag-peak-sat" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="6" style="accent-color:#f59e0b;width:13px;height:13px"> Сб
-        </label>
-        <label id="ag-peak-sun" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px">
-          <input type="checkbox" value="0" style="accent-color:#f59e0b;width:13px;height:13px"> Нд
-        </label>
-      </div>
-    </div>
-
-    <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--muted2)">
-      ⚠️ Генерація перезапише поточний графік вибраного місяця. Після генерації можна редагувати вручну.
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('autosched-modal')">Скасувати</button>
-      <button class="btn-save" onclick="runAutoSched()" style="background:rgba(167,139,250,.2);border-color:rgba(167,139,250,.5);color:#a78bfa">🤖 Згенерувати</button>
-    </div>
-  </div>
-</div>
-
 <!-- WISH MODAL -->
 <div class="modal-ov" id="wish-modal">
   <div class="modal" style="max-width:400px">
@@ -2189,7 +2067,7 @@ const TEAMS = [
   { id: 3, name: 'Customer Care UA/B2B',        lead: 'Maslii Oleksandra',   pass: TL_PASS },
   { id: 4, name: 'Post Sales Support',          lead: 'Luchko Yaroslav',     pass: TL_PASS },
   { id: 5, name: 'Ticketing Support',           lead: 'Sheliakova Anastasiia', pass: TL_PASS },
-  { id: 6, name: 'Customer Experience & Relations', lead: 'Snihur Viktoriia', pass: TL_PASS },
+  { id: 6, name: 'Customer Experience & Relations', lead: 'Drohomertska Roksolana', pass: TL_PASS },
   { id: 7, name: 'Involuntary Issues Support',  lead: 'Turchyn Uliana',      pass: TL_PASS },
 ];
 
@@ -2209,7 +2087,7 @@ let empCalY, empCalM, teamCalY, teamCalM, admSchedY, admSchedM, monthlyY, monthl
 let offerSelectedDay = null;
 
 // ══ GLOBALS ══
-let _lastDbStr='', _isSaving=false, _lastSaveTime=0;
+let _lastDbStr='', _isSaving=false, _lastSaveTime=0, _pendingSave=false;
 
 // ══ STORAGE — Supabase ══
 const SB_URL = 'https://eyxwtvysqnndubemrrok.supabase.co';
@@ -2301,6 +2179,8 @@ async function runMigrations(){
 }
 
 async function saveDB(){
+  if(_isSaving){ _pendingSave=true; return; }
+  _pendingSave=false;
   sbSaving();
   _isSaving=true;
   _lastSaveTime=Date.now();
@@ -2501,12 +2381,23 @@ async function saveDB(){
             }
           }
 
-          // [PATCH CRITICAL] REMARKS — підхоплюємо зауваження інших команд
+          // [PATCH CRITICAL] REMARKS — підхоплюємо зауваження і мержимо replies
           if(freshDb.remarks && freshDb.remarks.length > 0){
             if(!db.remarks) db.remarks = [];
-            const localRemarkIds = new Set(db.remarks.map(r=>r.id));
+            const localRemarkMap = new Map(db.remarks.map(r=>[r.id, r]));
             freshDb.remarks.forEach(r=>{
-              if(!localRemarkIds.has(r.id)) db.remarks.push(r);
+              if(!localRemarkMap.has(r.id)){
+                // Нове зауваження — додаємо
+                db.remarks.push(r);
+              } else {
+                // Вже є — мержимо replies по createdAt щоб не губити відповіді
+                const local = localRemarkMap.get(r.id);
+                if(!local.replies) local.replies = [];
+                const localTimes = new Set(local.replies.map(rep=>rep.createdAt));
+                (r.replies||[]).forEach(rep=>{
+                  if(!localTimes.has(rep.createdAt)) local.replies.push(rep);
+                });
+              }
             });
           }
 
@@ -2589,15 +2480,13 @@ async function saveDB(){
             });
           }
 
-          // [PATCH] WISHES — побажання агентів чужих команд
+          // [PATCH] WISHES — захищаємо ТІЛЬКИ власний слот (me.data.id)
+          // Кожен агент сам зберігає свої побажання — решта береться зі свіжих
           if(freshDb.wishes){
             if(!db.wishes) db.wishes = {};
-            const myTidW = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
-            const myEmpIdsW = myTidW && db.staff
-              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTidW).map(s=>String(s.id)))
-              : new Set();
+            const myEmpId = me && me.data ? String(me.data.id) : null;
             Object.keys(freshDb.wishes).forEach(empId=>{
-              if(!myEmpIdsW.has(String(empId))){
+              if(empId !== myEmpId){
                 db.wishes[empId] = freshDb.wishes[empId];
               }
             });
@@ -2666,6 +2555,9 @@ async function saveDB(){
             });
           }
 
+          // [FIX Bug5] globalLinks — legacy поле: підхоплюємо зі свіжих якщо локально нема
+          if(freshDb.globalLinks && !db.globalLinks) db.globalLinks = freshDb.globalLinks;
+
           _lastDbStr = freshRows[0].value;
         }
       }
@@ -2688,11 +2580,15 @@ async function saveDB(){
     try{ localStorage.setItem('ttn_db_backup', val); }catch(e){}
     sbOnline();
     console.log('[saveDB] success!');
+    // [FIX Bug4] Post-save перевірка через 2с: якщо хтось зберіг паралельно під час нашого merge+POST
+    // autoRefreshDB виявить різницю → злиє і повторно збереже → цикл сходиться
+    setTimeout(()=>{ if(!_isSaving) autoRefreshDB(); }, 2000);
   }catch(e){
     console.error('[saveDB] ERROR:', e);
     sbOffline();
   } finally {
     _isSaving=false;
+    if(_pendingSave){ _pendingSave=false; saveDB(); }
   }
 }
 
@@ -3725,7 +3621,7 @@ function renderEmpCal(){
         const bgColor = dotColor+'22';
         const borderColor = dotColor+'66';
         const fullLabel = wishLabel + (wishComment ? ' 💬' : '');
-        wishHtml=`<div style="margin-top:3px;background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:3px 6px;font-size:10px;font-weight:700;color:${dotColor};text-align:center;line-height:1.3;user-select:none${isMyOff&&isLimit?';border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12);color:var(--red)':''}" title="${wishLabel}${wishComment?' · '+wishComment:''}">✅ ${fullLabel}</div>${counterHtml}`;
+        wishHtml=`<div onclick="openWishModal(${d},'${key}')" style="margin-top:3px;background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:3px 6px;font-size:10px;font-weight:700;color:${dotColor};text-align:center;line-height:1.3;cursor:pointer${isMyOff&&isLimit?';border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12);color:var(--red)':''}" title="${wishLabel}${wishComment?' · '+wishComment:''}">✅ ${fullLabel}</div>${counterHtml}`;
       } else {
         wishHtml=`<div class="wish-empty" onclick="openWishModal(${d},'${key}')">💌 Побажання</div>${counterHtml}`;
       }
@@ -3793,7 +3689,8 @@ function openWishModal(day,key){
     if(cur.shift===p.id) opt.selected=true;
     sel.appendChild(opt);
   });
-  document.getElementById('wish-clear-btn').style.display=cur.shift&&!isLocked?'':'none';
+  // Кнопка видалення — показуємо якщо є побажання, незалежно від дедлайну
+  document.getElementById('wish-clear-btn').style.display=cur.shift?'':'none';
   // Show lock message if deadline not active
   const saveBtn=document.querySelector('#wish-modal .btn-save');
   const lockMsg=document.getElementById('wish-lock-msg');
@@ -3823,11 +3720,12 @@ async function saveWishMonthNote(key){
   if(sp){sp.textContent='✅ Збережено';sp.style.opacity='1';setTimeout(()=>sp.style.opacity='0',2000);}
 }
 async function saveWish(clear){
-  // Check deadline
   const now=new Date();
   const today=now.getDate();
   const dl=getWishDeadline();
-  if(!clear){
+  const shift=clear?'':document.getElementById('wm-shift').value;
+  // Дедлайн перевіряємо тільки якщо реально ДОДАЄМО побажання (не очищуємо)
+  if(shift){
     if(today < dl.from){
       alert(`⚠️ Побажання ще не відкриті! Прийматимуться з ${dl.from}-го числа.`); return;
     }
@@ -3835,7 +3733,6 @@ async function saveWish(clear){
       alert(`⚠️ Дедлайн минув! Побажання приймались до ${dl.to}-го числа.`); return;
     }
   }
-  const shift=clear?'':document.getElementById('wm-shift').value;
   const empId=me.data.id;
   if(!db.wishes) db.wishes={};
   if(!db.wishes[empId]) db.wishes[empId]={};
@@ -5120,498 +5017,6 @@ async function saveWishesAsSchedule(){
 
 
 
-// ══════════════════════════════════════════
-// 🤖 АВТО-ГЕНЕРАЦІЯ ГРАФІКУ
-// ══════════════════════════════════════════
-
-// Зберігаємо налаштування авто-генерації в db
-function addAgentShiftLimit(){
-  const container = document.getElementById('ag-shift-limits');
-  if(!container) return;
-  const staff = myStaff();
-  const shifts = getTeamShifts(me.teamId||1);
-  const agentOptions = staff.map(e=>`<option value="${e.id}">${e.name.split(' ')[1]||e.name.split(' ')[0]}</option>`).join('');
-  const shiftOptions = shifts.map(s=>`<option value="${s.id}">${s.label}${s.time?' ('+s.time+')':''}</option>`).join('');
-  const row = document.createElement('div');
-  row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap';
-  row.innerHTML=`
-    <select class="ag-limit-agent" style="background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-size:12px;outline:none">${agentOptions}</select>
-    <span style="font-size:11px;color:var(--muted)">тільки:</span>
-    <div class="ag-limit-shifts" style="display:flex;flex-wrap:wrap;gap:4px">${
-      shifts.map(s=>`<label style="display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">
-        <input type="checkbox" value="${s.id}" style="accent-color:#a78bfa;width:12px;height:12px"> ${s.label}${s.time?' '+s.time:''}
-      </label>`).join('')
-    }</div>
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-  container.appendChild(row);
-}
-
-function getAgentShiftLimits(){
-  // Повертає {empId: Set<shiftId>} — якщо Set порожній = без обмежень
-  const container = document.getElementById('ag-shift-limits');
-  if(!container) return {};
-  const limits = {};
-  container.querySelectorAll('div').forEach(row=>{
-    const agSel = row.querySelector('.ag-limit-agent');
-    const checked = [...row.querySelectorAll('.ag-limit-shifts input:checked')].map(i=>i.value);
-    if(agSel && checked.length>0){
-      const empId = String(agSel.value);
-      if(!limits[empId]) limits[empId]=new Set();
-      checked.forEach(s=>limits[empId].add(s));
-    }
-  });
-  return limits;
-}
-
-function renderAgentLimitsFromRules(rules){
-  const container = document.getElementById('ag-shift-limits');
-  if(!container) return;
-  container.innerHTML='';
-  const saved = rules.agentLimits || {};
-  Object.entries(saved).forEach(([empId, shiftIds])=>{
-    if(!shiftIds||!shiftIds.length) return;
-    const staff = myStaff();
-    const shifts = getTeamShifts(me.teamId||1);
-    const emp = staff.find(e=>String(e.id)===String(empId));
-    if(!emp) return;
-    const agentOptions = staff.map(e=>`<option value="${e.id}" ${String(e.id)===String(empId)?'selected':''}>${e.name.split(' ')[1]||e.name.split(' ')[0]}</option>`).join('');
-    const shiftSet = new Set(shiftIds);
-    const row = document.createElement('div');
-    row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap';
-    row.innerHTML=`
-      <select class="ag-limit-agent" style="background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-size:12px;outline:none">${agentOptions}</select>
-      <span style="font-size:11px;color:var(--muted)">тільки:</span>
-      <div class="ag-limit-shifts" style="display:flex;flex-wrap:wrap;gap:4px">${
-        shifts.map(s=>`<label style="display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">
-          <input type="checkbox" value="${s.id}" ${shiftSet.has(s.id)?'checked':''} style="accent-color:#a78bfa;width:12px;height:12px"> ${s.label}${s.time?' '+s.time:''}
-        </label>`).join('')
-      }</div>
-      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-    container.appendChild(row);
-  });
-}
-
-function addSlot(type){
-  const containerId = 'ag-slots-' + type;
-  const container = document.getElementById(containerId);
-  if(!container) return;
-  const shifts = getTeamShifts(me.teamId||1);
-  const options = shifts.map(s=>`<option value="${s.id}">${s.label} ${s.time?'('+s.time+')':''}</option>`).join('');
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:8px;align-items:center';
-  row.innerHTML = `
-    <select style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-size:12px;outline:none">${options}</select>
-    <span style="font-size:12px;color:var(--muted)">×</span>
-    <input type="number" value="1" min="1" max="10" style="width:52px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;text-align:center">
-    <span style="font-size:11px;color:var(--muted)">люд.</span>
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-  container.appendChild(row);
-}
-
-function getSlotsFromUI(containerId){
-  const container = document.getElementById(containerId);
-  if(!container) return [];
-  const rows = container.querySelectorAll('div');
-  const slots = [];
-  rows.forEach(row => {
-    const sel = row.querySelector('select');
-    const inp = row.querySelector('input[type="number"]');
-    if(sel && inp) slots.push({shiftId: sel.value, count: parseInt(inp.value)||1});
-  });
-  return slots;
-}
-
-function renderSlotsFromRules(rules, type){
-  const containerId = 'ag-slots-' + type;
-  const container = document.getElementById(containerId);
-  if(!container) return;
-  container.innerHTML = '';
-  const saved = (rules['slots_'+type]) || [];
-  if(saved.length === 0){ addSlot(type); return; }
-  const shifts = getTeamShifts(me.teamId||1);
-  saved.forEach(slot => {
-    const options = shifts.map(s=>`<option value="${s.id}" ${s.id===slot.shiftId?'selected':''}>${s.label} ${s.time?'('+s.time+')':''}</option>`).join('');
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:8px;align-items:center';
-    row.innerHTML = `
-      <select style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-size:12px;outline:none">${options}</select>
-      <span style="font-size:12px;color:var(--muted)">×</span>
-      <input type="number" value="${slot.count}" min="1" max="10" style="width:52px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;text-align:center">
-      <span style="font-size:11px;color:var(--muted)">люд.</span>
-      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-    container.appendChild(row);
-  });
-}
-
-function openAutoSchedModal(){
-  const tid = me && me.teamId ? String(me.teamId) : '0';
-  if(!db.schedRules) db.schedRules = {};
-  const rules = db.schedRules[tid] || {};
-
-  document.getElementById('ag-max-shifts').value    = rules.maxShifts  || 20;
-  document.getElementById('ag-min-shifts').value    = rules.minShifts  || 15;
-  document.getElementById('ag-max-row').value       = rules.maxRow     || 4;
-  document.getElementById('ag-rule-night-off').checked = rules.ruleNightOff !== false;
-  document.getElementById('ag-rule-priority').checked  = rules.rulePriority !== false;
-  document.getElementById('ag-rule-off-wish').checked  = rules.ruleOffWish  !== false;
-  document.getElementById('ag-rule-text-pref').checked = rules.ruleTextPref !== false;
-  document.getElementById('ag-rule-balance').checked   = rules.ruleBalance  !== false;
-
-  renderSlotsFromRules(rules, 'weekday');
-  renderSlotsFromRules(rules, 'weekend');
-  renderAgentLimitsFromRules(rules);
-  // Пікові дні
-  const peakDays = new Set((rules.peakDays||[]).map(String));
-  document.querySelectorAll('#autosched-modal [id^="ag-peak-"] input').forEach(inp=>{
-    inp.checked = peakDays.has(String(inp.value));
-    const label = inp.closest('label');
-    label.style.borderColor = inp.checked ? 'rgba(245,158,11,.6)' : '';
-    label.style.background  = inp.checked ? 'rgba(245,158,11,.1)' : '';
-    inp.onchange = ()=>{
-      label.style.borderColor = inp.checked ? 'rgba(245,158,11,.6)' : '';
-      label.style.background  = inp.checked ? 'rgba(245,158,11,.1)' : '';
-    };
-  });
-
-  const noNightSet = new Set(rules.noNight || []);
-  const container = document.getElementById('ag-no-night-list');
-  container.innerHTML = myStaff().map(emp => `
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px">
-      <input type="checkbox" value="${emp.id}" ${!noNightSet.has(emp.id)?'checked':''} style="accent-color:#a78bfa;width:15px;height:15px">
-      ${emp.name.split(' ')[1]||emp.name.split(' ')[0]}
-    </label>`).join('');
-
-  document.getElementById('autosched-modal').classList.add('open');
-}
-
-async function runAutoSched(){
-  const maxShifts    = +document.getElementById('ag-max-shifts').value  || 20;
-  const minShifts    = +document.getElementById('ag-min-shifts').value  || 15;
-  const maxRow       = +document.getElementById('ag-max-row').value     || 4;
-  const ruleNightOff = document.getElementById('ag-rule-night-off').checked;
-  const rulePriority = document.getElementById('ag-rule-priority').checked;
-  const ruleOffWish  = document.getElementById('ag-rule-off-wish').checked;
-  const ruleTextPref = document.getElementById('ag-rule-text-pref').checked;
-  const ruleBalance  = document.getElementById('ag-rule-balance').checked;
-  const slotsWeekday = getSlotsFromUI('ag-slots-weekday');
-  const slotsWeekend = getSlotsFromUI('ag-slots-weekend');
-
-  // Нічні агенти
-  const withNightRaw = [...document.querySelectorAll('#ag-no-night-list input:checked')].map(el=>String(el.value));
-  const withNightSet = new Set(withNightRaw);
-  const noNightRaw = myStaff().map(e=>String(e.id)).filter(id=>!withNightSet.has(id));
-  const noNightSet = new Set(noNightRaw);
-  function canNight(emp){ return withNightSet.has(String(emp.id)); }
-
-  // Обмеження змін для агентів
-  const agentLimits = getAgentShiftLimits();
-  function isAllowed(emp, shiftId){
-    const lim = agentLimits[String(emp.id)];
-    if(!lim||lim.size===0) return true;
-    return lim.has(String(shiftId));
-  }
-  function getAllowedPool(emp, pool){
-    const lim = agentLimits[String(emp.id)];
-    if(!lim||lim.size===0) return pool;
-    return pool.filter(s=>lim.has(String(s.id||s)));
-  }
-
-  // Пікові дні тижня (dow: 0=НД, 1=ПН...)
-  const peakDays = new Set(
-    [...document.querySelectorAll('#autosched-modal [id^="ag-peak-"] input:checked')]
-      .map(el=>+el.value)
-  );
-
-  // Зберігаємо правила
-  const agentLimitsSaved={};
-  Object.entries(agentLimits).forEach(([id,set])=>{ agentLimitsSaved[id]=[...set]; });
-  const tid = me&&me.teamId?String(me.teamId):'0';
-  if(!db.schedRules) db.schedRules={};
-  db.schedRules[tid]={maxShifts,minShifts,maxRow,noNight:noNightRaw,
-    ruleNightOff,rulePriority,ruleOffWish,ruleTextPref,ruleBalance,
-    slots_weekday:slotsWeekday,slots_weekend:slotsWeekend,
-    agentLimits:agentLimitsSaved, peakDays:[...peakDays]};
-
-  // Використовуємо місяць побажань якщо відкрито, інакше наступний місяць від поточного
-  const now2 = new Date();
-  const Y = wishesAdmY!==undefined ? wishesAdmY : (now2.getMonth()===11 ? now2.getFullYear()+1 : now2.getFullYear());
-  const M = wishesAdmM!==undefined ? wishesAdmM : (now2.getMonth()===11 ? 0 : now2.getMonth()+1);
-  const key = mkey(Y,M);
-  const monthLabel = MONTHS_UK[M]+' '+Y;
-  // Підтвердження з чітким місяцем — щоб не стерти не той місяць
-  if(!confirm(`🤖 Авто-генерація графіку\n\nМісяць: ${monthLabel}\n\nЦЕ ЗАМІНИТЬ ІСНУЮЧИЙ ГРАФІК ЗА ЦЕЙ МІСЯЦЬ.\nПродовжити?`)) return;
-  const daysInMonth = new Date(Y,M+1,0).getDate();
-  const staff = myStaff();
-  const allShifts = getTeamShifts(me.teamId||1);
-  const MIN_LETTERS = 4;
-
-  function isLetterShift(sid){
-    const sh=getShift(sid); if(!sh) return false;
-    return (sh.label||'').toLowerCase().includes('лист')||
-           (sh.label||'').toLowerCase().includes('mail');
-  }
-
-  // Побажання
-  const wishes={};
-  staff.forEach(emp=>{
-    const ew=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
-    wishes[emp.id]={};
-    Object.entries(ew).forEach(([d,w])=>{ if(w&&w.shift) wishes[emp.id][+d]=w; });
-  });
-
-  const monthNotes={};
-  staff.forEach(emp=>{
-    monthNotes[emp.id]=(((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key+'_note']||'').toLowerCase();
-  });
-  function getPref(id){
-    if(!ruleTextPref) return null;
-    const n=monthNotes[id]||'';
-    if(n.includes('ранк')||n.includes('утр')||n.includes('morning')) return 'early';
-    if(n.includes('вечір')||n.includes('evening')||n.includes('пізн')) return 'late';
-    if(n.includes('нічн')||n.includes('night')) return 'night';
-    return null;
-  }
-
-  // Ініціалізація
-  if(!db.schedule) db.schedule={};
-  db.schedule[key]={};
-  const state={};
-  staff.forEach(emp=>{
-    state[emp.id]={shifts:0, row:0, letters:0, shiftCount:{}};
-    db.schedule[key][emp.id]={};
-  });
-
-  function shiftFreshness(emp, sid){ return state[emp.id].shiftCount[sid]||0; }
-
-  function sortGroup(list, day, slotSid){
-    const sh=getShift(slotSid);
-    const shTime=sh?.time||'12:00';
-    const isN=isNightShift(slotSid);
-    return [...list].sort((a,b)=>{
-      const fa=shiftFreshness(a,slotSid), fb=shiftFreshness(b,slotSid);
-      if(fa!==fb) return fa-fb;
-      const pa=getPref(a.id), pb=getPref(b.id);
-      const ma=pa&&((isN&&pa==='night')||(shTime<='10:00'&&pa==='early')||(shTime>='15:00'&&pa==='late'));
-      const mb=pb&&((isN&&pb==='night')||(shTime<='10:00'&&pb==='early')||(shTime>='15:00'&&pb==='late'));
-      if(ma!==mb) return ma?-1:1;
-      if(rulePriority){
-        const ta=wishes[a.id]?.[day]?.submittedAt||Infinity;
-        const tb=wishes[b.id]?.[day]?.submittedAt||Infinity;
-        if(ta!==tb) return ta-tb;
-      }
-      return ruleBalance?state[a.id].shifts-state[b.id].shifts:0;
-    });
-  }
-
-  // ══════════════════════════════════════════
-  // ГОЛОВНИЙ ЦИКЛ
-  // ══════════════════════════════════════════
-  for(let day=1; day<=daysInMonth; day++){
-    const dow=new Date(Y,M,day).getDay();
-    const isWe=dow===0||dow===6;
-    const isPeak=peakDays.has(dow);
-    const slots=isWe?[...slotsWeekend]:[...slotsWeekday];
-
-    // Нічні — першими
-    const nightQ=[], dayQ=[];
-    slots.forEach(s=>{
-      for(let i=0;i<s.count;i++){
-        if(isNightShift(s.shiftId)) nightQ.push(s.shiftId);
-        else dayQ.push(s.shiftId);
-      }
-    });
-    const queue=[...nightQ,...dayQ];
-    const mandatoryCount = queue.length;
-
-    // Лічильники листів на цей день — щоб не перевищити слоти
-    const dayLetterCount = {}; // shiftId -> скільки вже виставлено листів цього типу сьогодні
-    const dayLetterLimit = {}; // shiftId -> скільки дозволено по слотах
-    slots.forEach(s=>{
-      if(isLetterShift(s.shiftId)){
-        dayLetterLimit[s.shiftId] = s.count;
-        dayLetterCount[s.shiftId] = 0;
-      }
-    });
-    function canAssignLetter(sid){
-      if(!isLetterShift(sid)) return true;
-      const limit = dayLetterLimit[sid];
-      if(limit===undefined) return false; // цей тип листів не в слотах сьогодні
-      return (dayLetterCount[sid]||0) < limit;
-    }
-
-    const assigned={};
-    staff.forEach(emp=>{ assigned[emp.id]=null; });
-
-    // Ліміти
-    const mustOff=new Set();
-    staff.forEach(emp=>{
-      if(state[emp.id].shifts>=maxShifts||state[emp.id].row>=maxRow)
-        mustOff.add(emp.id);
-    });
-
-    // Хто завтра нічна → сьогодні вихідний
-    const offForNight=new Set();
-    if(ruleNightOff){
-      staff.forEach(emp=>{
-        if(mustOff.has(emp.id)) return;
-        const tmr=wishes[emp.id]?.[day+1];
-        if(tmr?.shift&&isNightShift(tmr.shift)&&canNight(emp))
-          offForNight.add(emp.id);
-      });
-    }
-
-    // ── КРОК 1: Обов'язкові слоти ──
-    queue.forEach(slotSid=>{
-      const isN=isNightShift(slotSid);
-      const isL=isLetterShift(slotSid);
-      const sh=getShift(slotSid);
-      const shTime=sh?.time||'12:00';
-
-      const pool=staff.filter(emp=>
-        !mustOff.has(emp.id)&&!offForNight.has(emp.id)&&
-        assigned[emp.id]===null&&
-        !(isN&&!canNight(emp))&&
-        isAllowed(emp,slotSid)
-      );
-      if(!pool.length) return;
-
-      const wantsThis = pool.filter(e=>wishes[e.id]?.[day]?.shift===slotSid);
-      const needsLetters = isL
-        ? pool.filter(e=>state[e.id].letters<MIN_LETTERS&&!wantsThis.includes(e)&&
-            !(ruleOffWish&&wishes[e.id]?.[day]?.shift==='off'))
-        : [];
-      const wantsOff = pool.filter(e=>
-        ruleOffWish&&wishes[e.id]?.[day]?.shift==='off'&&
-        !wantsThis.includes(e)&&!needsLetters.includes(e)
-      );
-      const others = pool.filter(e=>
-        !wantsThis.includes(e)&&!needsLetters.includes(e)&&!wantsOff.includes(e)
-      );
-
-      const ranked=[
-        ...wantsThis,
-        ...sortGroup(needsLetters,day,slotSid),
-        ...sortGroup(others,day,slotSid),
-        ...sortGroup(wantsOff,day,slotSid),
-      ];
-      const chosen=ranked[0];
-      if(!chosen) return;
-
-      if(isN&&ruleNightOff&&day>1){
-        const prev=db.schedule[key][chosen.id][day-1];
-        if(prev&&prev!=='off'&&prev!=='vacation'){
-          db.schedule[key][chosen.id][day-1]='off';
-          if(state[chosen.id].shifts>0) state[chosen.id].shifts--;
-          state[chosen.id].row=0;
-        }
-      }
-      assigned[chosen.id]=slotSid;
-      if(isL) dayLetterCount[slotSid]=(dayLetterCount[slotSid]||0)+1;
-    });
-
-    // ── КРОК 2: Побажання вихідного → вихідний ──
-    staff.forEach(emp=>{
-      if(assigned[emp.id]!==null||mustOff.has(emp.id)||offForNight.has(emp.id)) return;
-      if(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off') assigned[emp.id]='off';
-    });
-
-    // ── КРОК 3: Піковий день → +1 людина ──
-    if(isPeak){
-      const peakCandidate = staff.filter(emp=>
-        assigned[emp.id]===null&&!mustOff.has(emp.id)&&
-        !offForNight.has(emp.id)&&state[emp.id].shifts<maxShifts&&
-        !(ruleOffWish&&wishes[emp.id]?.[day]?.shift==='off')
-      ).sort((a,b)=>state[a.id].shifts-state[b.id].shifts)[0];
-
-      if(peakCandidate){
-        const wish=wishes[peakCandidate.id]?.[day];
-        let pick=null;
-        if(wish?.shift&&wish.shift!=='off'&&
-           !(isNightShift(wish.shift)&&!canNight(peakCandidate))&&
-           isAllowed(peakCandidate,wish.shift)){
-          pick=wish.shift;
-        } else {
-          // Піковому агенту — не-нічна, не-листова (листи вже заповнені по слотах)
-          const pool=getAllowedPool(peakCandidate,
-            allShifts.filter(s=>!isNightShift(s.id)&&!isLetterShift(s.id))
-          );
-          if(pool.length){
-            const sorted=[...pool].sort((a,b)=>shiftFreshness(peakCandidate,a.id)-shiftFreshness(peakCandidate,b.id));
-            pick=sorted[0]?.id||null;
-          }
-        }
-        if(pick) assigned[peakCandidate.id]=pick;
-      }
-    }
-
-    // ── КРОК 4: Набір мінімуму — тільки якщо агент відстає ──
-    {
-      const daysLeft=daysInMonth-day+1;
-      staff.forEach(emp=>{
-        if(assigned[emp.id]!==null||mustOff.has(emp.id)||offForNight.has(emp.id)) return;
-        const done=state[emp.id].shifts;
-        const needed=minShifts-done;
-        if(needed<=0||needed<daysLeft*0.7){ assigned[emp.id]='off'; return; }
-
-        const wish=wishes[emp.id]?.[day];
-        let pick=null;
-        if(wish?.shift&&wish.shift!=='off'&&
-           !(isNightShift(wish.shift)&&!canNight(emp))&&
-           isAllowed(emp,wish.shift)){
-          pick=wish.shift;
-        } else {
-          const pool=getAllowedPool(emp,
-            canNight(emp)?allShifts:allShifts.filter(s=>!isNightShift(s.id))
-          );
-          if(!pool.length){ assigned[emp.id]='off'; return; }
-          // НЕ даємо листи якщо денний ліміт вже вичерпано
-          const needsL=state[emp.id].letters<MIN_LETTERS;
-          const letterPool=pool.filter(s=>isLetterShift(s.id)&&canAssignLetter(s.id));
-          const nonLetterPool=pool.filter(s=>!isLetterShift(s.id));
-          const base=needsL&&letterPool.length?letterPool:nonLetterPool.length?nonLetterPool:pool;
-          const sorted=[...base].sort((a,b)=>shiftFreshness(emp,a.id)-shiftFreshness(emp,b.id));
-          pick=sorted[0]?.id||null;
-        }
-        if(pick){
-          assigned[emp.id]=pick;
-          if(isLetterShift(pick)) dayLetterCount[pick]=(dayLetterCount[pick]||0)+1;
-        } else {
-          assigned[emp.id]='off';
-        }
-      });
-    }
-
-    // ── КРОК 5: Решта → вихідний ──
-    staff.forEach(emp=>{
-      if(assigned[emp.id]===null) assigned[emp.id]='off';
-    });
-
-    // ── Записуємо ──
-    staff.forEach(emp=>{
-      const s=assigned[emp.id]||'off';
-      db.schedule[key][emp.id][day]=s;
-      if(s&&s!=='off'&&s!=='vacation'){
-        state[emp.id].shifts++;
-        state[emp.id].row++;
-        state[emp.id].shiftCount[s]=(state[emp.id].shiftCount[s]||0)+1;
-        if(isLetterShift(s)) state[emp.id].letters++;
-      } else {
-        state[emp.id].row=0;
-      }
-    });
-  }
-
-  await saveDB();
-  closeModal('autosched-modal');
-  if(typeof renderAdmWishes==='function') renderAdmWishes();
-  if(typeof renderAdmSched==='function') renderAdmSched();
-
-  const total=staff.reduce((s,e)=>s+(state[e.id]?.shifts||0),0);
-  const totalL=staff.reduce((s,e)=>s+(state[e.id]?.letters||0),0);
-  alert(`✅ Графік згенеровано!\n📊 Змін: ${total}\n✉️ Листів: ${totalL} (мін. ${MIN_LETTERS}×${staff.length}=${MIN_LETTERS*staff.length})\n✏️ Можеш коригувати вручну`);
-}
-
-
 // ══ ANALYTICS ══
 let analyticsY, analyticsM;
 function analyticsNav(d){
@@ -6794,19 +6199,27 @@ async function autoRefreshDB(){
           });
         }
 
-        // 14. WISHES — побажання агентів на графік
+        // 14. WISHES — захищаємо тільки побажання поточного користувача (me.data.id)
+        // Deep merge по місяцях і днях — локальні дні завжди пріоритетні
         if(db.wishes && me){
           if(!freshDb.wishes) freshDb.wishes = {};
-          const myTeamId = me.teamId || (me.data && me.data.teamId) || null;
-          const myIds = myTeamId && db.staff
-            ? db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id))
-            : [];
-          myIds.forEach(id=>{
-            if(!db.wishes[id]) return;
-            if(!freshDb.wishes[id] || Object.keys(db.wishes[id]).length >= Object.keys(freshDb.wishes[id]).length){
-              freshDb.wishes[id] = db.wishes[id];
-            }
-          });
+          const myEmpId = me && me.data ? String(me.data.id) : null;
+          if(myEmpId && db.wishes[myEmpId]){
+            const merged = Object.assign({}, freshDb.wishes[myEmpId] || {});
+            Object.keys(db.wishes[myEmpId]).forEach(mKey=>{
+              const localVal = db.wishes[myEmpId][mKey];
+              const freshVal = (freshDb.wishes[myEmpId] || {})[mKey];
+              if(mKey.endsWith('_note')){
+                merged[mKey] = localVal;
+              } else if(localVal && typeof localVal === 'object'){
+                // місяць — мержимо по днях: локальні дні пріоритетні
+                merged[mKey] = Object.assign({}, typeof freshVal === 'object' ? freshVal : {}, localVal);
+              } else {
+                merged[mKey] = localVal;
+              }
+            });
+            freshDb.wishes[myEmpId] = merged;
+          }
         }
 
         // 15. ANNOUNCEMENTS — оголошення
@@ -6862,9 +6275,10 @@ async function autoRefreshDB(){
             if(!freshDb.dayMeta) freshDb.dayMeta = {};
             Object.keys(db.dayMeta).forEach(mKey=>{
               if(!freshDb.dayMeta[mKey]) freshDb.dayMeta[mKey] = {};
-              // Мержимо по днях — наші дані пріоритетні
+              // Локальні дані завжди пріоритетні — дзеркало логіки saveDB
+              // (раніше: тільки пропущені дні → локальні зміни губились при autoRefresh)
               Object.keys(db.dayMeta[mKey]).forEach(day=>{
-                if(!freshDb.dayMeta[mKey][day]) freshDb.dayMeta[mKey][day] = db.dayMeta[mKey][day];
+                freshDb.dayMeta[mKey][day] = db.dayMeta[mKey][day];
               });
             });
           }
@@ -6929,10 +6343,11 @@ async function autoRefreshDB(){
               // Є в обох — мержимо replies і текст
               const idx = freshDb.remarks.findIndex(fr=>fr.id===r.id);
               if(idx>=0){
-                // Зберігаємо більше replies
-                if(r.replies && r.replies.length > (freshDb.remarks[idx].replies||[]).length){
-                  freshDb.remarks[idx].replies = r.replies;
-                }
+                // Union-merge replies по createdAt — не губимо жодної відповіді
+                const merged = [...(freshDb.remarks[idx].replies||[])];
+                const freshTimes = new Set(merged.map(rep=>rep.createdAt));
+                (r.replies||[]).forEach(rep=>{ if(!freshTimes.has(rep.createdAt)) merged.push(rep); });
+                freshDb.remarks[idx].replies = merged;
                 // Якщо текст був змінений — берємо локальну версію
                 if(r.text && r.text !== freshDb.remarks[idx].text && r.updatedAt > (freshDb.remarks[idx].updatedAt||0)){
                   freshDb.remarks[idx].text = r.text;
@@ -6942,11 +6357,22 @@ async function autoRefreshDB(){
           });
         }
 
+        // [FIX Bug5] globalLinks — legacy поле: зберігаємо локальне якщо у свіжих нема
+        if(db.globalLinks && !freshDb.globalLinks) freshDb.globalLinks = db.globalLinks;
+
         _lastDbStr = fresh;
         db = freshDb;
 
-        // [FIX] Скидаємо _schedSaveTimer якщо він висить — щоб застаріле збереження не перезаписало свіжі дані
-        if(window._schedSaveTimer){ clearTimeout(window._schedSaveTimer); window._schedSaveTimer = null; }
+        // [FIX Bug4] Якщо autoRefresh виявив зміни незабаром після нашого збереження —
+        // ознака race condition (хтось зберіг між нашим fetch і POST).
+        // Перезберігаємо merged стан щоб дані не загубились.
+        if(_lastSaveTime > 0 && Date.now() - _lastSaveTime < 10000){
+          setTimeout(()=>saveDB(), 500);
+        }
+
+        // [FIX] Якщо був незбережений таймер — перезапускаємо, не скасовуємо
+        // (щоб локальні зміни з пам'яті таки дійшли до Supabase)
+        if(window._schedSaveTimer){ clearTimeout(window._schedSaveTimer); window._schedSaveTimer = setTimeout(()=>saveDB(), 1500); }
 
         // Re-render
         if(me){
@@ -9466,15 +8892,27 @@ async function auditorProposeExchange(offerId){
   const ex=db.exchanges.find(e=>e.id===offerId);
   if(!ex||ex.status!=='open') return;
   const key=mkey(ex.year,ex.month-1);
-  const myShiftId=((db.schedule[key]||{})[me.data.id]||{})[ex.day]||'off';
+  // Fallback String(me.data.id) — аналогічно proposeExchange для агентів
+  const mySched=(db.schedule[key]||{})[me.data.id]||(db.schedule[key]||{})[String(me.data.id)]||{};
+  const myShiftId=mySched[ex.day]||'off';
   ex.status='pending'; ex.responderId=me.data.id; ex.responderName=me.data.name; ex.responderShiftId=myShiftId;
   await saveDB(); renderAuditorExchange();
 }
 async function auditorConfirmExchange(id){
   const ex=db.exchanges.find(e=>e.id===id);
-  if(ex) ex.status='done';
+  if(!ex||ex.status!=='pending') return;
+  // [FIX] Свапаємо зміни в розкладі (раніше тільки статус змінювався, графік не оновлювався)
+  const key=mkey(ex.year,ex.month-1);
+  if(!db.schedule[key]) db.schedule[key]={};
+  if(!db.schedule[key][ex.fromId]) db.schedule[key][ex.fromId]={};
+  if(!db.schedule[key][ex.responderId]) db.schedule[key][ex.responderId]={};
+  const fromShift=ex.shiftId;
+  const respShift=ex.responderShiftId;
+  db.schedule[key][ex.fromId][ex.day]=respShift||'off';
+  db.schedule[key][ex.responderId][ex.day]=fromShift;
+  ex.status='done';
   await saveDB(); renderAuditorExchange();
-  sbToast('✅ Обмін підтверджено!','var(--green)','rgba(74,222,128,.1)');
+  sbToast('✅ Обмін підтверджено! Графік оновлено.','var(--green)','rgba(74,222,128,.1)');
 }
 async function auditorRejectExchange(id){
   const ex=db.exchanges.find(e=>e.id===id);
@@ -9825,11 +9263,15 @@ function renderAuditorHistory(){
   el.innerHTML = remarks.map(r=>{
     const isMe = r.auditorId === me.data.id;
     const replies = (r.replies||[]);
-    const replyHtml = replies.map(rep=>`
-      <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 Агент'} · ${formatRemarkDate(rep.createdAt)}</div>
+    const replyHtml = replies.map(rep=>{
+      const borderColor = rep.role==='tl' ? 'var(--accent-glow)' : rep.role==='auditor' ? 'rgba(96,165,250,.4)' : 'rgba(94,234,154,.3)';
+      const label = rep.role==='tl' ? '👑 Тім лід' : rep.role==='auditor' ? '🎧 '+rep.authorName.split(' ')[0] : '👤 Агент';
+      return `<div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${borderColor}">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${label} · ${formatRemarkDate(rep.createdAt)}</div>
         <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    const replyFormId = 'aud-reply-'+r.id;
     return `
     <div style="background:${isMe?'var(--accent-dim)':'var(--surface)'};border:1px solid ${replies.length?'var(--accent-glow)':isMe?'rgba(181,123,238,.25)':'var(--border)'};border-radius:12px;padding:14px 18px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
@@ -9842,7 +9284,14 @@ function renderAuditorHistory(){
       </div>
       <div style="font-size:13px;color:var(--muted2);line-height:1.5">${r.text}</div>
       ${replyHtml}
-      ${replies.length?`<div style="font-size:11px;color:var(--accent2);margin-top:8px">✅ ${replies.length} відповід${replies.length===1?'ь':'і'}</div>`:''}
+      <div id="${replyFormId}" style="display:none;margin-top:10px">
+        <textarea id="aud-reply-text-${r.id}" rows="2" placeholder="Написати відповідь агенту/TL..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''"></textarea>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button onclick="saveRemarkReply(${r.id},'auditor')" style="background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Відправити</button>
+          <button onclick="document.getElementById('${replyFormId}').style.display='none'" style="background:var(--surface2);border:var(--glass-border);border-radius:8px;color:var(--muted);padding:7px 12px;font-size:12px;cursor:pointer">Скасувати</button>
+        </div>
+      </div>
+      <button onclick="document.getElementById('${replyFormId}').style.display=document.getElementById('${replyFormId}').style.display==='none'?'block':'none'" style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:7px;color:var(--muted);padding:4px 12px;font-size:11px;cursor:pointer">💬 Відповісти</button>
     </div>`;
   }).join('');
 }
@@ -9893,11 +9342,13 @@ function renderAdmRemarks(){
       <div class="sec-title" style="margin-top:0">${agent?agent.name:'Агент'} <span style="color:var(--muted);font-weight:400;font-size:11px">${rems.length} зауваж.</span></div>
       ${rems.map(r=>{
         const replies=(r.replies||[]);
-        const replyHtml=replies.map(rep=>`
-          <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
-            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 '+rep.authorName.split(' ')[0]} · ${formatRemarkDate(rep.createdAt)}</div>
+        const replyHtml=replies.map(rep=>{
+          const bc=rep.role==='tl'?'var(--accent-glow)':rep.role==='auditor'?'rgba(96,165,250,.4)':'rgba(94,234,154,.3)';
+          const lbl=rep.role==='tl'?'👑 Тім лід':rep.role==='auditor'?'🎧 '+rep.authorName.split(' ')[0]:'👤 '+rep.authorName.split(' ')[0];
+          return `<div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${bc}">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${lbl} · ${formatRemarkDate(rep.createdAt)}</div>
             <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
-          </div>`).join('');
+          </div>`;}).join('');
         const replyFormId='adm-reply-'+r.id;
         return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px">
@@ -9936,11 +9387,13 @@ function renderEmpRemarks(){
   const TYPE_ICON = {chat:'💬',call:'📞',email:'✉️'};
   el.innerHTML = remarks.map(r=>{
     const replies = (r.replies||[]);
-    const replyHtml = replies.map(rep=>`
-      <div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${rep.role==='tl'?'var(--accent-glow)':'rgba(94,234,154,.3)'}">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${rep.role==='tl'?'👑 Тім лід':'👤 Ти'} · ${formatRemarkDate(rep.createdAt)}</div>
+    const replyHtml = replies.map(rep=>{
+      const bc=rep.role==='tl'?'var(--accent-glow)':rep.role==='auditor'?'rgba(96,165,250,.4)':'rgba(94,234,154,.3)';
+      const lbl=rep.role==='tl'?'👑 Тім лід':rep.role==='auditor'?'🎧 '+rep.authorName.split(' ')[0]:'👤 Ти';
+      return `<div style="margin-top:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid ${bc}">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${lbl} · ${formatRemarkDate(rep.createdAt)}</div>
         <div style="font-size:13px;color:var(--muted2);line-height:1.5">${rep.text}</div>
-      </div>`).join('');
+      </div>`;}).join('');
     const replyFormId = 'emp-reply-'+r.id;
     return `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px">
@@ -9966,7 +9419,7 @@ function renderEmpRemarks(){
 
 // ── Відповідь на зауваження ──
 async function saveRemarkReply(remarkId, role){
-  const prefix = role==='tl' ? 'adm-reply-text-' : 'emp-reply-text-';
+  const prefix = role==='tl' ? 'adm-reply-text-' : role==='auditor' ? 'aud-reply-text-' : 'emp-reply-text-';
   const inp = document.getElementById(prefix+remarkId);
   if(!inp) return;
   const text = inp.value.trim();
@@ -9976,15 +9429,16 @@ async function saveRemarkReply(remarkId, role){
   if(!remark.replies) remark.replies = [];
   remark.replies.push({
     role,
-    authorName: me.type==='admin' ? me.leadName : (me.data ? me.data.name : '?'),
+    authorName: me.type==='admin' ? (me.leadName||me.data?.name||'TL') : (me.data ? me.data.name : '?'),
     text,
     createdAt: new Date().toISOString()
   });
   await saveDB();
-  const formId = (role==='tl'?'adm-reply-':'emp-reply-')+remarkId;
+  const formId = role==='tl' ? 'adm-reply-'+remarkId : role==='auditor' ? 'aud-reply-'+remarkId : 'emp-reply-'+remarkId;
   const form = document.getElementById(formId);
   if(form) form.style.display='none';
   if(role==='tl') renderAdmRemarks();
+  else if(role==='auditor') renderAuditorHistory();
   else renderEmpRemarks();
 }
 
@@ -10853,7 +10307,7 @@ const TL_KPI_LEADS = [
   { teamId:1, name:'Zabusyk Anastasiia' },
   { teamId:2, name:'Kobylianskyi Yurii' },
   { teamId:3, name:'Maslii Oleksandra' },
-  { teamId:6, name:'Snihur Viktoriia' },
+  { teamId:6, name:'Drohomertska Roksolana' },
 ];
 
 
@@ -10862,7 +10316,7 @@ const TL_KPI_ALL_LEADS = [
   { teamId:1, name:'Zabusyk Anastasiia',    short:'Настя', color:'#4a3bcc' },
   { teamId:2, name:'Kobylianskyi Yurii',    short:'Юра',   color:'#1a6e50' },
   { teamId:3, name:'Maslii Oleksandra',     short:'Саша',  color:'#7a3e08' },
-  { teamId:6, name:'Snihur Viktoriia',      short:'Віка',  color:'#1a6e3a' },
+  { teamId:6, name:'Drohomertska Roksolana', short:'Рокса', color:'#1a6e3a' },
 ];
 
 const TL_KPI_BLOCKS = [
