@@ -5972,38 +5972,34 @@ async function autoRefreshDB(){
 
         // MERGE STRATEGY: захищаємо всі критичні дані від перезапису при autoRefresh
 
-        // 1. SCHEDULE — мержимо по клітинках, не замінюємо цілі рядки
+        // 1. SCHEDULE — мержимо по клітинках, завжди свіжі як основа
+        // Локальне береться тільки якщо воно ВІДРІЗНЯЄТЬСЯ від останнього збереженого (_lastDbStr)
+        // Це запобігає відновленню видалених змін із застарілого локального стану
         if(db.schedule && freshDb.schedule){
-          const myTeamIdSched = me ? (me.teamId || (me.data && me.data.teamId) || null) : null;
-          const myEmpIdsSched = myTeamIdSched && db.staff
-            ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamIdSched).map(s=>String(s.id)))
-            : new Set();
+          let lastSavedSched = null;
+          try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedSched=lp.schedule||null; } }catch(e){}
           Object.keys(db.schedule).forEach(mk=>{
             const cur = db.schedule[mk];
             if(!freshDb.schedule[mk]) freshDb.schedule[mk] = {};
             const frsh = freshDb.schedule[mk];
+            const lastMk = lastSavedSched ? (lastSavedSched[mk]||{}) : null;
             Object.keys(cur).forEach(empId=>{
               const curData = cur[empId] || {};
               const frshData = frsh[empId] || {};
-              const isMyEmp = myEmpIdsSched.has(String(empId));
-              if(isMyEmp){
-                // Своя команда — завжди зберігаємо повністю
-                frsh[empId] = curData;
-              } else {
-                // Чужа команда — мержимо по днях: беремо свіжі як основу,
-                // але якщо в локальному є день якого немає у свіжих — додаємо
-                // (це захищає від race condition між різними TL)
-                const merged = Object.assign({}, frshData);
-                Object.keys(curData).forEach(day=>{
-                  if(curData[day] && curData[day]!=='off' && !frshData[day]){
-                    merged[day] = curData[day];
-                  }
-                });
-                frsh[empId] = merged;
-              }
+              const lastData = lastMk ? (lastMk[empId]||{}) : null;
+              // Свіжі як основа; локальний день беремо тільки якщо він є новою змінено (відрізняється від _lastDbStr)
+              const merged = Object.assign({}, frshData);
+              Object.keys(curData).forEach(day=>{
+                const localVal = curData[day];
+                const lastVal = lastData ? lastData[day] : undefined;
+                if(localVal && localVal !== lastVal && !frshData[day]){
+                  // Є локальна незбережена зміна якої немає у свіжих — зберігаємо
+                  merged[day] = localVal;
+                }
+                // Якщо fresh має цей день — довіряємо fresh (сервер актуальніший)
+              });
+              frsh[empId] = merged;
             });
-            // Підхоплюємо нових агентів чужих команд яких ще нема в локальному db
-            // Їхні дані вже є у frsh (freshDb) — переконуємось що місяць-ключ є і в db.schedule
             if(!db.schedule[mk]) db.schedule[mk] = {};
           });
         }
@@ -6199,23 +6195,33 @@ async function autoRefreshDB(){
           });
         }
 
-        // 14. WISHES — захищаємо тільки побажання поточного користувача (me.data.id)
-        // Deep merge по місяцях і днях — локальні дні завжди пріоритетні
+        // 14. WISHES — захищаємо побажання поточного юзера тільки якщо є нові незбережені зміни
         if(db.wishes && me){
           if(!freshDb.wishes) freshDb.wishes = {};
           const myEmpId = me && me.data ? String(me.data.id) : null;
           if(myEmpId && db.wishes[myEmpId]){
+            let lastSavedWishes = null;
+            try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedWishes=(lp.wishes||{})[myEmpId]||null; } }catch(e){}
             const merged = Object.assign({}, freshDb.wishes[myEmpId] || {});
             Object.keys(db.wishes[myEmpId]).forEach(mKey=>{
               const localVal = db.wishes[myEmpId][mKey];
               const freshVal = (freshDb.wishes[myEmpId] || {})[mKey];
+              const lastVal = lastSavedWishes ? lastSavedWishes[mKey] : undefined;
               if(mKey.endsWith('_note')){
-                merged[mKey] = localVal;
+                // Нотатку беремо локальну тільки якщо вона змінилась відносно останнього збереження
+                if(localVal !== lastVal) merged[mKey] = localVal;
               } else if(localVal && typeof localVal === 'object'){
-                // місяць — мержимо по днях: локальні дні пріоритетні
-                merged[mKey] = Object.assign({}, typeof freshVal === 'object' ? freshVal : {}, localVal);
-              } else {
-                merged[mKey] = localVal;
+                // Місяць — мержимо по днях: локальний день лише якщо він нова незбережена зміна
+                const mergedMonth = Object.assign({}, typeof freshVal === 'object' ? freshVal : {});
+                const lastMonth = (lastSavedWishes && typeof lastVal === 'object') ? lastVal : {};
+                Object.keys(localVal).forEach(day=>{
+                  const localDay = localVal[day];
+                  const lastDay = lastMonth[day];
+                  if(JSON.stringify(localDay) !== JSON.stringify(lastDay) && !mergedMonth[day]){
+                    mergedMonth[day] = localDay;
+                  }
+                });
+                merged[mKey] = mergedMonth;
               }
             });
             freshDb.wishes[myEmpId] = merged;
@@ -6285,20 +6291,33 @@ async function autoRefreshDB(){
         }
 
         // 18. DAY COMMENTS — коментарі до днів графіку
-        // [PATCH] Fallback для агентів (me.data.teamId)
+        // Свіжі як основа; локальний коментар берем тільки якщо він новий (відрізняється від _lastDbStr)
         if(db.dayComments && me){
           if(!freshDb.dayComments) freshDb.dayComments = {};
-          const myTeamId3 = me.teamId || (me.data && me.data.teamId) || null;
-          if(myTeamId3){
-            Object.keys(db.dayComments).forEach(empId=>{
-              const myEmpIds = db.staff ? db.staff.filter(s=>(s.teamId||1)===myTeamId3).map(s=>String(s.id)) : [];
-              if(myEmpIds.includes(String(empId))){
-                if(!freshDb.dayComments[empId] || Object.keys(db.dayComments[empId]).length >= Object.keys(freshDb.dayComments[empId]||{}).length){
-                  freshDb.dayComments[empId] = db.dayComments[empId];
+          let lastSavedDc = null;
+          try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedDc=lp.dayComments||null; } }catch(e){}
+          Object.keys(db.dayComments).forEach(empId=>{
+            const localEmp = db.dayComments[empId] || {};
+            const freshEmp = freshDb.dayComments[empId] || {};
+            const lastEmp = lastSavedDc ? (lastSavedDc[empId]||{}) : null;
+            const mergedEmp = Object.assign({}, freshEmp);
+            Object.keys(localEmp).forEach(mKey=>{
+              const localMonth = localEmp[mKey] || {};
+              const freshMonth = freshEmp[mKey] || {};
+              const lastMonth = lastEmp ? (lastEmp[mKey]||{}) : null;
+              const mergedMonth = Object.assign({}, freshMonth);
+              Object.keys(localMonth).forEach(day=>{
+                const localDay = localMonth[day];
+                const lastDay = lastMonth ? lastMonth[day] : undefined;
+                // Якщо локальний день нової зміни (відрізняється від останнього збереженого) — беремо локальний
+                if(localDay && JSON.stringify(localDay) !== JSON.stringify(lastDay) && !freshMonth[day]){
+                  mergedMonth[day] = localDay;
                 }
-              }
+              });
+              mergedEmp[mKey] = mergedMonth;
             });
-          }
+            freshDb.dayComments[empId] = mergedEmp;
+          });
         }
 
         // 19. TEAM3 DIVIDERS — підгрупи команди 3
