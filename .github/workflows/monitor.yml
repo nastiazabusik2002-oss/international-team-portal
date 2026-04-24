@@ -1,0 +1,54 @@
+name: DB Health Check
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Supabase data
+        run: |
+          curl -s \
+            "https://eyxwtvysqnndubemrrok.supabase.co/rest/v1/portal_data?key=eq.portal_v6&select=value" \
+            -H "apikey: sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0" \
+            -H "Authorization: Bearer sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0" \
+            -o /tmp/db.json
+
+          python3 << 'PYEOF'
+          import json, sys
+
+          with open('/tmp/db.json') as f:
+              rows = json.load(f)
+
+          if not rows or not rows[0].get('value'):
+              print("ПОМИЛКА: дані порожні")
+              sys.exit(1)
+
+          db = json.loads(rows[0]['value'])
+          staff = db.get('staff', [])
+          schedule = db.get('schedule', {})
+          size = len(rows[0]['value'])
+
+          print(f"Агентів: {len(staff)}")
+          print(f"Місяців в розкладі: {len(schedule)}")
+          print(f"Розмір даних: {size} байт")
+
+          errors = []
+          if len(staff) < 10:
+              errors.append(f"Мало агентів: {len(staff)}")
+          if size < 50000:
+              errors.append(f"Дані підозріло малі: {size} байт")
+          if not schedule:
+              errors.append("Розклад порожній")
+
+          if errors:
+              print("ПРОБЛЕМИ:")
+              for e in errors: print(f"  - {e}")
+              sys.exit(1)
+
+          print("OK — все гаразд")
+          PYEOF
