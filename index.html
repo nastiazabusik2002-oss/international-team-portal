@@ -2193,41 +2193,41 @@ async function saveDB(){
         const freshRows = await freshRes.json();
         if(freshRows.length && freshRows[0].value && freshRows[0].value !== _lastDbStr){
           const freshDb = JSON.parse(freshRows[0].value);
-          // Мержимо schedule: для чужих команд беремо свіжі дані як основу
+          // Мержимо schedule: свіжі як основа для всіх
+          // Локальний день переписує свіжий ТІЛЬКИ якщо він реально змінився відносно _lastDbStr
+          // (тобто це незбережена зміна від поточного юзера, а не стара застаріла копія)
           if(freshDb.schedule && db.schedule){
-            const myTeamId = me ? (me.teamId || (me.data&&me.data.teamId) || null) : null;
-            const myEmpIds = myTeamId && db.staff
-              ? new Set(db.staff.filter(s=>(s.teamId||1)===myTeamId).map(s=>String(s.id)))
-              : new Set();
+            let lastSavedSchedSave = null;
+            try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedSchedSave=lp.schedule||null; } }catch(e){}
 
-            // [PATCH FIX] Спочатку захищаємо СВОЇХ агентів — записуємо їх у freshDb
-            // щоб після JSON.stringify(db) не загубити їхні дані
-            // (ітеруємо по db.schedule — локальних місяцях де є наші дані)
+            // Для кожного місяця/агента/дня: локальне пріоритетніше якщо відрізняється від _lastDbStr
             Object.keys(db.schedule).forEach(mk=>{
               if(!freshDb.schedule[mk]) freshDb.schedule[mk] = {};
-              myEmpIds.forEach(empId=>{
-                if(db.schedule[mk][empId] && Object.keys(db.schedule[mk][empId]).length > 0){
-                  // Своя команда — локальні дані завжди пріоритетні
-                  freshDb.schedule[mk][empId] = db.schedule[mk][empId];
-                }
+              const lastMkSave = lastSavedSchedSave ? (lastSavedSchedSave[mk]||{}) : {};
+              Object.keys(db.schedule[mk]).forEach(empId=>{
+                const curData = db.schedule[mk][empId] || {};
+                const frshData = freshDb.schedule[mk][empId] || {};
+                const lastData = lastMkSave[empId] || {};
+                const merged = Object.assign({}, frshData);
+                Object.keys(curData).forEach(day=>{
+                  const localVal = curData[day];
+                  const lastVal = lastData[day];
+                  if(localVal !== lastVal){
+                    // Реальна зміна від поточного юзера — пріоритет над сервером
+                    merged[day] = localVal;
+                  }
+                  // Якщо localVal === lastVal (незмінений) — довіряємо fresh
+                });
+                freshDb.schedule[mk][empId] = merged;
               });
             });
 
-            // Потім мержимо чужих агентів — беремо свіжі як основу
+            // Агенти чужих команд яких немає в локальному db — підтягуємо зі свіжих
             Object.keys(freshDb.schedule).forEach(mk=>{
               if(!db.schedule[mk]) db.schedule[mk] = {};
               Object.keys(freshDb.schedule[mk]).forEach(empId=>{
-                if(!myEmpIds.has(String(empId))){
-                  // Чужий агент — беремо свіжі дані (їх TL щойно зберіг)
-                  // але якщо у нас є дні яких немає у свіжих — додаємо
-                  const frshData = freshDb.schedule[mk][empId] || {};
-                  const curData = db.schedule[mk][empId] || {};
-                  const merged = Object.assign({}, frshData);
-                  Object.keys(curData).forEach(day=>{
-                    if(curData[day] && curData[day]!=='off' && !frshData[day])
-                      merged[day] = curData[day];
-                  });
-                  db.schedule[mk][empId] = merged;
+                if(!db.schedule[mk][empId]){
+                  db.schedule[mk][empId] = freshDb.schedule[mk][empId];
                 }
               });
             });
