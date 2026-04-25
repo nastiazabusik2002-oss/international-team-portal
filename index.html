@@ -2193,44 +2193,35 @@ async function saveDB(){
         const freshRows = await freshRes.json();
         if(freshRows.length && freshRows[0].value && freshRows[0].value !== _lastDbStr){
           const freshDb = JSON.parse(freshRows[0].value);
-          // Мержимо schedule: свіжі як основа для всіх
-          // Локальний день переписує свіжий ТІЛЬКИ якщо він реально змінився відносно _lastDbStr
-          // (тобто це незбережена зміна від поточного юзера, а не стара застаріла копія)
+          // Мержимо schedule: свіжі як основа, локальне лише якщо реально змінилось від _lastDbStr
           if(freshDb.schedule && db.schedule){
             let lastSavedSchedSave = null;
             try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedSchedSave=lp.schedule||null; } }catch(e){}
 
-            // Для кожного місяця/агента/дня: локальне пріоритетніше якщо відрізняється від _lastDbStr
+            // Будуємо merged schedule: починаємо зі свіжих (deep copy), накладаємо локальні зміни
+            const mergedSched = JSON.parse(JSON.stringify(freshDb.schedule));
             Object.keys(db.schedule).forEach(mk=>{
-              if(!freshDb.schedule[mk]) freshDb.schedule[mk] = {};
+              if(!mergedSched[mk]) mergedSched[mk] = {};
               const lastMkSave = lastSavedSchedSave ? (lastSavedSchedSave[mk]||{}) : {};
               Object.keys(db.schedule[mk]).forEach(empId=>{
                 const curData = db.schedule[mk][empId] || {};
-                const frshData = freshDb.schedule[mk][empId] || {};
+                const frshData = (freshDb.schedule[mk]||{})[empId] || {};
                 const lastData = lastMkSave[empId] || {};
                 const merged = Object.assign({}, frshData);
                 Object.keys(curData).forEach(day=>{
                   const localVal = curData[day];
                   const lastVal = lastData[day];
                   if(localVal !== lastVal){
-                    // Реальна зміна від поточного юзера — пріоритет над сервером
+                    // Реальна незбережена зміна — пріоритет над сервером
                     merged[day] = localVal;
                   }
-                  // Якщо localVal === lastVal (незмінений) — довіряємо fresh
+                  // Якщо localVal === lastVal — довіряємо fresh (вже є в merged)
                 });
-                freshDb.schedule[mk][empId] = merged;
+                mergedSched[mk][empId] = merged;
               });
             });
-
-            // Агенти чужих команд яких немає в локальному db — підтягуємо зі свіжих
-            Object.keys(freshDb.schedule).forEach(mk=>{
-              if(!db.schedule[mk]) db.schedule[mk] = {};
-              Object.keys(freshDb.schedule[mk]).forEach(empId=>{
-                if(!db.schedule[mk][empId]){
-                  db.schedule[mk][empId] = freshDb.schedule[mk][empId];
-                }
-              });
-            });
+            // Застосовуємо до db — щоб JSON.stringify(db) містив правильний розклад
+            db.schedule = mergedSched;
           }
           // Мержимо shiftTypes: deep merge по id — щоб не губити типи змін
           if(freshDb.shiftTypes && db.shiftTypes){
@@ -5992,11 +5983,11 @@ async function autoRefreshDB(){
               Object.keys(curData).forEach(day=>{
                 const localVal = curData[day];
                 const lastVal = lastData ? lastData[day] : undefined;
-                if(localVal && localVal !== lastVal && !frshData[day]){
-                  // Є локальна незбережена зміна якої немає у свіжих — зберігаємо
+                if(localVal && localVal !== lastVal){
+                  // Реальна незбережена локальна зміна — пріоритет над fresh
                   merged[day] = localVal;
                 }
-                // Якщо fresh має цей день — довіряємо fresh (сервер актуальніший)
+                // Якщо localVal === lastVal — довіряємо fresh (вже є в merged)
               });
               frsh[empId] = merged;
             });
