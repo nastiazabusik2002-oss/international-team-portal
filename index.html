@@ -2214,8 +2214,12 @@ async function saveDB(){
                   if(localVal !== lastVal){
                     // Реальна незбережена зміна — пріоритет над сервером
                     merged[day] = localVal;
+                  } else if(localVal && !(day in frshData)){
+                    // Fresh не має цього дня — зберігаємо локальне
+                    // (інший юзер міг затерти race condition-ом)
+                    merged[day] = localVal;
                   }
-                  // Якщо localVal === lastVal — довіряємо fresh (вже є в merged)
+                  // Якщо fresh активно має значення і localVal не змінився — довіряємо fresh
                 });
                 mergedSched[mk][empId] = merged;
               });
@@ -2471,14 +2475,27 @@ async function saveDB(){
             });
           }
 
-          // [PATCH] WISHES — захищаємо ТІЛЬКИ власний слот (me.data.id)
-          // Кожен агент сам зберігає свої побажання — решта береться зі свіжих
+          // [PATCH] WISHES — union-merge: fresh перемагає по дню, але не видаляє локальні дні яких нема у fresh
           if(freshDb.wishes){
             if(!db.wishes) db.wishes = {};
             const myEmpId = me && me.data ? String(me.data.id) : null;
             Object.keys(freshDb.wishes).forEach(empId=>{
               if(empId !== myEmpId){
-                db.wishes[empId] = freshDb.wishes[empId];
+                const localWishes = db.wishes[empId] || {};
+                const freshWishes = freshDb.wishes[empId] || {};
+                const merged = Object.assign({}, localWishes);
+                Object.keys(freshWishes).forEach(mKey=>{
+                  if(mKey.endsWith('_note')){
+                    merged[mKey] = freshWishes[mKey];
+                  } else if(freshWishes[mKey] && typeof freshWishes[mKey] === 'object'){
+                    const mergedMonth = Object.assign({}, merged[mKey] || {});
+                    Object.keys(freshWishes[mKey]).forEach(day=>{
+                      mergedMonth[day] = freshWishes[mKey][day];
+                    });
+                    merged[mKey] = mergedMonth;
+                  }
+                });
+                db.wishes[empId] = merged;
               }
             });
           }
@@ -5986,8 +6003,12 @@ async function autoRefreshDB(){
                 if(localVal && localVal !== lastVal){
                   // Реальна незбережена локальна зміна — пріоритет над fresh
                   merged[day] = localVal;
+                } else if(localVal && !(day in frshData)){
+                  // Fresh взагалі не має цього дня — зберігаємо локальне
+                  // (захист: інший юзер міг затерти race condition-ом)
+                  merged[day] = localVal;
                 }
-                // Якщо localVal === lastVal — довіряємо fresh (вже є в merged)
+                // Якщо fresh активно має це значення і localVal не змінився — довіряємо fresh
               });
               frsh[empId] = merged;
             });
