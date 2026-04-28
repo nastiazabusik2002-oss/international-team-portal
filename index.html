@@ -6432,6 +6432,25 @@ async function autoRefreshDB(){
 }
 setInterval(autoRefreshDB, 60000);
 
+// Захист від втрати незбережених змін при закритті/оновленні вкладки
+window.addEventListener('beforeunload', function(e){
+  if(window._schedSaveTimer){
+    clearTimeout(window._schedSaveTimer);
+    window._schedSaveTimer = null;
+    // keepalive: true — браузер продовжить запит навіть після закриття вкладки
+    try{
+      const val = JSON.stringify(db);
+      fetch(SB_URL+'/rest/v1/portal_data', {
+        method:'POST', keepalive:true,
+        headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({key:'portal_v6', value:val})
+      });
+    }catch(err){}
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // ══ EXCHANGE ══
 // Статуси: 'open' = пропозиція висить, 'pending' = хтось запропонував обмін (чекає підтвердження), 'done' = завершено, 'cancelled'
 
