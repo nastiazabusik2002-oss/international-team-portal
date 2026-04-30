@@ -2099,11 +2099,11 @@ const SB_HDR = {
 };
 
 // Завантажує окремі рядки розкладу по командах (sched_v6_t{id}) і мержить в targetDb.schedule
-// Кожна команда пише у свій рядок → ніяких race condition між TL-ами
-async function loadTeamScheds(targetDb){
+// excludeTid — не завантажувати цю команду (для autoRefreshDB: своя команда вже правильно змержена)
+async function loadTeamScheds(targetDb, excludeTid){
   try{
     if(!targetDb.staff||!targetDb.staff.length)return;
-    const tids=[...new Set(targetDb.staff.map(s=>s.teamId||1))];
+    const tids=[...new Set(targetDb.staff.map(s=>s.teamId||1))].filter(t=>t!==excludeTid);
     const results=await Promise.all(tids.map(tid=>
       fetch(SB_URL+'/rest/v1/portal_data?key=eq.sched_v6_t'+tid+'&select=value',{headers:SB_HDR})
         .then(r=>r.ok?r.json():[]).catch(()=>[])
@@ -2618,6 +2618,7 @@ async function saveDB(){
       try{ if(_prevDbStr){const lp=JSON.parse(_prevDbStr);lastSchedSnap=lp.schedule||null;} }catch(e){}
       const myTidSave=me?(me.teamId||(me.data&&me.data.teamId)||null):null;
       const allTids=[...new Set((db.staff||[]).map(s=>s.teamId||1))];
+      const teamSchedSaves=[];
       for(const tid of allTids){
         const tidEmpIds=new Set((db.staff||[]).filter(s=>(s.teamId||1)===tid).map(s=>String(s.id)));
         const tidSched={};
@@ -2627,21 +2628,23 @@ async function saveDB(){
           Object.keys(db.schedule[mk]).forEach(empId=>{
             if(!tidEmpIds.has(empId))return;
             tidSched[mk][empId]=db.schedule[mk][empId];
-            // Перевіряємо чи цей агент змінився відносно _lastDbStr
             const prev=JSON.stringify(((lastSchedSnap||{})[mk]||{})[empId]||{});
             const cur=JSON.stringify(db.schedule[mk][empId]||{});
             if(prev!==cur)changed=true;
           });
         });
-        // Пишемо якщо: наша команда (завжди актуальна) АБО розклад команди реально змінився
         if(changed||tid===myTidSave){
-          fetch(SB_URL+'/rest/v1/portal_data',{
-            method:'POST',
-            headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
-            body:JSON.stringify({key:'sched_v6_t'+tid,value:JSON.stringify(tidSched)})
-          }).catch(e=>console.warn('[saveDB] team sched t'+tid+' failed:',e));
+          teamSchedSaves.push(
+            fetch(SB_URL+'/rest/v1/portal_data',{
+              method:'POST',
+              headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+              body:JSON.stringify({key:'sched_v6_t'+tid,value:JSON.stringify(tidSched)})
+            }).catch(e=>console.warn('[saveDB] team sched t'+tid+' failed:',e))
+          );
         }
       }
+      // Чекаємо поки всі per-team рядки збережуться перш ніж показати "Збережено"
+      if(teamSchedSaves.length) await Promise.all(teamSchedSaves);
     }catch(e){console.warn('[saveDB] team sched prep:',e);}
     sbOnline();
     console.log('[saveDB] success!');
@@ -6446,9 +6449,10 @@ async function autoRefreshDB(){
         // [FIX Bug5] globalLinks — legacy поле: зберігаємо локальне якщо у свіжих нема
         if(db.globalLinks && !freshDb.globalLinks) freshDb.globalLinks = db.globalLinks;
 
-        // Підтягуємо авторитетні per-team рядки розкладу і перезаписуємо freshDb.schedule
-        // Це гарантує що race condition між TL-ами не затирає нічиїх даних
-        await loadTeamScheds(freshDb);
+        // Підтягуємо per-team рядки ІНШИХ команд (своя вже правильно змержена вище)
+        // Своя команда excluded — щоб не перезаписати щойно збережені зміни стейл-даними
+        const _myTidAR = me ? (me.teamId||(me.data&&me.data.teamId)||null) : null;
+        await loadTeamScheds(freshDb, _myTidAR);
 
         _lastDbStr = fresh;
         db = freshDb;
