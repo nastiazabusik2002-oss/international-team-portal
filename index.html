@@ -2247,6 +2247,13 @@ async function saveDB(){
                   }
                   // Якщо fresh активно має значення і localVal не змінився — довіряємо fresh
                 });
+                // Відстежуємо видалення: день був у lastData але зник з curData = TL його видалив
+                // Без цього fresh відновлює видалену зміну через merge-базу frshData
+                Object.keys(lastData).forEach(day=>{
+                  if(!(day in curData) && day in merged && lastData[day] && lastData[day] !== 'off'){
+                    delete merged[day];
+                  }
+                });
                 mergedSched[mk][empId] = merged;
               });
             });
@@ -6068,6 +6075,15 @@ async function autoRefreshDB(){
                 }
                 // Якщо fresh активно має це значення і localVal не змінився — довіряємо fresh
               });
+              // Відстежуємо видалення: день був у lastData але зник з curData = TL його видалив
+              // Без цього autoRefreshDB відновлює видалену зміну через merge-базу frshData
+              if(lastData){
+                Object.keys(lastData).forEach(day=>{
+                  if(!(day in curData) && day in merged && lastData[day] && lastData[day] !== 'off'){
+                    delete merged[day];
+                  }
+                });
+              }
               frsh[empId] = merged;
             });
             if(!db.schedule[mk]) db.schedule[mk] = {};
