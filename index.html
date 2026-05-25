@@ -1206,6 +1206,7 @@ body.theme-light #burger-panel{background:rgba(240,235,255,.97)}
               <button id="view-mode-full" onclick="setSchedViewMode('full')" style="padding:5px 12px;font-size:12px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;background:transparent;color:var(--muted2);border-right:var(--glass-border)" title="Повний вигляд (редагування)">✏️ Повний</button>
               <button id="view-mode-compact" onclick="setSchedViewMode('compact')" style="padding:5px 12px;font-size:12px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;background:var(--accent-dim);color:var(--accent2)" title="Компактний вигляд (весь місяць)">👁 Компакт</button>
             </div>
+            <button id="ds-mode-btn" onclick="toggleDsMode()" class="btn-sm" title="Режим підрахунку змін — вмикає виділення кліком">📊 Підрахунок</button>
             <button class="btn-sm" onclick="clearSchedAgent()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити графік одного агента">🗑 Агент</button>
             <button class="btn-sm" onclick="clearSchedMonth()" style="background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--red)" title="Очистити весь місяць">🗑 Весь місяць</button>
           </div>
@@ -10285,8 +10286,9 @@ document.addEventListener('keydown', function(e){
   background: var(--accent-dim) !important;
   position: relative;
 }
-.sched-table.ds-active {
-  user-select: none;
+/* В режимі підрахунку — курсор crosshair на клітинках */
+.sched-table.ds-mode-active td:not(.name-col)[data-shift] {
+  cursor: crosshair;
 }
 
 #ds-bar {
@@ -10373,19 +10375,38 @@ body.theme-light #ds-bar {
 </div>
 
 <script>
-// ══ DRAG-SELECT для графіку ══
-let _dsActive  = false;
-let _dsStartEl = null;
+// ══ SELECT MODE для графіку — кнопка-режим + drag ══
+let _dsMode     = false;
 let _dsSelected = new Set();
+let _dsDragging = false;
+let _dsLastTd   = null;
 
-function dragSelectClear() {
+function toggleDsMode() {
+  _dsMode = !_dsMode;
+  const btn = document.getElementById('ds-mode-btn');
+  if (_dsMode) {
+    if (btn) { btn.style.background='var(--accent-dim)'; btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent2)'; }
+    document.querySelectorAll('.sched-table').forEach(t => t.classList.add('ds-mode-active'));
+  } else {
+    dragSelectClear(true);
+  }
+}
+
+function dsDeactivate() {
+  _dsMode = false;
+  const btn = document.getElementById('ds-mode-btn');
+  if (btn) { btn.style.background=''; btn.style.borderColor=''; btn.style.color=''; }
+  document.querySelectorAll('.sched-table').forEach(t => t.classList.remove('ds-mode-active'));
+}
+
+function dragSelectClear(andDeactivate) {
   _dsSelected.forEach(td => td.classList.remove('ds-selected'));
   _dsSelected.clear();
-  _dsActive  = false;
-  _dsStartEl = null;
-  document.querySelectorAll('.sched-table').forEach(t => t.classList.remove('ds-active'));
+  _dsDragging = false;
+  _dsLastTd   = null;
   const bar = document.getElementById('ds-bar');
   if (bar) bar.classList.remove('ds-bar-visible');
+  if (andDeactivate) dsDeactivate();
 }
 
 function dragSelectUpdateBar() {
@@ -10394,128 +10415,141 @@ function dragSelectUpdateBar() {
   const chips = document.getElementById('ds-bar-chips');
   if (!bar) return;
 
-  if (_dsSelected.size === 0) {
-    bar.classList.remove('ds-bar-visible');
-    return;
-  }
+  if (_dsSelected.size === 0) { bar.classList.remove('ds-bar-visible'); return; }
 
-  // Count per shift
-  const counts = {};
+  // ── Словник груп: ключове слово → назва і іконка групи ──
+  // Порядок важливий: перше правило що спрацює — виграє
+  const DS_GROUPS = [
+    { key:'чат',   label:'Чати',   icon:'💬' },
+    { key:'chat',  label:'Чати',   icon:'💬' },
+    { key:'нічна', label:'Чати',   icon:'💬' }, // нічна = чат
+    { key:'нічн',  label:'Чати',   icon:'💬' },
+    { key:'лист',  label:'Листи',  icon:'📧' },
+    { key:'фідб',  label:'Фідбек', icon:'🔁' },
+    { key:'фидб',  label:'Фідбек', icon:'🔁' },
+    { key:'feedback', label:'Фідбек', icon:'🔁' },
+  ];
+
+  // Збираємо кількість по кожному shiftId
+  const rawCounts = {};
   _dsSelected.forEach(td => {
     const sid = td.dataset.shift || 'off';
-    if (sid === 'off') return; // skip вихідні
-    counts[sid] = (counts[sid] || 0) + 1;
+    rawCounts[sid] = (rawCounts[sid] || 0) + 1;
+  });
+  const offCount = rawCounts['off'] || 0;
+  delete rawCounts['off'];
+
+  // Розкладаємо кожен shiftId по групі
+  const groups    = {}; // groupLabel → { icon, cnt, color }
+  const ungrouped = {}; // sid → { label, color, cnt }
+
+  Object.entries(rawCounts).forEach(([sid, cnt]) => {
+    const sh    = getShift(sid);
+    const label = (sh.label || sh.time || sid).toLowerCase();
+    const color = sh.color || '#888';
+
+    const rule = DS_GROUPS.find(r => label.includes(r.key));
+    if (rule) {
+      if (!groups[rule.label]) groups[rule.label] = { icon: rule.icon, cnt: 0, color };
+      groups[rule.label].cnt += cnt;
+    } else {
+      ungrouped[sid] = { label: sh.label || sh.time || sid, color, cnt };
+    }
   });
 
-  const workedCount = Object.values(counts).reduce((a,b) => a+b, 0);
-  const offCount    = _dsSelected.size - workedCount;
+  const workCount = _dsSelected.size - offCount;
+  total.textContent = `Виділено: ${workCount}`;
 
-  total.textContent = `Виділено: ${_dsSelected.size}`;
-
-  // Build chips
-  let html = '';
-  // Sort by count desc
-  const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-  entries.forEach(([sid, cnt]) => {
-    const sh  = getShift(sid);
-    const lbl = sh.label || sh.time || sid;
-    const col = sh.color || '#888';
-    html += `<div class="ds-chip">
-      <div class="ds-chip-dot" style="background:${col}"></div>
+  let h = '';
+  // Групи
+  Object.entries(groups).sort((a,b) => b[1].cnt - a[1].cnt).forEach(([lbl, g]) => {
+    h += `<div class="ds-chip">
+      <span style="font-size:14px;line-height:1">${g.icon}</span>
       <span style="color:var(--muted2)">${lbl}</span>
-      <span class="ds-chip-count">×${cnt}</span>
+      <span class="ds-chip-count">×${g.cnt}</span>
     </div>`;
   });
-  if (offCount > 0) {
-    html += `<div class="ds-chip">
-      <div class="ds-chip-dot" style="background:var(--muted)"></div>
-      <span style="color:var(--muted2)">Вихідний</span>
-      <span class="ds-chip-count">×${offCount}</span>
+  // Унікальні типи що не потрапили в групу
+  Object.entries(ungrouped).sort((a,b) => b[1].cnt - a[1].cnt).forEach(([sid, info]) => {
+    h += `<div class="ds-chip">
+      <div class="ds-chip-dot" style="background:${info.color}"></div>
+      <span style="color:var(--muted2)">${info.label}</span>
+      <span class="ds-chip-count">×${info.cnt}</span>
     </div>`;
+  });
+  // Вихідні
+  if (offCount > 0) {
+    h += `<div class="ds-chip"><div class="ds-chip-dot" style="background:var(--muted)"></div><span style="color:var(--muted2)">Вихідний</span><span class="ds-chip-count">×${offCount}</span></div>`;
   }
 
-  chips.innerHTML = html;
+  chips.innerHTML = h;
   bar.classList.add('ds-bar-visible');
 }
 
-function dragSelectIsSchedTd(el) {
-  // Must be a <td> in a .sched-table, not the name column or sticky count column
+function dsIsSchedTd(el) {
   if (!el || el.tagName !== 'TD') return false;
-  const table = el.closest('.sched-table');
-  if (!table) return false;
+  if (!el.closest('.sched-table')) return false;
   if (el.classList.contains('name-col')) return false;
-  // Skip the sticky "Змін" column (last td, no data-shift)
   if (!el.hasAttribute('data-shift')) return false;
   return true;
 }
 
-// ── Mouse events ──
-document.addEventListener('mousedown', function(e) {
-  const td = e.target.closest('td');
-  if (!dragSelectIsSchedTd(td)) return;
-  // Only activate on non-clickable intent — shift/alt held, or right-click excluded
-  // We use a 200ms drag threshold to not conflict with normal shift picker clicks
-  _dsStartEl = td;
-  _dsActive  = false; // becomes true on first move
-}, { passive: true });
-
-document.addEventListener('mousemove', function(e) {
-  if (!_dsStartEl) return;
-
-  if (!_dsActive) {
-    // Activate drag mode
-    _dsActive = true;
-    dragSelectClear();
-    _dsStartEl.classList.add('ds-selected');
-    _dsSelected.add(_dsStartEl);
-    _dsStartEl.closest('.sched-table').classList.add('ds-active');
-    dragSelectUpdateBar();
-  }
-
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  const td = el && el.closest('td');
-  if (!dragSelectIsSchedTd(td)) return;
+function dsSelectTd(td) {
   if (_dsSelected.has(td)) return;
-
-  // Only select within same table
-  const table = _dsStartEl.closest('.sched-table');
-  if (!td.closest('.sched-table').isSameNode(table)) return;
-
   td.classList.add('ds-selected');
   _dsSelected.add(td);
-  dragSelectUpdateBar();
-}, { passive: true });
+}
 
-document.addEventListener('mouseup', function(e) {
-  if (_dsActive) {
-    // Keep selection visible; bar stays up
-    _dsActive  = false;
-    document.querySelectorAll('.sched-table').forEach(t => t.classList.remove('ds-active'));
+// ── mousedown: починаємо drag тільки якщо режим активний ──
+document.addEventListener('mousedown', function(e) {
+  if (!_dsMode) return;
+  const td = e.target.closest('td');
+  if (!dsIsSchedTd(td)) return;
+  e.preventDefault(); // блокує нативний drag рядка
+  _dsDragging = true;
+  _dsLastTd   = td;
+  // Якщо клікнули по вже виділеній — знімаємо (toggle)
+  if (_dsSelected.has(td)) {
+    td.classList.remove('ds-selected');
+    _dsSelected.delete(td);
   } else {
-    // Was a normal click (no drag movement) — clear
-    if (_dsStartEl) dragSelectClear();
+    dsSelectTd(td);
   }
-  _dsStartEl = null;
+  dragSelectUpdateBar();
 });
 
-// Clear on click outside table
+// ── mousemove: додаємо клітинки під курсором ──
+document.addEventListener('mousemove', function(e) {
+  if (!_dsMode || !_dsDragging) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const td = el && el.closest('td');
+  if (!dsIsSchedTd(td) || td === _dsLastTd) return;
+  _dsLastTd = td;
+  dsSelectTd(td);
+  dragSelectUpdateBar();
+});
+
+// ── mouseup: завершуємо drag ──
+document.addEventListener('mouseup', function(e) {
+  if (!_dsMode) return;
+  _dsDragging = false;
+  _dsLastTd   = null;
+});
+
+// ── Клік поза таблицею — знімаємо виділення (режим залишається) ──
 document.addEventListener('click', function(e) {
-  if (_dsSelected.size === 0) return;
+  if (!_dsMode) return;
   const td = e.target.closest('td');
-  if (dragSelectIsSchedTd(td)) return; // click inside table — keep
-  const bar = e.target.closest('#ds-bar');
-  if (bar) return; // click on bar — keep
-  dragSelectClear();
+  if (dsIsSchedTd(td)) return;
+  if (e.target.closest('#ds-bar')) return;
+  if (e.target.closest('#ds-mode-btn')) return;
+  dragSelectClear(false);
 }, { passive: true });
 
-// Prevent shift-picker from firing when drag was active
-const _origOpenShiftPicker = window.openShiftPicker;
-if (typeof _origOpenShiftPicker === 'function') {
-  window.openShiftPicker = function(event, ...args) {
-    if (_dsSelected.size > 1) return; // suppress picker during multi-select
-    _origOpenShiftPicker(event, ...args);
-  };
-}
+// ── Escape — вимикає режим повністю ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _dsMode) dragSelectClear(true);
+});
 </script>
 
 </body>
