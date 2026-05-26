@@ -2396,11 +2396,8 @@ async function saveDB(){
 
           _lastDbStr = freshRows[0].value;
 
-          // [FIX MULTI-USER] Підтягуємо per-team sched рядки для ЧУЖИХ команд
-          // Якщо TL2 зберіг свій розклад після нашого GET — він є в sched_v6_t але не в portal_v6 що ми отримали
-          // Це гарантує що ми не перезапишемо чужий розклад стейл-даними з portal_v6
-          const _myTidSave2 = me ? (me.teamId||(me.data&&me.data.teamId)||null) : null;
-          await loadTeamScheds(db, _myTidSave2);
+          // loadTeamScheds removed from saveDB — too many concurrent requests (rate limit risk)
+          // Protection handled by: autoRefreshDB + per-team sched POST after main save
         }
       }
     }catch(mergeErr){ console.warn('[saveDB] pre-merge failed:', mergeErr); }
@@ -6173,14 +6170,14 @@ async function confirmExchange(offerId){
   const actualRespShift  = (db.schedule[key]||{})[ex.responderId]?.[ex.day];
   if(actualFromShift !== fromShift){
     alert(`⚠️ Зміна ${ex.fromName.split(' ')[0]} на ${ex.day}-е число вже змінилась. Обмін скасовано — попроси колегу створити нову пропозицію.`);
-    ex.status='open'; delete ex.responderId; delete ex.responderName; delete ex.responderShiftId;
+    ex.status='open'; ex.responderId=null; ex.responderName=''; ex.responderShiftId=null;
     await saveDB();
     renderExchange();
     return;
   }
   if(actualRespShift !== respShift){
     alert(`⚠️ Твоя зміна на ${ex.day}-е число вже змінилась. Обмін скасовано — створи нову пропозицію.`);
-    ex.status='open'; delete ex.responderId; delete ex.responderName; delete ex.responderShiftId;
+    ex.status='open'; ex.responderId=null; ex.responderName=''; ex.responderShiftId=null;
     await saveDB();
     renderExchange();
     return;
