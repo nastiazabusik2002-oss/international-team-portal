@@ -1806,8 +1806,8 @@ let offerSelectedDay = null;
 let _lastDbStr='', _isSaving=false, _lastSaveTime=0, _pendingSave=false, _saveRetryCount=0, _willRetry=false;
 
 // ══ STORAGE — Supabase ══
-const SB_URL = 'https://eyxwtvysqnndubemrrok.supabase.co';
-const SB_KEY = 'sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0';
+const SB_URL = 'https://gdiowdzzhuwfcshsrqbp.supabase.co';
+const SB_KEY = 'sb_publishable_ejNp0_QOCb0NX8ZCbKkOsQ_I06M27Mj';
 const SB_HDR = {
   'Content-Type': 'application/json',
   'apikey': SB_KEY,
@@ -1820,14 +1820,16 @@ async function loadTeamScheds(targetDb, excludeTid){
   try{
     if(!targetDb.staff||!targetDb.staff.length)return;
     const tids=[...new Set(targetDb.staff.map(s=>s.teamId||1))].filter(t=>t!==excludeTid);
-    const results=await Promise.all(tids.map(tid=>
-      fetch(SB_URL+'/rest/v1/portal_data?key=eq.sched_v6_t'+tid+'&select=value',{headers:SB_HDR})
-        .then(r=>r.ok?r.json():[]).catch(()=>[])
-    ));
-    results.forEach(rows=>{
-      if(!rows.length||!rows[0].value)return;
+    if(!tids.length)return;
+    // ONE request for all teams using `in` operator instead of N parallel requests
+    const keys=tids.map(t=>'sched_v6_t'+t).join(',');
+    const res=await fetch(SB_URL+'/rest/v1/portal_data?key=in.('+keys+')&select=key,value',{headers:SB_HDR});
+    if(!res.ok)return;
+    const rows=await res.json();
+    rows.forEach(row=>{
+      if(!row.value)return;
       try{
-        const ts=JSON.parse(rows[0].value);
+        const ts=JSON.parse(row.value);
         if(!targetDb.schedule)targetDb.schedule={};
         Object.keys(ts).forEach(mk=>{
           if(!targetDb.schedule[mk])targetDb.schedule[mk]={};
@@ -1977,15 +1979,22 @@ async function saveAnnouncements(){
 // Завантажує isolated rows і мержить в db (викликається з loadDB)
 async function loadIsolatedRows(){
   try{
-    // Завантажуємо всі notes_v1_* і wishes_v1_* рядки одним запитом
-    const [notesRes, wishesRes, annRes] = await Promise.all([
-      fetch(SB_URL+'/rest/v1/portal_data?key=like.notes_v1_*&select=key,value', {headers:SB_HDR}),
-      fetch(SB_URL+'/rest/v1/portal_data?key=like.wishes_v1_*&select=key,value', {headers:SB_HDR}),
+    // Завантажуємо notes+wishes+announcements двома запитами замість трьох
+    // notes_v1_* і wishes_v1_* — одним запитом через like на спільний префікс
+    const [notesWishesRes, annRes] = await Promise.all([
+      fetch(SB_URL+'/rest/v1/portal_data?key=like.*_v1_*&select=key,value', {headers:SB_HDR}),
       fetch(SB_URL+'/rest/v1/portal_data?key=eq.announcements_v1&select=value', {headers:SB_HDR}),
     ]);
+    const notesRes = { ok: notesWishesRes.ok, _rows: null };
+    const wishesRes = { ok: notesWishesRes.ok, _rows: null };
+    if(notesWishesRes.ok){
+      const allRows = await notesWishesRes.json();
+      notesRes._rows = allRows.filter(r=>r.key.startsWith('notes_v1_'));
+      wishesRes._rows = allRows.filter(r=>r.key.startsWith('wishes_v1_'));
+    }
     // Notes
     if(notesRes.ok){
-      const rows = await notesRes.json();
+      const rows = notesRes._rows || [];
       if(!db.personalNotes) db.personalNotes = {};
       rows.forEach(row=>{
         const empId = row.key.replace('notes_v1_','');
@@ -2004,7 +2013,7 @@ async function loadIsolatedRows(){
     }
     // Wishes
     if(wishesRes.ok){
-      const rows = await wishesRes.json();
+      const rows = wishesRes._rows || [];
       if(!db.wishes) db.wishes = {};
       rows.forEach(row=>{
         const empId = row.key.replace('wishes_v1_','');
@@ -2406,8 +2415,12 @@ async function saveDB(){
     db._savedAt = Date.now();
     // [SINGLE SOURCE OF TRUTH] notes/wishes/announcements живуть ТІЛЬКИ в isolated rows
     // Видаляємо їх з portal_v6 payload щоб уникнути stale dual-write і divergence
-    const { personalNotes: _pn, wishes: _wi, announcements: _an, ...dbWithoutIsolated } = db;
-    const val=JSON.stringify(dbWithoutIsolated);
+    // Strip isolated fields before saving to portal_v6
+    const _dbCopy = Object.assign({}, db);
+    delete _dbCopy.personalNotes;
+    delete _dbCopy.wishes;
+    delete _dbCopy.announcements;
+    const val=JSON.stringify(_dbCopy);
     // [FIX Bug1] Оновлюємо _lastDbStr ДО відправки
     _lastDbStr = val;
     console.log('[saveDB] saving, size:', val.length);
@@ -2419,6 +2432,7 @@ async function saveDB(){
     console.log('[saveDB] status:', res.status);
     if(!res.ok){
       const errBody=await res.text();
+      console.error('[saveDB] Supabase error:', res.status, errBody);
       throw new Error('Save failed: '+res.status+' '+errBody);
     }
     try{ localStorage.setItem('ttn_db_backup', val); }catch(e){}
@@ -5819,7 +5833,7 @@ async function autoRefreshDB(){
     }
   }catch(e){ sbOffline(); }
 }
-setInterval(autoRefreshDB, 60000);
+setInterval(autoRefreshDB, 180000); // 3 minutes — reduced from 60s to save egress
 
 // Захист від втрати незбережених змін при закритті/оновленні вкладки
 window.addEventListener('beforeunload', function(e){
@@ -5833,9 +5847,12 @@ window.addEventListener('beforeunload', function(e){
     // Зберігаємо і portal_v6 і per-team sched рядки
     try{
       // Strip isolated fields from portal_v6 (вони зберігаються окремо нижче)
-      const { personalNotes: _pn2, wishes: _wi2, announcements: _an2, ...dbStripped } = db;
-      dbStripped._savedAt = Date.now();
-      const val = JSON.stringify(dbStripped);
+      const _dbStripped = Object.assign({}, db);
+      delete _dbStripped.personalNotes;
+      delete _dbStripped.wishes;
+      delete _dbStripped.announcements;
+      _dbStripped._savedAt = Date.now();
+      const val = JSON.stringify(_dbStripped);
       fetch(SB_URL+'/rest/v1/portal_data', {
         method:'POST', keepalive:true,
         headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
