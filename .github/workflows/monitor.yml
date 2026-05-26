@@ -1,39 +1,58 @@
-name: DB Health Check
-
+name: DB Health Check & Backup
 on:
   schedule:
     - cron: '0 6 * * *'
     - cron: '0 18 * * *'
   workflow_dispatch:
-
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Supabase data
+      - name: Check Supabase & Send Backup
         run: |
           curl -s \
-            "https://eyxwtvysqnndubemrrok.supabase.co/rest/v1/portal_data?key=eq.portal_v6&select=value" \
-            -H "apikey: sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0" \
-            -H "Authorization: Bearer sb_publishable_L21Q_G9LvdpUt_jjm6pAxQ_XXdcDNw0" \
+            "https://gdiowdzzhuwfcshsrqbp.supabase.co/rest/v1/portal_data?key=eq.portal_v6&select=value" \
+            -H "apikey: sb_publishable_ejNp0_QOCb0NX8ZCbKkOsQ_I06M27Mj" \
+            -H "Authorization: Bearer sb_publishable_ejNp0_QOCb0NX8ZCbKkOsQ_I06M27Mj" \
             -o /tmp/db.json
 
+          curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=ttn-backup&per_page=2" \
+            -o /tmp/artifacts.json || echo '{"artifacts":[]}' > /tmp/artifacts.json
+
           python3 << 'PYEOF'
-          import json, sys, urllib.request, urllib.parse, os
+          import json, sys, urllib.request, urllib.parse, os, datetime, subprocess, glob
 
           TOKEN = os.environ['TELEGRAM_TOKEN']
           CHAT_ID = os.environ['TELEGRAM_CHAT_ID']
+          GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+          IS_MORNING = datetime.datetime.utcnow().hour < 12
+          today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+          now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
 
           def send(msg):
               url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-              data = urllib.parse.urlencode({'chat_id': CHAT_ID, 'text': msg}).encode()
-              urllib.request.urlopen(url, data)
+              data = urllib.parse.urlencode({'chat_id': CHAT_ID, 'text': msg, 'parse_mode': 'HTML'}).encode()
+              try: urllib.request.urlopen(url, data)
+              except Exception as e: print(f"TG error: {e}")
 
+          def send_file(filepath, caption):
+              subprocess.run([
+                  'curl', '-s',
+                  '-F', f'chat_id={CHAT_ID}',
+                  '-F', f'caption={caption}',
+                  '-F', f'document=@{filepath}',
+                  f'https://api.telegram.org/bot{TOKEN}/sendDocument'
+              ])
+
+          # ── Читаємо поточну базу ──
           with open('/tmp/db.json') as f:
               rows = json.load(f)
 
           if not rows or not rows[0].get('value'):
-              send("🔴 TTN Portal: дані порожні або недоступні!")
+              send("🔴 <b>TTN Portal КРИТИЧНО</b>: база недоступна або порожня!")
               sys.exit(1)
 
           db = json.loads(rows[0]['value'])
@@ -41,24 +60,151 @@ jobs:
           schedule = db.get('schedule', {})
           size = len(rows[0]['value'])
 
+          # Словник id → name для зручних повідомлень
+          id_to_name = {str(s['id']): s['name'] for s in staff}
+
           errors = []
+          warnings = []
+
+          # ── Базові перевірки ──
           if len(staff) < 10:
-              errors.append(f"Мало агентів: {len(staff)}")
+              errors.append(f"Критично мало агентів: {len(staff)}")
           if size < 50000:
               errors.append(f"Дані підозріло малі: {size} байт")
           if not schedule:
-              errors.append("Розклад порожній")
+              errors.append("Розклад повністю порожній")
 
+          # ── Завантажуємо вчорашній бекап ──
+          prev_db = None
+          try:
+              with open('/tmp/artifacts.json') as f:
+                  artifacts = json.load(f)
+              arts = artifacts.get('artifacts', [])
+              prev_art = next((a for a in arts
+                               if today not in a.get('created_at','')
+                               and not a.get('expired', False)), None)
+              if prev_art:
+                  subprocess.run([
+                      'curl', '-sL',
+                      '-H', f'Authorization: Bearer {GITHUB_TOKEN}',
+                      '-H', 'Accept: application/vnd.github+json',
+                      '-o', '/tmp/prev_backup.zip',
+                      prev_art['archive_download_url']
+                  ])
+                  subprocess.run(['unzip', '-o', '-q', '/tmp/prev_backup.zip', '-d', '/tmp/prev_backup/'])
+                  prev_files = glob.glob('/tmp/prev_backup/*.json')
+                  if prev_files:
+                      with open(prev_files[0]) as f:
+                          prev_db = json.load(f)
+                      print(f"Loaded prev backup: {prev_files[0]}")
+          except Exception as e:
+              print(f"No prev backup: {e}")
+
+          # ── Порівняння розкладів ──
+          if prev_db:
+              prev_schedule = prev_db.get('schedule', {})
+              prev_staff = prev_db.get('staff', [])
+              prev_id_to_name = {str(s['id']): s['name'] for s in prev_staff}
+
+              # 1. Зникли агенти
+              prev_ids = {s['id'] for s in prev_staff}
+              cur_ids = {s['id'] for s in staff}
+              lost = [s['name'] for s in prev_staff if s['id'] not in cur_ids]
+              if lost:
+                  warnings.append(f"⚠️ Зникли агенти ({len(lost)}): {', '.join(lost[:5])}")
+
+              # 2. Rollback детектор — ключова перевірка
+              # Порівнюємо кожну клітинку яка ІСНУВАЛА вчора
+              # Якщо вона змінилась на іншу — підозрілий rollback
+              rollbacks = []
+              for mk, month_data in prev_schedule.items():
+                  # Перевіряємо тільки минулі і поточний місяць (не майбутні — там зміни нормальні)
+                  try:
+                      month_dt = datetime.datetime.strptime(mk, '%Y-%m')
+                      # Перевіряємо місяці що вже закінчились або поточний
+                      if month_dt > datetime.datetime.utcnow().replace(day=28):
+                          continue
+                  except:
+                      continue
+
+                  cur_month = schedule.get(mk, {})
+                  for emp_id, prev_days in month_data.items():
+                      cur_days = cur_month.get(emp_id, {})
+                      name = prev_id_to_name.get(emp_id, f'id={emp_id}')
+                      for day, prev_shift in prev_days.items():
+                          cur_shift = cur_days.get(day)
+                          if cur_shift is None:
+                              # Клітинка зникла (вихідний не рахуємо)
+                              if prev_shift and prev_shift != 'off':
+                                  rollbacks.append(f"{name} {mk}-{day.zfill(2)}: зникла зміна")
+                          elif cur_shift != prev_shift:
+                              # Зміна замінилась на іншу — підозріло для минулих дат
+                              rollbacks.append(f"{name} {mk}-{day.zfill(2)}: {prev_shift[:12]} → {cur_shift[:12]}")
+
+              if rollbacks:
+                  # Якщо більше 5 змін — це точно щось не те
+                  if len(rollbacks) > 5:
+                      warnings.append(
+                          f"🔴 <b>Підозрілий rollback!</b> Змінилось {len(rollbacks)} клітинок в минулих місяцях:\n"
+                          + "\n".join(f"  • {r}" for r in rollbacks[:8])
+                          + (f"\n  ... і ще {len(rollbacks)-8}" if len(rollbacks) > 8 else "")
+                      )
+                  elif len(rollbacks) > 0:
+                      # 1-5 змін — можливо TL просто виправляв, але повідомимо
+                      warnings.append(
+                          f"ℹ️ Змінено {len(rollbacks)} клітинок в закритих місяцях:\n"
+                          + "\n".join(f"  • {r}" for r in rollbacks)
+                      )
+
+              # 3. База підозріло зменшилась
+              prev_size = len(json.dumps(prev_db))
+              if size < prev_size * 0.75:
+                  warnings.append(
+                      f"⚠️ База зменшилась на {round((1-size/prev_size)*100)}%: "
+                      f"було {round(prev_size/1024)}KB → {round(size/1024)}KB"
+                  )
+
+          # ── Формуємо повідомлення ──
           if errors:
-              msg = "🔴 TTN Portal — ПРОБЛЕМА:\n" + "\n".join(f"• {e}" for e in errors)
+              msg = f"🔴 <b>TTN Portal КРИТИЧНО</b> — {now}\n\n" + "\n".join(f"• {e}" for e in errors)
+              if warnings:
+                  msg += "\n\n" + "\n".join(warnings)
               send(msg)
-              print(msg)
               sys.exit(1)
-          else:
-              msg = f"✅ TTN Portal OK\nАгентів: {len(staff)}\nРозмір: {round(size/1024)}KB"
+
+          elif warnings:
+              msg = f"🟡 <b>TTN Portal — увага</b> — {now}\n\n"
+              msg += "\n\n".join(warnings)
+              msg += f"\n\n👥 Агентів: {len(staff)} | 💾 {round(size/1024)}KB"
               send(msg)
-              print(msg)
+
+          else:
+              session = "🌅 Ранок" if IS_MORNING else "🌆 Вечір"
+              msg = (f"✅ <b>TTN Portal OK</b> {session} — {now}\n"
+                     f"👥 Агентів: {len(staff)} | 💾 {round(size/1024)}KB")
+              send(msg)
+
+          # ── Щоранку — бекап файлом в TG ──
+          if IS_MORNING:
+              backup_path = f'/tmp/ttn_backup_{today}.json'
+              with open(backup_path, 'w', encoding='utf-8') as f:
+                  json.dump(db, f, ensure_ascii=False, indent=2)
+              caption = f"📦 TTN Backup {today} | 👥 {len(staff)} агентів | 💾 {round(size/1024)}KB"
+              if warnings:
+                  caption += "\n⚠️ Є попередження!"
+              send_file(backup_path, caption)
+
+          print(f"Done: {len(staff)} staff, {round(size/1024)}KB, warnings={len(warnings)}")
           PYEOF
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save backup as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttn-backup
+          path: /tmp/ttn_backup_*.json
+          retention-days: 3
