@@ -1724,6 +1724,20 @@ function getTeamShifts(teamId){
 function getShift(id){
   if(!id || id==='off') return SHIFT_OFF;
   if(id==='vacation') return SHIFT_VACATION;
+  // Ticketing cell format: TK:num:typeId
+  if(typeof id==='string' && id.startsWith('TK:')){
+    const tkp=parseTKShift(id);
+    let tkColor='#9ca3af', tkTypeName='';
+    if(tkp&&tkp.typeId&&db.shiftTypes){
+      for(const arr of Object.values(db.shiftTypes)){
+        const f=arr.find(s=>s.id===tkp.typeId);
+        if(f){tkColor=f.color; tkTypeName=f.label||f.time||''; break;}
+      }
+    }
+    const tkNum=tkp?tkp.num:'';
+    // label = назва типу зміни (для тултипу), time = число (для відображення в ячейці)
+    return {id, label:tkTypeName||tkNum, time:tkNum, color:tkColor, desc:'📋 розподіл по ринкам + висяки своєї черги', _isTK:true, _tkNum:tkNum};
+  }
   // Search across all team shifts
   if(db.shiftTypes){
     for(const arr of Object.values(db.shiftTypes)){
@@ -1746,6 +1760,14 @@ function getShift(id){
   return SHIFT_OFF;
 }
 
+// Парсер формату TK:num:typeId для Тікетинг команди
+function parseTKShift(id){
+  if(!id||!id.startsWith('TK:')) return null;
+  const rest=id.substring(3);
+  const ci=rest.indexOf(':');
+  return ci<0?{num:rest,typeId:''}:{num:rest.substring(0,ci),typeId:rest.substring(ci+1)};
+}
+
 // Helper: short display for a shift
 function shiftShort(sh){ return sh.time || sh.label || sh.short || '—'; }
 function shiftLabel(sh){ return (sh.label&&sh.time) ? sh.label+' '+sh.time : (sh.label||sh.time||'—'); }
@@ -1760,6 +1782,9 @@ const SHIFTS = [
 // Визначає чи є зміна нічною (00:00) по label або time
 function isNightShift(shiftId){
   if(!shiftId || shiftId==='off' || shiftId==='vacation') return false;
+  if(typeof shiftId==='string' && shiftId.startsWith('TK:')){
+    const p=parseTKShift(shiftId); return !!(p&&(p.num==='00'||p.num==='0'));
+  }
   if(shiftId==='s7') return true;
   const sh = getShift(shiftId);
   if(!sh) return false;
@@ -3867,6 +3892,7 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
 
   let tbody='<tbody>';
   const isTeam3 = false; // Команда 3 тепер має окремі таблиці — розділювачі не потрібні
+  const isTeam5TK = me && me.teamId===5;
   let staffList = staffOverride || myStaff();
 
   staffList.forEach((emp, empIndex)=>{
@@ -3888,12 +3914,22 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
         const empWish=((db.wishes||{})[emp.id]||(db.wishes||{})[String(emp.id)]||{})[key]||{};
         const w=empWish[d];
         const wishBadge=w?`<div style="font-size:8px;color:var(--accent);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;margin-top:2px" title="${w.comment||''}">${w.shift?(w.shift==='off'?'🌙вих':shiftShort(getShift(w.shift))):''}${w.comment?' 💬':''}</div>`:'';
-        const cellHtml = shiftId==='off'
-          ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">—</div>`
-          : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color}" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">
-              <div class="shift-cell-time">${sh.time||sh.label||'?'}</div>
-              ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
+        let cellHtml;
+        if(isTeam5TK){
+          const tkFull = hasShift && sh && sh.id!=='off';
+          const tkBg = shiftId==='vacation'?'rgba(56,189,248,.5)':tkFull?sh.color+'CC':'';
+          const tkTxt = shiftId==='vacation'?'🏖':(tkFull?(sh.time||sh.label||'?'):'—');
+          cellHtml = `<div class="shift-cell" style="background:${tkBg||'none'};border:1px solid ${tkFull?sh.color+'88':'var(--border)'};color:${tkFull?'#fff':'var(--muted)'}" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">
+              <div class="shift-cell-time" style="color:${tkFull?'#fff':'var(--muted)'}">${tkTxt}</div>
              </div>`;
+        } else {
+          cellHtml = shiftId==='off'
+            ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">—</div>`
+            : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color}" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">
+                <div class="shift-cell-time">${sh.time||sh.label||'?'}</div>
+                ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
+               </div>`;
+        }
         cells+=`<td style="padding:2px;background:${bg};text-align:center" data-shift="${shiftId}">${cellHtml}${wishBadge}</td>`;
       } else {
         if(shiftId==='vacation'){
@@ -6569,6 +6605,7 @@ function renderAdmSchedCompact(){
       + '<div style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:'+(isToday?700:400)+';color:'+dowColor+'">'+d+'</div>'
       + '</th>';
   }
+  if(isTicketing5) theadHTML += '<th style="min-width:28px;text-align:center;font-size:9px;color:var(--red);background:var(--surface)">🌙</th>';
   theadHTML += '<th style="min-width:32px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">&sum;</th>';
   theadHTML += '</tr></thead>';
 
@@ -6581,6 +6618,7 @@ function renderAdmSchedCompact(){
       var emp = staffList[si];
       var empSched = sched[emp.id] || {};
       var shiftCount = 0;
+      var tkNightCount = 0;
       var cellsHTML = '';
       for(var di2=0; di2<days.length; di2++){
         var d2 = days[di2];
@@ -6600,18 +6638,35 @@ function renderAdmSchedCompact(){
         var shDesc  = sh&&hasShift ? (sh.desc||'') : '';
         var dispTime = hasShift && sh ? (sh.time ? sh.time.split(':')[0] : (sh.label||'?')[0]) : '&#183;';
         var dispColor = hasShift && sh ? sh.color : 'var(--muted)';
-        cellsHTML += '<td style="background:'+bg2+';padding:1px 0;text-align:center;'+border2+'" data-shift="'+shiftId+'">'
-          + '<span class="sh-tip-cell"'
-          + ' data-l="'+shLabel.replace(/"/g,'&quot;')+'"'
-          + ' data-t="'+shTime+'" data-c="'+shColor+'"'
-          + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
-          + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
-          + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
-          + dispTime+'</span></td>';
+        if(isTicketing5){
+          var tkHasFill = hasShift && sh && sh.id!=='off';
+          var tkCellBg = shiftId==='vacation' ? 'rgba(56,189,248,.5)' : tkHasFill ? sh.color+'CC' : (isToday2?'rgba(181,123,238,.06)':'');
+          var tkCellNum = shiftId==='vacation' ? '🏖' : (tkHasFill ? dispTime : '');
+          var tkTextCol = tkHasFill||shiftId==='vacation' ? '#fff' : 'rgba(255,255,255,.15)';
+          if(hasShift && shiftId!=='vacation'){
+            if(sh._isTK ? sh._tkNum==='00' : isNightShift(shiftId)) tkNightCount++;
+          }
+          cellsHTML += '<td style="background:'+tkCellBg+';padding:0;text-align:center" data-shift="'+shiftId+'">'
+            + '<span onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
+            + ' style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:700;color:'+tkTextCol+';cursor:pointer;display:block;line-height:22px;min-height:22px">'
+            + tkCellNum+'</span></td>';
+        } else {
+          cellsHTML += '<td style="background:'+bg2+';padding:1px 0;text-align:center;'+border2+'" data-shift="'+shiftId+'">'
+            + '<span class="sh-tip-cell"'
+            + ' data-l="'+shLabel.replace(/"/g,'&quot;')+'"'
+            + ' data-t="'+shTime+'" data-c="'+shColor+'"'
+            + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
+            + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
+            + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
+            + dispTime+'</span></td>';
+        }
       }
       var isFiltered = _agentFilter && _agentFilter !== emp.id;
       var filtStyle = isFiltered ? 'opacity:.12;filter:grayscale(1)' : '';
       var sumColor = shiftCount > 0 ? 'var(--accent2)' : 'var(--muted)';
+      var nightTd = isTicketing5
+        ? '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:'+(tkNightCount>0?'var(--red)':'var(--muted)')+';background:var(--surface2)">'+tkNightCount+'</td>'
+        : '';
       rows += '<tr data-emp-id="'+emp.id+'" draggable="true" style="'+filtStyle+'"'
         + ' ondragstart="compactDragStart(event,'+emp.id+')"'
         + ' ondragover="compactDragOver(event)"'
@@ -6621,6 +6676,7 @@ function renderAdmSchedCompact(){
         + '<span style="color:var(--muted);font-size:9px;margin-right:3px">&#8995;</span>'+formatName(emp.name)
         + '</td>'
         + cellsHTML
+        + nightTd
         + '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;font-weight:600;color:'+sumColor+';position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">'+shiftCount+'</td>'
         + '</tr>';
     }
@@ -6648,8 +6704,80 @@ function renderAdmSchedCompact(){
     tbodyHTML = buildCompactRows(staff);
   }
 
-  container.innerHTML = '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">&#8995; Перетягни рядок щоб змінити порядок агентів</div>'
-    + '<div class="sched-wrap"><table class="sched-table">'+theadHTML+tbodyHTML+'</table></div>';
+  // Підсумкові рядки для Тікетинг
+  var tfootHTML = '';
+  if(isTicketing5){
+    var dayWorking={}, dayNight={}, dayMorn={}, dayEve={};
+    days.forEach(function(d){dayWorking[d]=0;dayNight[d]=0;dayMorn[d]=0;dayEve[d]=0;});
+    staff.forEach(function(emp2){
+      var empS=sched[emp2.id]||{};
+      days.forEach(function(d){
+        var sId=empS[d]||'off';
+        if(!sId||sId==='off'||sId==='vacation') return;
+        dayWorking[d]++;
+        var sh2=getShift(sId);
+        var tkN=sh2._isTK?sh2._tkNum:'';
+        if(tkN==='00'||tkN==='0'||(!sh2._isTK&&isNightShift(sId))) dayNight[d]++;
+        else if(tkN==='08'||tkN==='8') dayMorn[d]++;
+        else if(tkN==='16') dayEve[d]++;
+      });
+    });
+    var totalNight=days.reduce(function(s,d){return s+dayNight[d];},0);
+    var totalMorn=days.reduce(function(s,d){return s+dayMorn[d];},0);
+    var totalEve=days.reduce(function(s,d){return s+dayEve[d];},0);
+    // Рядок-підсумок: label + cells per day + total в колонці 🌙 + sticky Σ
+    function mkTfootRow(label,colorText,bgFn,map,total,stickyVal){
+      var r='<tr>';
+      r+='<td class="name-col" style="font-size:9px;font-weight:700;color:'+colorText+';padding:3px 8px">'+label+'</td>';
+      days.forEach(function(d){
+        var c=map[d];
+        r+='<td style="background:'+(bgFn(c))+';text-align:center;padding:1px 0">'
+          +'<span style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+(c>0?colorText:'var(--muted)')+'">'+(c||'·')+'</span></td>';
+      });
+      r+='<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;font-weight:600;color:'+colorText+'">'+total+'</td>';
+      r+='<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--muted);position:sticky;right:0;background:var(--surface)">'+stickyVal+'</td>';
+      r+='</tr>';
+      return r;
+    }
+    tfootHTML='<tfoot>';
+    // ВСЬОГО
+    var rAll='<tr style="border-top:2px solid rgba(181,123,238,.25)">';
+    rAll+='<td class="name-col" style="font-size:9px;font-weight:700;color:var(--accent2);padding:3px 8px">ВСЬОГО</td>';
+    days.forEach(function(d){
+      var c=dayWorking[d];
+      rAll+='<td style="background:'+(c>0?'rgba(181,123,238,.15)':'')+';text-align:center;padding:1px 0">'
+        +'<span style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:var(--accent2)">'+(c||'·')+'</span></td>';
+    });
+    var totalWorking=days.reduce(function(s,d){return s+dayWorking[d];},0);
+    rAll+='<td style="text-align:center;font-size:9px;color:var(--muted)">—</td>';
+    rAll+='<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;font-weight:600;color:var(--accent2);position:sticky;right:0;background:var(--surface)">'+totalWorking+'</td>';
+    rAll+='</tr>';
+    tfootHTML+=rAll;
+    tfootHTML+=mkTfootRow('🌅 РАНКОВИХ','#f59e0b',function(c){return c>0?'rgba(251,191,36,.15)':'';},dayMorn,totalMorn,'—');
+    tfootHTML+=mkTfootRow('🌆 ВЕЧІРНІХ','#60a5fa',function(c){return c>0?'rgba(96,165,250,.15)':'';},dayEve,totalEve,'—');
+    tfootHTML+=mkTfootRow('🌙 НІЧНИХ','var(--red)',function(c){return c>0?'rgba(248,113,113,.18)':'';},dayNight,totalNight,'—');
+    tfootHTML+='</tfoot>';
+  }
+
+  // Stamp-bar: показуємо якщо stamp-режим активний
+  var stampBarHTML = '';
+  if(isTicketing5 && window._tkStampActive && window._tkStampValue){
+    var stSh=getShift(window._tkStampValue);
+    var stP=parseTKShift(window._tkStampValue);
+    var stNum=stP?stP.num:'?';
+    var stLabel=stSh.label&&stSh.label!==stNum?stSh.label:'';
+    stampBarHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;margin-bottom:8px;background:'+stSh.color+'15;border:1px solid '+stSh.color+'40;border-radius:8px;flex-wrap:wrap">'
+      +'<div style="width:10px;height:10px;border-radius:50%;background:'+stSh.color+';flex-shrink:0"></div>'
+      +'<span style="font-family:\'DM Mono\',monospace;font-size:13px;font-weight:700;color:'+stSh.color+'">'+escapeHTML(stNum)+'</span>'
+      +(stLabel?'<span style="font-size:11px;color:var(--muted2)">'+escapeHTML(stLabel)+'</span>':'')
+      +'<span style="font-size:11px;color:var(--muted2)">— кліки заповнюють ячейки</span>'
+      +'<button onclick="deactivateTKStamp()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;color:var(--muted);font-size:11px">✕ Вимкнути</button>'
+      +'</div>';
+  }
+
+  container.innerHTML = stampBarHTML
+    + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">&#8995; Перетягни рядок щоб змінити порядок агентів</div>'
+    + '<div class="sched-wrap"><table class="sched-table">'+theadHTML+tbodyHTML+tfootHTML+'</table></div>';
 
   // Drag-and-drop
   var _dragId = null;
@@ -7439,6 +7567,14 @@ let _pickerEmpId=null, _pickerDay=null, _pickerKey=null, _pickerEl=null;
 
 function openShiftPicker(e, empId, day, key){
   e.stopPropagation();
+  if(me && me.teamId===5){
+    if(window._tkStampActive && window._tkStampValue){
+      e.stopPropagation(); closeShiftPicker();
+      _pickerEmpId=empId; _pickerDay=day; _pickerKey=key;
+      applyShift(window._tkStampValue); return;
+    }
+    openTicketingCellEditor(e,empId,day,key); return;
+  }
   closeShiftPicker();
   _pickerEmpId=empId; _pickerDay=day; _pickerKey=key; _pickerEl=e.currentTarget;
 
@@ -7511,6 +7647,14 @@ async function applyShift(shiftId){
   if(!db.schedule[_pickerKey]) db.schedule[_pickerKey]={};
   if(!db.schedule[_pickerKey][_pickerEmpId]) db.schedule[_pickerKey][_pickerEmpId]={};
   db.schedule[_pickerKey][_pickerEmpId][_pickerDay] = shiftId;
+  // Stamp mode для Тікетинг команди
+  if(me && me.teamId===5){
+    if(typeof shiftId==='string' && shiftId.startsWith('TK:')){
+      window._tkStampValue = shiftId; window._tkStampActive = true;
+    } else {
+      window._tkStampActive = false; window._tkStampValue = null;
+    }
+  }
   // Re-render just the cell visually
   renderAdmSched();
   // Auto-save after short delay
@@ -7519,6 +7663,111 @@ async function applyShift(shiftId){
     window._schedSaveTimer = null; // [FIX CRITICAL] Clear before saveDB so autoRefreshDB isn't permanently blocked
     saveDB();
   }, 1500);
+}
+
+// ══ РЕДАКТОР ЯЧЕЙКИ ДЛЯ ТІКЕТИНГ КОМАНДИ ══
+function openTicketingCellEditor(e, empId, day, key){
+  e.stopPropagation();
+  closeShiftPicker();
+  _pickerEmpId=empId; _pickerDay=day; _pickerKey=key; _pickerEl=e.currentTarget;
+
+  const teamId = me && me.teamId ? me.teamId : 1;
+  const shifts = getTeamShifts(teamId);
+  const curId = (db.schedule[key]&&db.schedule[key][empId]&&db.schedule[key][empId][day])||'off';
+  const curParsed = parseTKShift(curId);
+  const curNum = curParsed ? curParsed.num : '';
+  const curTypeId = curParsed ? curParsed.typeId : (curId!=='off'&&curId!=='vacation' ? curId : '');
+  window._tkSelectedType = curTypeId;
+
+  const btnsHTML = shifts.map(s=>{
+    const isActive = curTypeId===s.id;
+    return `<button id="tkcb-${s.id}" onclick="saveTKWithType('${s.id}')"
+      style="display:flex;align-items:center;gap:8px;width:100%;background:${isActive?s.color+'22':'none'};border:1px solid ${isActive?s.color+'88':'var(--border)'};border-radius:7px;padding:5px 9px;cursor:pointer;margin-bottom:3px;box-sizing:border-box">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+      <div style="font-size:11px;color:${s.color};font-weight:600;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(s.label||s.time||'—')}</div>
+      ${isActive?`<span style="margin-left:auto;color:${s.color};font-size:10px">✓</span>`:''}
+    </button>`;
+  }).join('');
+
+  const html = `<div class="shift-picker-title">ТІКЕТИНГ · День ${day}</div>
+    <div style="padding:8px 10px 6px">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:5px;letter-spacing:.5px">ЧАС ЗМІНИ</div>
+      <input id="tk-num-input" type="text" inputmode="numeric" value="${escapeHTML(curNum)}" placeholder="8, 16, 00..."
+        autocomplete="off"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:7px 12px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;outline:none;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')saveTKCell()">
+    </div>
+    <div style="padding:4px 10px 8px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-height:210px;overflow-y:auto">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:5px;margin-top:6px;letter-spacing:.5px">КОЛІР / ТИП ЗМІНИ (клік = зберегти)</div>
+      ${btnsHTML}
+    </div>
+    <div style="padding:6px 10px;display:flex;gap:6px">
+      <button onclick="saveTKCell()" style="flex:1;background:rgba(94,234,154,.12);border:1px solid rgba(94,234,154,.3);border-radius:7px;padding:7px;cursor:pointer;color:var(--green);font-size:12px;font-weight:600">✅ Зберегти без кольору</button>
+      <button onclick="applyShift('off')" style="flex:0 0 auto;background:none;border:1px solid var(--border);border-radius:7px;padding:7px 12px;cursor:pointer;color:var(--muted);font-size:11px">✕</button>
+    </div>`;
+
+  const picker = document.createElement('div');
+  picker.className='shift-picker'; picker.id='shift-picker-popup';
+  picker.style.maxHeight='82vh'; picker.style.overflowY='auto';
+  picker.style.visibility='hidden';
+  picker.innerHTML=html;
+  // Клік всередині попапа не закриває його
+  picker.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  document.body.appendChild(picker);
+
+  const rect=e.currentTarget.getBoundingClientRect();
+  const ph=picker.offsetHeight, pw=picker.offsetWidth||290;
+  let top, left;
+  if(rect.bottom+ph+8<=window.innerHeight) top=rect.bottom+6;
+  else if(rect.top-ph-6>=0) top=rect.top-ph-6;
+  else top=Math.max(8,(window.innerHeight-ph)/2);
+  left=rect.left;
+  if(left+pw+8>window.innerWidth) left=window.innerWidth-pw-8;
+  if(left<8) left=8;
+  picker.style.top=top+'px'; picker.style.left=left+'px';
+  picker.style.visibility='';
+
+  const inp=document.getElementById('tk-num-input');
+  if(inp){ inp.focus(); inp.select(); }
+  setTimeout(()=>document.addEventListener('click',closeShiftPicker,{once:true}),10);
+}
+
+function selectTKType(typeId){
+  window._tkSelectedType=typeId;
+  const teamId=me&&me.teamId?me.teamId:1;
+  getTeamShifts(teamId).forEach(s=>{
+    const btn=document.getElementById('tkcb-'+s.id);
+    if(!btn) return;
+    const isActive=s.id===typeId;
+    btn.style.background=isActive?s.color+'22':'none';
+    btn.style.border='1px solid '+(isActive?s.color+'88':'var(--border)');
+    btn.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>`
+      +`<div style="font-size:11px;color:${s.color};font-weight:600;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(s.label||s.time||'—')}</div>`
+      +(isActive?`<span style="margin-left:auto;color:${s.color};font-size:10px">✓</span>`:'');
+  });
+}
+
+function saveTKCell(){
+  const inp=document.getElementById('tk-num-input');
+  const num=inp?inp.value.trim():'';
+  const typeId=window._tkSelectedType||'';
+  if(!num&&!typeId){ applyShift('off'); return; }
+  applyShift('TK:'+num+':'+(typeId||''));
+}
+
+// Вимкнути stamp-режим
+function deactivateTKStamp(){
+  window._tkStampActive=false; window._tkStampValue=null;
+  renderAdmSchedCompact();
+}
+
+// Кліk по кольору — одразу зберігає з поточним числом
+function saveTKWithType(typeId){
+  const inp=document.getElementById('tk-num-input');
+  const num=inp?inp.value.trim():'';
+  window._tkSelectedType=typeId;
+  if(!num&&!typeId){ applyShift('off'); return; }
+  applyShift('TK:'+num+':'+typeId);
 }
 
 // ══ ХТО НА ЗМІНІ СЬОГОДНІ — ТОПБАР ══
