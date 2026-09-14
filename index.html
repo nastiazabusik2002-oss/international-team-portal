@@ -3703,7 +3703,7 @@ function renderTeamCal(){
     if(legendEl){
       legendEl.innerHTML += `<div style="width:100%;margin-top:8px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px">
         <span class="sh-offered" style="font-family:'DM Mono',monospace;font-weight:700;color:var(--orange)">••</span>
-        Зміна, що блимає — запропонована на обмін. Натисни на свою зміну, щоб віддати або поміняти.
+        Зміна, що блимає — запропонована на обмін. Натисни на свою зміну, щоб віддати або поміняти. Натисни на чужу блимаючу зміну, щоб забрати її собі (відбудеться обмін).
       </div>`;
     }
   }
@@ -3768,8 +3768,9 @@ function renderTeamCal(){
           const dispColor=hasShift&&sh?sh.color:'var(--muted)';
           const isMineCell=isMe;
           const isOffered=isShiftOffered(key,emp.id,d); // [FIX] видно всій команді, не тільки власнику зміни
-          const cellClick=isMineCell?` onclick="openMyShiftMenu(event,'${emp.id}',${d},'${key}')"`:'';
-          const cellCursor=isMineCell?'cursor:pointer;':'';
+          const canClaim = !isMineCell && isOffered && me && me.type==='employee';
+          const cellClick=isMineCell?` onclick="openMyShiftMenu(event,'${emp.id}',${d},'${key}')"`:(canClaim?` onclick="openClaimShiftMenu(event,'${emp.id}',${d},'${key}')"`:'');
+          const cellCursor=(isMineCell||canClaim)?'cursor:pointer;':'';
           cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}${cellCursor}" data-shift="${shiftId}"${cellClick}>
             <span class="sh-tip-cell${isOffered?' sh-offered':''}" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
               style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
@@ -3805,8 +3806,9 @@ function renderTeamCal(){
       const dispColor=hasShift&&sh?sh.color:'var(--muted)';
       const isMineCell=isMe;
       const isOffered=isShiftOffered(key,emp.id,d); // [FIX] видно всій команді, не тільки власнику зміни
-      const cellClick=isMineCell?` onclick="openMyShiftMenu(event,'${emp.id}',${d},'${key}')"`:'';
-      const cellCursor=isMineCell?'cursor:pointer;':'';
+      const canClaim = !isMineCell && isOffered && me && me.type==='employee';
+      const cellClick=isMineCell?` onclick="openMyShiftMenu(event,'${emp.id}',${d},'${key}')"`:(canClaim?` onclick="openClaimShiftMenu(event,'${emp.id}',${d},'${key}')"`:'');
+      const cellCursor=(isMineCell||canClaim)?'cursor:pointer;':'';
       cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}${cellCursor}" data-shift="${shiftId}"${cellClick}>
         <span class="sh-tip-cell${isOffered?' sh-offered':''}" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
           style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
@@ -7128,12 +7130,24 @@ function closeShiftPicker(){
   if(p) p.remove();
 }
 
-// ══ САМООБСЛУГОВУВАННЯ ЗМІНИ АГЕНТОМ — тільки своя зміна, тільки "віддати" або "поміняти" ══
-// Агент НЕ може видалити зміну (тільки обрати іншу) і НЕ може чіпати чужі зміни.
+// ══ САМООБСЛУГОВУВАННЯ ЗМІНИ АГЕНТОМ ══
+// Свою зміну можна запропонувати на обмін або замінити (видалити не можна — тільки замінити).
+// Чужу запропоновану (блимаючу) зміну будь-який інший агент команди може забрати — тоді відбувається
+// взаємний обмін: його зміна на цей день переходить до мене, а моя — до нього.
 let _myShiftEmpId=null, _myShiftDay=null, _myShiftKey=null;
+let _claimOffererEmpId=null, _claimDay=null, _claimKey=null;
 
 function isShiftOffered(key, empId, day){
   return !!(db.shiftOffers && db.shiftOffers[key] && db.shiftOffers[key][empId] && db.shiftOffers[key][empId][day]);
+}
+
+// Тихе сповіщення в Telegram через Netlify Function — помилка мережі не повинна ламати основний флоу
+function notifyShiftTelegram(payload){
+  fetch('/.netlify/functions/notify-shift', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).catch(e=>console.warn('[telegram notify] failed', e));
 }
 
 function openMyShiftMenu(e, empId, day, key){
@@ -7226,10 +7240,109 @@ async function toggleMyShiftOffer(){
     delete db.shiftOffers[key][empId][day];
   } else {
     db.shiftOffers[key][empId][day] = true;
+    const emp = (db.staff||[]).find(s=>String(s.id)===String(empId));
+    const shId = (db.schedule[key]&&db.schedule[key][empId]&&db.schedule[key][empId][day])||'off';
+    notifyShiftTelegram({
+      type:'offer',
+      agentName: emp?formatName(emp.name):'Агент',
+      day, month: MONTHS_UK[parseInt(key.split('-')[1],10)-1],
+      shiftLabel: shiftLabel(getShift(shId))
+    });
   }
   closeMyShiftMenu();
   renderTeamCal();
   await saveDB();
+}
+
+// Меню "забрати чужу запропоновану зміну" — відкривається кліком на блимаючу зміну колеги
+function openClaimShiftMenu(e, offererEmpId, day, key){
+  e.stopPropagation();
+  if(!me || me.type!=='employee') return;
+  if(String(offererEmpId)===String(me.data.id)) return; // своя зміна — тут не через це меню
+  if(!isShiftOffered(key, offererEmpId, day)) return; // вже забрали або скасували
+
+  closeMyShiftMenu(); closeClaimMenu();
+  _claimOffererEmpId=offererEmpId; _claimDay=day; _claimKey=key;
+
+  const myId = me.data.id;
+  const offererShId = (db.schedule[key]&&db.schedule[key][offererEmpId]&&db.schedule[key][offererEmpId][day])||'off';
+  const myShId = (db.schedule[key]&&db.schedule[key][myId]&&db.schedule[key][myId][day])||'off';
+  const offerer = (db.staff||[]).find(s=>String(s.id)===String(offererEmpId));
+  const offererSh = getShift(offererShId);
+  const mySh = getShift(myShId);
+  const offererName = offerer?formatName(offerer.name):'агентом';
+
+  const html = `<div class="shift-picker-title">ЗАБРАТИ ЗМІНУ · День ${day}</div>
+    <div style="font-size:12px;color:var(--muted2);padding:0 2px 10px;line-height:1.5">
+      Обмін із <b style="color:var(--text)">${offererName}</b>:<br>
+      ти отримаєш <b style="color:${offererSh.color||'inherit'}">${shiftLabel(offererSh)}</b><br>
+      ${offererName} отримає твою <b style="color:${mySh.color||'var(--muted)'}">${shiftLabel(mySh)}</b>
+    </div>
+    <button class="shift-picker-btn" onclick="event.stopPropagation();confirmClaimShift()" style="background:rgba(74,222,128,.12);border-color:var(--green)">
+      <div class="shift-picker-dot" style="background:var(--green)"></div>
+      <div style="font-weight:600;font-size:13px">🔄 Забрати й обмінятись</div>
+    </button>
+    <button class="shift-picker-clear" onclick="event.stopPropagation();closeClaimMenu()">Скасувати</button>`;
+
+  const picker = document.createElement('div');
+  picker.className='shift-picker'; picker.id='claim-shift-popup';
+  picker.style.visibility='hidden';
+  picker.innerHTML = html;
+  document.body.appendChild(picker);
+  _positionMyShiftMenu(e.currentTarget, picker);
+  setTimeout(()=>document.addEventListener('click', closeClaimMenu, {once:true}), 10);
+}
+
+function closeClaimMenu(){
+  const p=document.getElementById('claim-shift-popup');
+  if(p) p.remove();
+}
+
+async function confirmClaimShift(){
+  const key=_claimKey, offererEmpId=_claimOffererEmpId, day=_claimDay;
+  if(!me || me.type!=='employee' || !key) return;
+  if(!isShiftOffered(key, offererEmpId, day)){
+    // [race condition] поки меню було відкрите, пропозицію вже скасували або хтось інший забрав
+    closeClaimMenu();
+    alert('Цю зміну вже забрали або скасували.');
+    renderTeamCal();
+    return;
+  }
+  const myId = me.data.id;
+
+  if(!db.schedule[key]) db.schedule[key]={};
+  if(!db.schedule[key][offererEmpId]) db.schedule[key][offererEmpId]={};
+  if(!db.schedule[key][myId]) db.schedule[key][myId]={};
+
+  const offererShId = db.schedule[key][offererEmpId][day] || 'off';
+  const myShId = db.schedule[key][myId][day] || 'off';
+
+  // Взаємний обмін: моя зміна цього дня ⇄ його зміна цього дня
+  db.schedule[key][offererEmpId][day] = myShId;
+  db.schedule[key][myId][day] = offererShId;
+
+  // Пропозицію знімаємо — обмін відбувся
+  if(db.shiftOffers && db.shiftOffers[key] && db.shiftOffers[key][offererEmpId]){
+    delete db.shiftOffers[key][offererEmpId][day];
+  }
+
+  const offerer = (db.staff||[]).find(s=>String(s.id)===String(offererEmpId));
+  const meStaff = (db.staff||[]).find(s=>String(s.id)===String(myId));
+
+  closeClaimMenu();
+  renderTeamCal();
+  clearTimeout(window._schedSaveTimer);
+  window._schedSaveTimer=null; // [FIX CRITICAL] Clear before saveDB so autoRefreshDB isn't permanently blocked
+  await saveDB();
+
+  notifyShiftTelegram({
+    type:'swap',
+    agentName: meStaff?formatName(meStaff.name):'Агент',
+    agent2Name: offerer?formatName(offerer.name):'Агент',
+    day, month: MONTHS_UK[parseInt(key.split('-')[1],10)-1],
+    shiftLabel: shiftLabel(getShift(offererShId)),
+    shiftLabel2: shiftLabel(getShift(myShId))
+  });
 }
 
 function _positionMyShiftMenu(anchorEl, picker){
@@ -9231,7 +9344,7 @@ const GUIDE_SECTIONS_EMP = [
   },
   {
     icon:ICON_REFRESH, title:'Обмін змінами',
-    text:`Клікни на свою зміну прямо в графіку команди — з'явиться меню з двома варіантами. "Віддати зміну" — зміна почне блимати помаранчевим, і вся команда побачить, що вона запропонована на обмін (клікни ще раз щоб скасувати). "Поміняти зміну" — відкриється список типів змін, обери нову і підтверди заміну. Змінити можна тільки свою зміну на іншу — видалити зміну собі не можна, тільки замінити.`
+    text:`Клікни на свою зміну прямо в графіку команди — з'явиться меню з двома варіантами. "Віддати зміну" — зміна почне блимати помаранчевим, і вся команда побачить, що вона запропонована на обмін (клікни ще раз щоб скасувати). "Поміняти зміну" — відкриється список типів змін, обери нову і підтверди заміну. Змінити можна тільки свою зміну на іншу — видалити зміну собі не можна, тільки замінити. Якщо блимає зміна КОЛЕГИ — клікни на неї, щоб забрати собі: відбудеться обмін, твоя зміна цього дня перейде до нього.`
   },
   {
     icon:ICON_STAR2, title:'Відгуки',
