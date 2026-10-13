@@ -590,7 +590,7 @@ body.theme-light .field select option{background:#f0ebff;color:#1e0a3c}
 .today-col-h{background:var(--accent-dim)!important;color:var(--accent2)!important}
 @keyframes shOfferBlink{0%,100%{opacity:1;text-shadow:0 0 6px var(--orange)}50%{opacity:.3;text-shadow:none}}
 .sh-offered{animation:shOfferBlink 1.1s ease-in-out infinite;color:var(--orange)!important}
-.sh-mark{font-size:8px;line-height:0;margin-left:1px;vertical-align:super;color:#facc15;font-weight:400}
+.sh-mark{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 1.5px #fff,0 0 6px 1px rgba(239,68,68,.9);margin-left:2px;vertical-align:top;flex-shrink:0}
 @media (prefers-reduced-motion: reduce){.sh-offered{animation:none;text-decoration:underline wavy var(--orange)}}
 .today-col{background:rgba(181,123,238,.03)!important}
 .you-row .name-col{border-left:2px solid var(--accent)}
@@ -7153,13 +7153,13 @@ function openShiftPicker(e, empId, day, key){
       ${active?'<span style="margin-left:auto;color:'+s.color+'">✓</span>':''}
     </button>`;
   });
-  // ✉ Мітка дод. обов'язку — тільки команда Chat і тільки на робочий день
+  // 🔴 Мітка дод. обов'язку — тільки команда Chat і тільки на робочий день
   if(teamId===SHIFT_MARK_TEAM_ID && curId!=='off' && curId!=='vacation'){
     const marked = isShiftMarked(key, empId, day);
-    html+=`<button class="shift-picker-btn" onclick="toggleShiftMarkFromPicker()" style="${marked?'background:rgba(250,204,21,.12);border-color:#facc15;':''}">
-      <div class="shift-picker-dot" style="background:#facc15"></div>
-      <div style="font-weight:600;font-size:13px;color:#facc15">✉ ${marked?'Прибрати дод. обов\'язок':'Дод. обов\'язок'}</div>
-      ${marked?'<span style="margin-left:auto;color:#facc15">✓</span>':''}
+    html+=`<button class="shift-picker-btn" onclick="toggleShiftMarkFromPicker()" style="${marked?'background:rgba(239,68,68,.12);border-color:#ef4444;':''}">
+      <div class="shift-picker-dot" style="background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.9)"></div>
+      <div style="font-weight:600;font-size:13px;color:#ef4444">${marked?'Прибрати дод. обов\'язок':'Дод. обов\'язок'}</div>
+      ${marked?'<span style="margin-left:auto;color:#ef4444">✓</span>':''}
     </button>`;
   }
   // Vacation
@@ -7242,7 +7242,7 @@ function setShiftMark(key, empId, day, on){
 // Значок для клітинки графіку — тільки на робочий день (не вихідний і не відпустка)
 function shiftMarkBadge(key, empId, day, shiftId){
   if(!shiftId || shiftId==='off' || shiftId==='vacation') return '';
-  return isShiftMarked(key, empId, day) ? '<sup class="sh-mark" title="Додатковий обов\'язок">✉</sup>' : '';
+  return isShiftMarked(key, empId, day) ? '<span class="sh-mark" title="Додатковий обов\'язок"></span>' : '';
 }
 
 // Тихе сповіщення в Telegram через Netlify Function — помилка мережі не повинна ламати основний флоу
