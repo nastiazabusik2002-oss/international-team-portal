@@ -590,6 +590,7 @@ body.theme-light .field select option{background:#f0ebff;color:#1e0a3c}
 .today-col-h{background:var(--accent-dim)!important;color:var(--accent2)!important}
 @keyframes shOfferBlink{0%,100%{opacity:1;text-shadow:0 0 6px var(--orange)}50%{opacity:.3;text-shadow:none}}
 .sh-offered{animation:shOfferBlink 1.1s ease-in-out infinite;color:var(--orange)!important}
+.sh-mark{font-size:8px;line-height:0;margin-left:1px;vertical-align:super;color:#facc15;font-weight:400}
 @media (prefers-reduced-motion: reduce){.sh-offered{animation:none;text-decoration:underline wavy var(--orange)}}
 .today-col{background:rgba(181,123,238,.03)!important}
 .you-row .name-col{border-left:2px solid var(--accent)}
@@ -2157,6 +2158,38 @@ async function saveDB(){
           } else if(freshDb.shiftOffers && !db.shiftOffers){
             db.shiftOffers = freshDb.shiftOffers;
           }
+          // Мержимо shiftMarks (✉ мітка дод. обов'язку) — та сама схема, що й shiftOffers
+          if(freshDb.shiftMarks && db.shiftMarks){
+            let lastSavedMarksSave = null;
+            try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedMarksSave=lp.shiftMarks||null; } }catch(e){}
+            const mergedMarks = JSON.parse(JSON.stringify(freshDb.shiftMarks));
+            Object.keys(db.shiftMarks).forEach(mk=>{
+              if(!mergedMarks[mk]) mergedMarks[mk] = {};
+              const lastMkSave = lastSavedMarksSave ? (lastSavedMarksSave[mk]||{}) : {};
+              Object.keys(db.shiftMarks[mk]).forEach(empId=>{
+                const curData = db.shiftMarks[mk][empId] || {};
+                const frshData = (freshDb.shiftMarks[mk]||{})[empId] || {};
+                const lastData = lastMkSave[empId] || {};
+                const merged = Object.assign({}, frshData);
+                Object.keys(curData).forEach(day=>{
+                  const localVal = curData[day];
+                  const lastVal = lastData[day];
+                  if(localVal !== lastVal){
+                    merged[day] = localVal;
+                  } else if(localVal && !(day in frshData)){
+                    merged[day] = localVal;
+                  }
+                });
+                Object.keys(lastData).forEach(day=>{
+                  if(!(day in curData) && day in merged) delete merged[day];
+                });
+                mergedMarks[mk][empId] = merged;
+              });
+            });
+            db.shiftMarks = mergedMarks;
+          } else if(freshDb.shiftMarks && !db.shiftMarks){
+            db.shiftMarks = freshDb.shiftMarks;
+          }
           // Мержимо shiftTypes: deep merge по id — щоб не губити типи змін
           if(freshDb.shiftTypes && db.shiftTypes){
             const myTid = me ? String(me.teamId||(me.data&&me.data.teamId)||1) : null;
@@ -2605,6 +2638,7 @@ function buildDefault(){
     nextId,
     schedule:{},
     shiftOffers:{},
+    shiftMarks:{},
     exchanges:[],
     globalLinks:[
       {name:'Google Диск',url:'https://drive.google.com',icon:'📁',desc:'Спільні файли'},
@@ -3470,7 +3504,7 @@ function renderEmpCal(){
     const bdayHtml=bdayPeople.length?`<div style="font-size:10px;color:var(--pink);margin-top:2px" title="${bdayPeople.map(e=>e.name).join(', ')}">${bdayPeople.map(e=>'🎂'+e.name.split(' ')[0]).join(' ')}</div>`:'';
     const shiftHtml=sh.id==='off'
       ?`<div style="font-size:10px;color:var(--muted)">—</div>`
-      :`<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:0 auto;min-width:46px"><div class="shift-cell-time" style="font-size:10px">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?'<div class="shift-cell-label">'+sh.label+'</div>':''}</div>`;
+      :`<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:0 auto;min-width:46px"><div class="shift-cell-time" style="font-size:10px">${sh.time||sh.label||'?'}${shiftMarkBadge(key,me.data.id,d,mySched[d])}</div>${sh.label&&sh.time?'<div class="shift-cell-label">'+sh.label+'</div>':''}</div>`;
     const commentObj=typeof comment==='object'?comment:{};
     const hasCmt=commentObj.overtime||commentObj.late;
     const cParts=[];
@@ -3773,7 +3807,7 @@ function renderTeamCal(){
           const cellCursor=(isMineCell||canClaim)?'cursor:pointer;':'';
           cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}${cellCursor}" data-shift="${shiftId}"${cellClick}>
             <span class="sh-tip-cell${isOffered?' sh-offered':''}" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
-              style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
+              style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
           </td>`;
         });
         tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
@@ -3811,7 +3845,7 @@ function renderTeamCal(){
       const cellCursor=(isMineCell||canClaim)?'cursor:pointer;':'';
       cells+=`<td style="width:22px;padding:1px 0;text-align:center;background:${bg};${todayBorder}${cellCursor}" data-shift="${shiftId}"${cellClick}>
         <span class="sh-tip-cell${isOffered?' sh-offered':''}" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}"
-          style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}</span>
+          style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${dispColor};display:inline-block;line-height:1.6">${dispTime}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
       </td>`;
     });
     tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
@@ -3927,7 +3961,7 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
           cellHtml = shiftId==='off'
             ? `<div class="shift-cell shift-cell-off" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">—</div>`
             : `<div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color}" onclick="openShiftPicker(event,${emp.id},${d},'${key}')">
-                <div class="shift-cell-time">${sh.time||sh.label||'?'}</div>
+                <div class="shift-cell-time">${sh.time||sh.label||'?'}${shiftMarkBadge(key,emp.id,d,shiftId)}</div>
                 ${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}
                </div>`;
         }
@@ -3936,7 +3970,7 @@ function renderSchedTable(tableId,year,month,editable, staffOverride){
         if(shiftId==='vacation'){
           cells+=`<td style="background:${bg};text-align:center" data-shift="vacation"><span class="shift-pill sh-vac">🏖</span></td>`;
         } else if(hasShift){
-          cells+=`<td style="background:${bg};text-align:center" data-shift="${shiftId}"><div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:auto"><div class="shift-cell-time">${sh.time||sh.label||'?'}</div>${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}</div></td>`;
+          cells+=`<td style="background:${bg};text-align:center" data-shift="${shiftId}"><div class="shift-cell" style="background:${sh.color}22;border-color:${sh.color}55;color:${sh.color};margin:auto"><div class="shift-cell-time">${sh.time||sh.label||'?'}${shiftMarkBadge(key,emp.id,d,shiftId)}</div>${sh.label&&sh.time?`<div class="shift-cell-label">${sh.label}</div>`:''}</div></td>`;
         } else {
           cells+=`<td style="background:${bg};text-align:center" data-shift="off"><span style="color:var(--muted);font-size:11px">—</span></td>`;
         }
@@ -5233,7 +5267,7 @@ function renderChiefSched(){
             const shColor = sh&&shiftId&&shiftId!=='off'?(sh.color||''):'';
             const shDesc  = sh&&shiftId&&shiftId!=='off'?(sh.desc||''):'';
             html+=`<td style="text-align:center;padding:2px;${isWe?'background:rgba(245,200,66,.05)':''}${bg?';background:'+bg:''}">
-              <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}</span>
+              <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
             </td>`;
           });
           html += '</tr>';
@@ -5255,7 +5289,7 @@ function renderChiefSched(){
         const shColor = sh && shiftId && shiftId!=='off' ? (sh.color||'') : '';
         const shDesc  = sh && shiftId && shiftId!=='off' ? (sh.desc||'') : '';
         html += `<td style="text-align:center;padding:2px;${isWe?'background:rgba(245,200,66,.05)':''}${bg?';background:'+bg:''}">
-          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}</span>
+          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-size:10px;color:${sh&&sh.color?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${txt||'—'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
         </td>`;
       });
       html += '</tr>';
@@ -5524,6 +5558,41 @@ async function autoRefreshDB(){
           });
         } else if(db.shiftOffers && !freshDb.shiftOffers){
           freshDb.shiftOffers = db.shiftOffers;
+        }
+
+        // 1c. SHIFT MARKS (✉ мітка дод. обов'язку) — та сама схема, що й shiftOffers
+        if(db.shiftMarks && freshDb.shiftMarks){
+          let lastSavedMarks = null;
+          try{ if(_lastDbStr){ const lp=JSON.parse(_lastDbStr); lastSavedMarks=lp.shiftMarks||null; } }catch(e){}
+          Object.keys(db.shiftMarks).forEach(mk=>{
+            const cur = db.shiftMarks[mk];
+            if(!freshDb.shiftMarks[mk]) freshDb.shiftMarks[mk] = {};
+            const frsh = freshDb.shiftMarks[mk];
+            const lastMk = lastSavedMarks ? (lastSavedMarks[mk]||{}) : null;
+            Object.keys(cur).forEach(empId=>{
+              const curData = cur[empId] || {};
+              const frshData = frsh[empId] || {};
+              const lastData = lastMk ? (lastMk[empId]||{}) : null;
+              const merged = Object.assign({}, frshData);
+              Object.keys(curData).forEach(day=>{
+                const localVal = curData[day];
+                const lastVal = lastData ? lastData[day] : undefined;
+                if(localVal && localVal !== lastVal){
+                  merged[day] = localVal;
+                } else if(localVal && !(day in frshData)){
+                  merged[day] = localVal;
+                }
+              });
+              if(lastData){
+                Object.keys(lastData).forEach(day=>{
+                  if(!(day in curData) && day in merged) delete merged[day];
+                });
+              }
+              frsh[empId] = merged;
+            });
+          });
+        } else if(db.shiftMarks && !freshDb.shiftMarks){
+          freshDb.shiftMarks = db.shiftMarks;
         }
 
         // 2. STAFF — захищаємо агентів своєї команди
@@ -6355,7 +6424,7 @@ function renderAdmSchedCompact(){
             + ' data-d="'+shDesc.replace(/"/g,'&quot;')+'"'
             + ' onclick="openShiftPicker(event,'+emp.id+','+d2+',\''+key+'\')"'
             + ' style="font-family:\'DM Mono\',monospace;font-size:9px;font-weight:700;color:'+dispColor+';cursor:pointer;display:inline-block;line-height:1.6">'
-            + dispTime+'</span></td>';
+            + dispTime+shiftMarkBadge(key,emp.id,d2,shiftId)+'</span></td>';
         }
       }
       var isFiltered = _agentFilter && _agentFilter !== emp.id;
@@ -7084,6 +7153,15 @@ function openShiftPicker(e, empId, day, key){
       ${active?'<span style="margin-left:auto;color:'+s.color+'">✓</span>':''}
     </button>`;
   });
+  // ✉ Мітка дод. обов'язку — тільки команда Chat і тільки на робочий день
+  if(teamId===SHIFT_MARK_TEAM_ID && curId!=='off' && curId!=='vacation'){
+    const marked = isShiftMarked(key, empId, day);
+    html+=`<button class="shift-picker-btn" onclick="toggleShiftMarkFromPicker()" style="${marked?'background:rgba(250,204,21,.12);border-color:#facc15;':''}">
+      <div class="shift-picker-dot" style="background:#facc15"></div>
+      <div style="font-weight:600;font-size:13px;color:#facc15">✉ ${marked?'Прибрати дод. обов\'язок':'Дод. обов\'язок'}</div>
+      ${marked?'<span style="margin-left:auto;color:#facc15">✓</span>':''}
+    </button>`;
+  }
   // Vacation
   html+=`<button class="shift-picker-btn" onclick="applyShift('vacation')" style="${curId==='vacation'?'background:rgba(56,189,248,.1);border-color:#38bdf8;':''}">
     <div class="shift-picker-dot" style="background:#38bdf8"></div>
@@ -7139,6 +7217,32 @@ let _claimOffererEmpId=null, _claimDay=null, _claimKey=null;
 
 function isShiftOffered(key, empId, day){
   return !!(db.shiftOffers && db.shiftOffers[key] && db.shiftOffers[key][empId] && db.shiftOffers[key][empId][day]);
+}
+
+// ══ ✉ МІТКА ДОДАТКОВОГО ОБОВ'ЯЗКУ (тимчасово, тільки команда Chat) ══
+// Окреме поле db.shiftMarks[key][empId][day]=true — саму зміну в schedule не змінює.
+// Ставить TL у попапі вибору зміни; при обміні змінами мітка переходить разом зі зміною.
+const SHIFT_MARK_TEAM_ID = 1;
+
+function isShiftMarked(key, empId, day){
+  return !!(db.shiftMarks && db.shiftMarks[key] && db.shiftMarks[key][empId] && db.shiftMarks[key][empId][day]);
+}
+
+function setShiftMark(key, empId, day, on){
+  if(on){
+    if(!db.shiftMarks) db.shiftMarks={};
+    if(!db.shiftMarks[key]) db.shiftMarks[key]={};
+    if(!db.shiftMarks[key][empId]) db.shiftMarks[key][empId]={};
+    db.shiftMarks[key][empId][day] = true;
+  } else if(db.shiftMarks && db.shiftMarks[key] && db.shiftMarks[key][empId]){
+    delete db.shiftMarks[key][empId][day];
+  }
+}
+
+// Значок для клітинки графіку — тільки на робочий день (не вихідний і не відпустка)
+function shiftMarkBadge(key, empId, day, shiftId){
+  if(!shiftId || shiftId==='off' || shiftId==='vacation') return '';
+  return isShiftMarked(key, empId, day) ? '<sup class="sh-mark" title="Додатковий обов\'язок">✉</sup>' : '';
 }
 
 // Тихе сповіщення в Telegram через Netlify Function — помилка мережі не повинна ламати основний флоу
@@ -7221,6 +7325,7 @@ function confirmMyShiftChange(shiftId){
   if(!db.schedule[key]) db.schedule[key]={};
   if(!db.schedule[key][empId]) db.schedule[key][empId]={};
   db.schedule[key][empId][day] = shiftId;
+  if(shiftId==='vacation') setShiftMark(key, empId, day, false);
   // Зміна замінена — знімаємо позначку "запропоновано на обмін", якщо була
   if(db.shiftOffers && db.shiftOffers[key] && db.shiftOffers[key][empId]){
     delete db.shiftOffers[key][empId][day];
@@ -7320,6 +7425,11 @@ async function confirmClaimShift(){
   // Взаємний обмін: моя зміна цього дня ⇄ його зміна цього дня
   db.schedule[key][offererEmpId][day] = myShId;
   db.schedule[key][myId][day] = offererShId;
+  // ✉ Мітка дод. обов'язку переходить разом зі зміною
+  const offererMarked = isShiftMarked(key, offererEmpId, day);
+  const myMarked = isShiftMarked(key, myId, day);
+  setShiftMark(key, offererEmpId, day, myMarked);
+  setShiftMark(key, myId, day, offererMarked);
 
   // Пропозицію знімаємо — обмін відбувся
   if(db.shiftOffers && db.shiftOffers[key] && db.shiftOffers[key][offererEmpId]){
@@ -7372,6 +7482,8 @@ async function applyShift(shiftId){
   if(!db.schedule[_pickerKey]) db.schedule[_pickerKey]={};
   if(!db.schedule[_pickerKey][_pickerEmpId]) db.schedule[_pickerKey][_pickerEmpId]={};
   db.schedule[_pickerKey][_pickerEmpId][_pickerDay] = shiftId;
+  // Немає робочої зміни — немає й дод. обов'язку
+  if(shiftId==='off' || shiftId==='vacation') setShiftMark(_pickerKey, _pickerEmpId, _pickerDay, false);
   // Stamp mode для Тікетинг команди
   if(me && me.teamId===5){
     if(typeof shiftId==='string' && shiftId.startsWith('TK:')){
@@ -7386,6 +7498,19 @@ async function applyShift(shiftId){
   clearTimeout(window._schedSaveTimer);
   window._schedSaveTimer = setTimeout(()=>{
     window._schedSaveTimer = null; // [FIX CRITICAL] Clear before saveDB so autoRefreshDB isn't permanently blocked
+    saveDB();
+  }, 1500);
+}
+
+function toggleShiftMarkFromPicker(){
+  closeShiftPicker();
+  if(!_pickerKey||!_pickerEmpId) return;
+  setShiftMark(_pickerKey, _pickerEmpId, _pickerDay, !isShiftMarked(_pickerKey, _pickerEmpId, _pickerDay));
+  renderAdmSched();
+  // Той самий дебаунс, що й в applyShift — autoRefreshDB чекає поки таймер не спрацює
+  clearTimeout(window._schedSaveTimer);
+  window._schedSaveTimer = setTimeout(()=>{
+    window._schedSaveTimer = null;
     saveDB();
   }, 1500);
 }
@@ -8583,7 +8708,7 @@ function renderAuditorCompanySchedules(){
         const shColor = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
+          <span class="sh-tip-cell" data-l="${shLabel.replace(/"/g,'&quot;')}" data-t="${shTime}" data-c="${shColor}" data-d="${shDesc.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
         </td>`;
       });
       const shortName=formatName(emp.name);
@@ -8982,7 +9107,7 @@ function renderAdmCompanySchedules(){
             const shTime2=sh&&shiftId!=='off'?(sh.time||''):'';
             const shColor2=sh&&shiftId!=='off'?(sh.color||''):'';
             const shDesc2=sh&&shiftId!=='off'?(sh.desc||''):'';
-            cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span></td>`;
+            cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span></td>`;
           });
           tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${formatName(emp.name)}</td>${cells}</tr>`;
         });
@@ -9002,7 +9127,7 @@ function renderAdmCompanySchedules(){
         const shTime2  = sh&&shiftId!=='off' ? (sh.time||'') : '';
         const shColor2 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc2  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
-        cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span></td>`;
+        cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}"><span class="sh-tip-cell" data-l="${shLabel2.replace(/"/g,'&quot;')}" data-t="${shTime2}" data-c="${shColor2}" data-d="${shDesc2.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel2?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span></td>`;
       });
       const shortName=formatName(emp.name);
       tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${shortName}</td>${cells}</tr>`;
@@ -9159,7 +9284,7 @@ function renderCompanySchedules(){
             const shColor3=sh&&shiftId!=='off'?(sh.color||''):'';
             const shDesc3=sh&&shiftId!=='off'?(sh.desc||''):'';
             cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-              <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
+              <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
             </td>`;
           });
           tbody+=`<tr><td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px">${formatName(emp.name)}</td>${cells}</tr>`;
@@ -9183,7 +9308,7 @@ function renderCompanySchedules(){
         const shColor3 = sh&&shiftId!=='off' ? (sh.color||'') : '';
         const shDesc3  = sh&&shiftId!=='off' ? (sh.desc||'') : '';
         cells+=`<td style="background:${bg};padding:2px;text-align:center;${todayBorder}">
-          <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}</span>
+          <span class="sh-tip-cell" data-l="${shLabel3.replace(/"/g,'&quot;')}" data-t="${shTime3}" data-c="${shColor3}" data-d="${shDesc3.replace(/"/g,'&quot;')}" style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${sh?sh.color:'var(--muted)'};cursor:${shLabel3?'pointer':'default'}">${shiftId!=='off'?(sh?(sh.time?sh.time.split(':')[0]:(sh.label?sh.label[0]:'?')):'?'):'·'}${shiftMarkBadge(key,emp.id,d,shiftId)}</span>
         </td>`;
       });
       const shortName=formatName(emp.name);
