@@ -3810,7 +3810,10 @@ function renderTeamCal(){
       <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:${isToday?700:400};color:${isToday?'var(--accent2)':'var(--text)'}">${d}</div>
     </th>`;
   });
-  thead+=`<th style="min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
+  // Денні / нічні зміни агента — sticky справа перед ∑
+  thead+=`<th title="Денні зміни" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">☀</th>`;
+  thead+=`<th title="Нічні зміни" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">🌙</th>`;
+  thead+=`<th title="Всього змін" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
   thead+='</tr></thead>';
 
   const isTeam3 = teamId === 3;
@@ -3821,13 +3824,13 @@ function renderTeamCal(){
       const sgStaff = staff.filter(e=>(e.subteam||0)===gi);
       if(!sgStaff.length) return;
       // Separator row
-      tbody+=`<tr><td colspan="${days.length+2}" style="padding:5px 8px;background:${sg.color}12;border-top:1px solid ${sg.color}44;border-bottom:1px solid ${sg.color}22">
+      tbody+=`<tr><td colspan="${days.length+4}" style="padding:5px 8px;background:${sg.color}12;border-top:1px solid ${sg.color}44;border-bottom:1px solid ${sg.color}22">
         <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${sg.color}">${sg.label}</span>
       </td></tr>`;
       sgStaff.forEach(emp=>{
         const empSched=sched[emp.id]||{};
         const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
-        let shiftCount=0;
+        let shiftCount=0, nightCount=0;
         let cells='';
         days.forEach(d=>{
           const isToday=isNow&&now.getDate()===d;
@@ -3835,7 +3838,7 @@ function renderTeamCal(){
           const shiftId=empSched[d]||'off';
           const sh=getShift(shiftId);
           const hasShift=shiftId&&shiftId!=='off';
-          if(isCountedShift(shiftId)) shiftCount++;
+          if(isCountedShift(shiftId)){ shiftCount++; if(isNightShift(shiftId)) nightCount++; }
           const bg=isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.18)':'';
           const todayBorder=isToday?'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);':'';
           const shLabel=sh&&hasShift?(sh.label||''):'';
@@ -3857,6 +3860,8 @@ function renderTeamCal(){
         tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
           <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
           ${cells}
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
           <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
         </tr>`;
       });
@@ -3865,7 +3870,7 @@ function renderTeamCal(){
   staff.forEach(emp=>{
     const empSched=sched[emp.id]||{};
     const isMe=me&&me.type==='employee'&&me.data.id===emp.id;
-    let shiftCount=0;
+    let shiftCount=0, nightCount=0;
     let cells='';
     days.forEach(d=>{
       const isToday=isNow&&now.getDate()===d;
@@ -3873,7 +3878,7 @@ function renderTeamCal(){
       const shiftId=empSched[d]||'off';
       const sh=getShift(shiftId);
       const hasShift=shiftId&&shiftId!=='off';
-      if(isCountedShift(shiftId)) shiftCount++;
+      if(isCountedShift(shiftId)){ shiftCount++; if(isNightShift(shiftId)) nightCount++; }
       const bg=isToday?'rgba(181,123,238,.08)':wknd?'rgba(167,139,250,.18)':'';
       const todayBorder=isToday?'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);':'';
       const shLabel=sh&&hasShift?(sh.label||''):'';
@@ -3895,7 +3900,9 @@ function renderTeamCal(){
     tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
       <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
       ${cells}
-      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
     </tr>`;
   });
   } // end else
@@ -3912,7 +3919,7 @@ function renderTeamCal(){
     const bg=isToday?'rgba(181,123,238,.06)':wknd?'rgba(167,139,250,.16)':'';
     tfoot+=`<td style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;color:${clr};background:${bg}">${count||'·'}</td>`;
   });
-  tfoot+='<td></td></tr></tfoot>';
+  tfoot+='<td></td><td></td><td></td></tr></tfoot>';
 
   // Wrap in CSS-constrained div like compact admin schedule
   const wrap = document.getElementById('team-sched-table').parentElement;
