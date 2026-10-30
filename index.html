@@ -3811,9 +3811,9 @@ function renderTeamCal(){
     </th>`;
   });
   // Денні / нічні зміни агента — sticky справа перед ∑
-  thead+=`<th title="Денні зміни" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">☀</th>`;
-  thead+=`<th title="Нічні зміни" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">🌙</th>`;
-  thead+=`<th title="Всього змін" style="width:30px;min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
+  thead+=`<th title="Денні зміни" style="text-align:center;font-size:9px;position:sticky;right:44px;background:var(--surface);backdrop-filter:blur(8px)">☀</th>`;
+  thead+=`<th title="Нічні зміни" style="text-align:center;font-size:9px;position:sticky;right:22px;background:var(--surface);backdrop-filter:blur(8px)">🌙</th>`;
+  thead+=`<th title="Всього змін" style="min-width:30px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">∑</th>`;
   thead+='</tr></thead>';
 
   const isTeam3 = teamId === 3;
@@ -3860,8 +3860,8 @@ function renderTeamCal(){
         tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
           <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
           ${cells}
-          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
-          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:44px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:22px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
           <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
         </tr>`;
       });
@@ -3900,8 +3900,8 @@ function renderTeamCal(){
     tbody+=`<tr ${isMe?'style="background:rgba(181,123,238,.05)"':''}>
       <td class="name-col" style="font-size:11px;padding:4px 8px;min-width:100px;${isMe?'color:var(--accent2);font-weight:700':''}">${formatName(emp.name)}${isMe?' 👈':''}</td>
       ${cells}
-      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:60px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
-          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:30px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${shiftCount-nightCount>0?'var(--text)':'var(--muted)'};position:sticky;right:44px;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount-nightCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${nightCount>0?'#a78bfa':'var(--muted)'};position:sticky;right:22px;background:var(--surface);backdrop-filter:blur(8px)">${nightCount}</td>
           <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${shiftCount>0?'var(--accent2)':'var(--muted)'};position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">${shiftCount}</td>
     </tr>`;
   });
@@ -6446,6 +6446,11 @@ function renderAdmSchedCompact(){
       + '</th>';
   }
   if(isTicketing5) theadHTML += '<th style="min-width:28px;text-align:center;font-size:9px;color:var(--red);background:var(--surface)">🌙</th>';
+  // Денні / нічні зміни агента (не Тікетинг) — sticky справа перед ∑
+  if(!isTicketing5){
+    theadHTML += '<th title="Денні зміни" style="text-align:center;font-size:9px;position:sticky;right:44px;background:var(--surface);backdrop-filter:blur(8px)">☀</th>';
+    theadHTML += '<th title="Нічні зміни" style="text-align:center;font-size:9px;position:sticky;right:22px;background:var(--surface);backdrop-filter:blur(8px)">🌙</th>';
+  }
   theadHTML += '<th style="min-width:32px;text-align:center;font-size:9px;position:sticky;right:0;background:var(--surface);backdrop-filter:blur(8px)">&sum;</th>';
   theadHTML += '</tr></thead>';
 
@@ -6459,6 +6464,7 @@ function renderAdmSchedCompact(){
       var empSched = sched[emp.id] || {};
       var shiftCount = 0;
       var tkNightCount = 0;
+      var nightCount = 0;
       var cellsHTML = '';
       for(var di2=0; di2<days.length; di2++){
         var d2 = days[di2];
@@ -6467,7 +6473,7 @@ function renderAdmSchedCompact(){
         var shiftId = empSched[d2] || 'off';
         var sh = getShift(shiftId);
         var hasShift = shiftId && shiftId !== 'off';
-        if(isCountedShift(shiftId)) shiftCount++;
+        if(isCountedShift(shiftId)){ shiftCount++; if(!isTicketing5 && isNightShift(shiftId)) nightCount++; }
         var dayCol2 = dayColors[d2] || null;
         var bg2 = isToday2 ? 'rgba(181,123,238,.08)' : dayCol2 ? dayCol2+'14' : wknd2 ? 'rgba(167,139,250,.18)' : '';
         var border2 = isToday2 ? 'border-left:1px solid rgba(181,123,238,.25);border-right:1px solid rgba(181,123,238,.25);'
@@ -6506,8 +6512,9 @@ function renderAdmSchedCompact(){
       var sumColor = shiftCount > 0 ? 'var(--accent2)' : 'var(--muted)';
       var nightTd = isTicketing5
         ? '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:'+(tkNightCount>0?'var(--red)':'var(--muted)')+';background:var(--surface2)">'+tkNightCount+'</td>'
-        : '';
-      rows += '<tr data-emp-id="'+emp.id+'" draggable="true" style="'+filtStyle+'"'
+        : '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:'+(shiftCount-nightCount>0?'var(--text)':'var(--muted)')+';position:sticky;right:44px;background:var(--surface);backdrop-filter:blur(8px)">'+(shiftCount-nightCount)+'</td>'
+          + '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:'+(nightCount>0?'#a78bfa':'var(--muted)')+';position:sticky;right:22px;background:var(--surface);backdrop-filter:blur(8px)">'+nightCount+'</td>';
+      rows += '<tr data-emp-id=""'+emp.id+'" draggable="true" style="'+filtStyle+'"'
         + ' ondragstart="compactDragStart(event,'+emp.id+')"'
         + ' ondragover="compactDragOver(event)"'
         + ' ondrop="compactDrop(event,'+emp.id+')"'
@@ -6531,7 +6538,7 @@ function renderAdmSchedCompact(){
       var sg = TEAM3_SUBGROUPS[gi];
       var sgStaff = staff.filter(function(e){ return (e.subteam||0)===gi; });
       var sgCount = sgStaff.length;
-      var dividerRow = '<tr><td colspan="'+(days.length+2)+'" style="padding:6px 10px;background:'+sg.color+'12;border-top:2px solid '+sg.color+'44;border-bottom:1px solid '+sg.color+'22;">'
+      var dividerRow = '<tr><td colspan="'+(days.length+(isTicketing5?3:4))+'" style="padding:6px 10px;background:'+sg.color+'12;border-top:2px solid '+sg.color+'44;border-bottom:1px solid '+sg.color+'22;">'
         +'<span style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+sg.color+'">'+sg.label+'</span>'
         +' <span style="font-size:10px;color:var(--muted)">'+sgCount+' агентів</span>'
         +'</td></tr>';
@@ -6612,6 +6619,7 @@ function renderAdmSchedCompact(){
       var bg = isToday?'rgba(181,123,238,.06)':wknd?'rgba(167,139,250,.16)':'';
       onShiftRow += '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;font-weight:600;color:'+clr+';background:'+bg+'">'+(count||'·')+'</td>';
     });
+    onShiftRow += '<td style="position:sticky;right:44px;background:var(--surface)"></td><td style="position:sticky;right:22px;background:var(--surface)"></td>';
     onShiftRow += '<td style="position:sticky;right:0;background:var(--surface)"></td>';
     tfootHTML = '<tfoot><tr>'+onShiftRow+'</tr></tfoot>';
   }
